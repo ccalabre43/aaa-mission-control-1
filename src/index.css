@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: aaa-michigan --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "aaa-michigan";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f4f4f4;
+  --color-base-300: #eaeaea;
+  --color-base-content: #222222;
+  --color-primary: #98150b;
+  --color-primary-content: #ffffff;
+  --color-secondary: #003087;
+  --color-secondary-content: #ffffff;
+  --color-accent: #003087;
+  --color-accent-content: #ffffff;
+  --color-neutral: #222222;
+  --color-neutral-content: #ffffff;
+  --color-info: #003087;
+  --color-info-content: #ffffff;
+  --color-success: #0d5c2e;
+  --color-success-content: #ffffff;
+  --color-warning: #8a5a00;
+  --color-warning-content: #ffffff;
+  --color-error: #98150b;
+  --color-error-content: #ffffff;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.375rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+:root {
+  --aaa-navy: #003087;
+  --aaa-red: #98150b;
+  --aaa-ink: #222222;
+  --aaa-surface: #f4f4f4;
+  --aaa-header-row: #eaeaea;
+  --aaa-border: #dddddd;
+  --aaa-field-stroke: #cacaca;
+  --focus-outline: 3px solid #003087;
+  --focus-outline-offset: 2px;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  color: var(--aaa-ink);
+  background: var(--aaa-surface);
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--aaa-surface);
+  color: var(--aaa-ink);
+}
+
+h1,
+h2,
+.font-display {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible,
+.btn:focus-visible,
+.btn:has(:focus-visible),
+.select:focus-visible,
+.tracker-input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--aaa-navy);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.tracker-input {
+  width: 100%;
+  min-height: 2.75rem;
+  background: #ffffff;
+  border: 1px solid var(--aaa-field-stroke);
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  color: inherit;
+  font: inherit;
+}
+
+.select,
+select.select {
+  border: 1px solid var(--aaa-field-stroke);
+  background-color: #ffffff;
+}
+
+.tracker-input:hover,
+.select:hover {
+  background-color: #f4f4f4;
+}
+
+.tracker-input:focus-visible,
+.select:focus-visible {
+  background-color: #ffffff;
+  border-color: var(--aaa-navy);
+}
