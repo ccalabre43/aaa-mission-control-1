@@ -16,7 +16,6 @@ export interface TrackerRow {
   estimatedCompletionDate: string | null;
   status: Status;
   nextSteps: string;
-  misc: string;
   createdAt: string;
   priority: Priority;
 }
@@ -31,7 +30,6 @@ export const EXPORT_HEADERS = [
   "Estimated Completion Date",
   "Status",
   "Next Steps/Notes",
-  "Misc.",
   "Date created",
   "Priority",
 ] as const;
@@ -43,7 +41,6 @@ export function createRow(partial: Partial<TrackerRow> = {}): TrackerRow {
     estimatedCompletionDate: null,
     status: "Not started",
     nextSteps: "",
-    misc: "",
     createdAt: new Date().toISOString(),
     priority: "medium",
     ...partial,

@@ -1,13 +1,7 @@
 import { PRIORITIES, STATUS_OPTIONS, type TrackerRow } from "../lib/types";
 import { priorityLabel } from "../lib/format";
 
-type Field =
-  | "priority"
-  | "project"
-  | "date"
-  | "status"
-  | "notes"
-  | "misc";
+type Field = "priority" | "project" | "date" | "status" | "notes";
 
 type RowFieldsProps = {
   row: TrackerRow;
@@ -102,31 +96,17 @@ export function RowFields({ row, onChange, layout, labelled = false }: RowFields
     );
   }
 
-  if (layout === "notes") {
-    return (
-      <label className="block">
-        {labelled ? (
-          <span className="mb-1 block text-sm font-semibold">Next Steps/Notes</span>
-        ) : null}
-        <textarea
-          className="tracker-input min-h-11 resize-y"
-          rows={2}
-          value={row.nextSteps}
-          aria-label="Next Steps/Notes"
-          onChange={(event) => onChange(row.id, { nextSteps: event.target.value })}
-        />
-      </label>
-    );
-  }
-
   return (
     <label className="block">
-      {labelled ? <span className="mb-1 block text-sm font-semibold">Misc.</span> : null}
-      <input
-        className="tracker-input"
-        value={row.misc}
-        aria-label="Misc."
-        onChange={(event) => onChange(row.id, { misc: event.target.value })}
+      {labelled ? (
+        <span className="mb-1 block text-sm font-semibold">Next Steps/Notes</span>
+      ) : null}
+      <textarea
+        className="tracker-input resize-y"
+        rows={1}
+        value={row.nextSteps}
+        aria-label="Next Steps/Notes"
+        onChange={(event) => onChange(row.id, { nextSteps: event.target.value })}
       />
     </label>
   );

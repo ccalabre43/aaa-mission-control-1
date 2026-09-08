@@ -1,5 +1,48 @@
 @import "tailwindcss";
 
+/* Gotham Condensed is a licensed Hoefler & Co. face. These rules reference the
+   locally installed font only; no font file is bundled or served. */
+@font-face {
+  font-family: "Gotham Condensed";
+  src:
+    local("Gotham Cond Book"),
+    local("GothamCond-Book"),
+    local("Gotham Condensed Book");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gotham Condensed";
+  src:
+    local("Gotham Cond Medium"),
+    local("GothamCond-Medium"),
+    local("Gotham Condensed Medium");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gotham Condensed";
+  src:
+    local("Gotham Condensed Bold"),
+    local("GothamCondensed-Bold"),
+    local("Gotham Cond Bold"),
+    local("GothamCond-Bold");
+  font-weight: 600 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gotham Condensed";
+  src:
+    local("Gotham Cond Black"),
+    local("GothamCond-Black"),
+    local("Gotham Condensed Black");
+  font-weight: 800 900;
+  font-style: normal;
+}
+
 @plugin "daisyui" {
   themes: aaa-michigan --default;
 }
@@ -45,6 +88,7 @@
   --aaa-header-row: #eaeaea;
   --aaa-border: #dddddd;
   --aaa-field-stroke: #cacaca;
+  --aaa-field-height: 2.75rem;
   --focus-outline: 3px solid #003087;
   --focus-outline-offset: 2px;
   font-family: "Nunito Sans", "Segoe UI", sans-serif;
@@ -63,9 +107,11 @@ body,
 
 h1,
 h2,
-.font-display {
-  font-family: Oswald, "Arial Narrow", sans-serif;
-  letter-spacing: 0.02em;
+.font-display,
+.font-header {
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 :focus {
@@ -95,7 +141,8 @@ summary:focus-visible {
 
 .tracker-input {
   width: 100%;
-  min-height: 2.75rem;
+  height: var(--aaa-field-height);
+  min-height: var(--aaa-field-height);
   background: #ffffff;
   border: 1px solid var(--aaa-field-stroke);
   border-radius: 0.25rem;
@@ -104,10 +151,97 @@ summary:focus-visible {
   font: inherit;
 }
 
+textarea.tracker-input {
+  line-height: 1.5;
+}
+
 .select,
 select.select {
+  height: var(--aaa-field-height);
+  min-height: var(--aaa-field-height);
   border: 1px solid var(--aaa-field-stroke);
   background-color: #ffffff;
+}
+
+.tracker-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: var(--aaa-field-height);
+  border: 1px solid var(--aaa-field-stroke);
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: var(--aaa-navy);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: grab;
+}
+
+.tracker-handle:hover {
+  background: var(--aaa-header-row);
+}
+
+.tracker-handle:active {
+  cursor: grabbing;
+}
+
+.tracker-handle:disabled {
+  color: #767676;
+  cursor: not-allowed;
+}
+
+.tracker-row-target td {
+  box-shadow: inset 0 3px 0 0 var(--aaa-navy);
+}
+
+.tracker-menu {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.375rem;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.18);
+}
+
+.tracker-menu-title {
+  padding: 0.25rem 0.5rem 0.375rem;
+  border-bottom: 1px solid var(--aaa-border);
+  margin-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--aaa-navy);
+}
+
+.tracker-menu button {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.5rem;
+  border-radius: 0.25rem;
+  text-align: left;
+  color: var(--aaa-ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.tracker-menu button:hover:not(:disabled) {
+  background: var(--aaa-surface);
+}
+
+.tracker-menu button:disabled {
+  color: #767676;
+  cursor: not-allowed;
+}
+
+.tracker-menu button.tracker-menu-danger {
+  color: var(--aaa-red);
 }
 
 .tracker-input:hover,

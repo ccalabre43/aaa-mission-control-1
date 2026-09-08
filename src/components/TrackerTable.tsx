@@ -2,11 +2,13 @@ import { useState } from "react";
 import type { OrderMode, TrackerRow } from "../lib/types";
 import { formatCreatedAt } from "../lib/format";
 import { RowFields } from "./RowFields";
+import { RowActionsMenu } from "./RowActionsMenu";
 
 type TrackerTableProps = {
   rows: TrackerRow[];
   orderMode: OrderMode;
   onChange: (id: string, patch: Partial<TrackerRow>) => void;
+  onSaveRow: (row: TrackerRow) => void;
   onExportRow: (row: TrackerRow) => void;
   onRequestDelete: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
@@ -17,6 +19,7 @@ export function TrackerTable({
   rows,
   orderMode,
   onChange,
+  onSaveRow,
   onExportRow,
   onRequestDelete,
   onMove,
@@ -60,21 +63,18 @@ export function TrackerTable({
             <th scope="col" className="min-w-[16rem]">
               Next Steps/Notes
             </th>
-            <th scope="col" className="min-w-[10rem]">
-              Misc.
-            </th>
             <th scope="col" className="min-w-[8.5rem]">
               Priority
             </th>
-            <th scope="col" className="w-16">
-              <span className="sr-only">Row actions</span>
+            <th scope="col" className="w-20">
+              Actions
             </th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={9} className="py-16 text-center text-[#222222]">
+              <td colSpan={8} className="py-16 text-center text-[#222222]">
                 No deliverables yet. Add one or import an Excel file.
               </td>
             </tr>
@@ -138,19 +138,17 @@ export function TrackerTable({
                   <RowFields row={row} onChange={onChange} layout="notes" />
                 </td>
                 <td>
-                  <RowFields row={row} onChange={onChange} layout="misc" />
-                </td>
-                <td>
                   <RowFields row={row} onChange={onChange} layout="priority" />
                 </td>
                 <td>
-                  <RowActions
+                  <RowActionsMenu
                     row={row}
                     index={index}
                     total={rows.length}
+                    onMove={onMove}
+                    onSaveRow={onSaveRow}
                     onExportRow={onExportRow}
                     onRequestDelete={onRequestDelete}
-                    onMove={onMove}
                   />
                 </td>
               </tr>
@@ -199,90 +197,5 @@ function DragHandle({
     >
       <span aria-hidden="true">⣿</span>
     </button>
-  );
-}
-
-function RowActions({
-  row,
-  index,
-  total,
-  onExportRow,
-  onRequestDelete,
-  onMove,
-}: {
-  row: TrackerRow;
-  index: number;
-  total: number;
-  onExportRow: (row: TrackerRow) => void;
-  onRequestDelete: (id: string) => void;
-  onMove: (id: string, direction: -1 | 1) => void;
-}) {
-  const label = row.project.trim() || "Untitled deliverable";
-
-  function close(event: React.MouseEvent<HTMLButtonElement>) {
-    const details = event.currentTarget.closest("details");
-    if (details) details.open = false;
-  }
-
-  return (
-    <details className="dropdown dropdown-end">
-      <summary
-        className="btn btn-ghost btn-square min-h-11 min-w-11"
-        aria-label={`Actions for ${label}`}
-      >
-        <span aria-hidden="true" className="text-xl leading-none">
-          ⋯
-        </span>
-      </summary>
-      <ul className="menu dropdown-content z-20 w-56 rounded-md border border-[#dddddd] bg-white p-2 shadow">
-        <li>
-          <button
-            type="button"
-            disabled={index === 0}
-            onClick={(event) => {
-              onMove(row.id, -1);
-              close(event);
-            }}
-          >
-            Move up
-          </button>
-        </li>
-        <li>
-          <button
-            type="button"
-            disabled={index === total - 1}
-            onClick={(event) => {
-              onMove(row.id, 1);
-              close(event);
-            }}
-          >
-            Move down
-          </button>
-        </li>
-        <li>
-          <button
-            type="button"
-            onClick={(event) => {
-              onExportRow(row);
-              close(event);
-            }}
-          >
-            Export this row
-          </button>
-        </li>
-        <li>
-          <button
-            type="button"
-            className="text-error"
-            onClick={(event) => {
-              onRequestDelete(row.id);
-              close(event);
-            }}
-          >
-            Delete
-          </button>
-        </li>
-      </ul>
-    </details>
   );
 }

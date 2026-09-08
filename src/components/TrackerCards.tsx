@@ -5,6 +5,7 @@ import { RowFields } from "./RowFields";
 type TrackerCardsProps = {
   rows: TrackerRow[];
   onChange: (id: string, patch: Partial<TrackerRow>) => void;
+  onSaveRow: (row: TrackerRow) => void;
   onExportRow: (row: TrackerRow) => void;
   onRequestDelete: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
@@ -13,6 +14,7 @@ type TrackerCardsProps = {
 export function TrackerCards({
   rows,
   onChange,
+  onSaveRow,
   onExportRow,
   onRequestDelete,
   onMove,
@@ -72,7 +74,15 @@ export function TrackerCards({
               <RowFields row={row} onChange={onChange} layout="status" labelled />
               <RowFields row={row} onChange={onChange} layout="notes" labelled />
               <RowFields row={row} onChange={onChange} layout="priority" labelled />
-              <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+              <p className="pt-1 text-sm font-semibold">Actions</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  className="btn btn-secondary min-h-11"
+                  onClick={() => onSaveRow(row)}
+                >
+                  Save
+                </button>
                 <button
                   type="button"
                   className="btn btn-outline btn-secondary min-h-11"

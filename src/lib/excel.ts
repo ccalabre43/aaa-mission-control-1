@@ -26,8 +26,6 @@ const HEADER_ALIASES: Record<string, keyof TrackerRow | "skip"> = {
   "next steps notes": "nextSteps",
   "next steps": "nextSteps",
   notes: "nextSteps",
-  misc: "misc",
-  miscellaneous: "misc",
   "date created": "createdAt",
   created: "createdAt",
   "created at": "createdAt",
@@ -97,7 +95,6 @@ function rowToExportArray(row: TrackerRow): string[] {
     row.estimatedCompletionDate ?? "",
     row.status,
     row.nextSteps,
-    row.misc,
     row.createdAt,
     priorityLabel(row.priority),
   ];
@@ -113,7 +110,6 @@ function workbookFromRows(rows: TrackerRow[]): XLSX.WorkBook {
     { wch: 24 },
     { wch: 16 },
     { wch: 36 },
-    { wch: 18 },
     { wch: 28 },
     { wch: 12 },
   ];
@@ -168,8 +164,6 @@ export function parseSpreadsheet(buffer: ArrayBuffer): TrackerRow[] {
         values.status = cellText(value);
       } else if (field === "nextSteps") {
         values.nextSteps = cellText(value);
-      } else if (field === "misc") {
-        values.misc = cellText(value);
       }
     });
 
@@ -178,7 +172,6 @@ export function parseSpreadsheet(buffer: ArrayBuffer): TrackerRow[] {
       project ||
       values.status ||
       values.nextSteps ||
-      values.misc ||
       values.estimatedCompletionDate;
     if (!hasAny) continue;
 
