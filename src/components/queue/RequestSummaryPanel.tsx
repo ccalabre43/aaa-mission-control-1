@@ -1,22 +1,20 @@
 /**
- * The right-hand Summary panel Workfront opens for a selected request.
+ * Summary panel for a selected request.
  *
- * Two modes, and the restricted one is the default posture rather than an afterthought:
- *
- * - **Summary only** shows ALAN number, request name, requesting team, status, path, and the match
- *   reasons. Guardrail 6 limits any cross-team listing to exactly that, and this panel becomes
- *   cross-team the moment the corpus comes from Workfront rather than from one browser.
- * - **Full** adds the assembled A3 fields, read-only, in Workfront's own section order.
- *
- * The requester's email is in neither mode. Name and department are the most that ever appears here,
- * because an email in a queue listing is PII leaving its original context.
- *
- * Rendered as a dialog rather than an expanding row: the panel is long enough that expanding a row
- * in place pushes the rest of the table off screen, and a dialog gives focus somewhere to return to.
+ * Includes local reviewer Status/Priority editors (not Workfront-bound yet) plus Path, send state,
+ * and the Workfront payload preview so the connection to the A3 form is not lost.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { groupA3BySection } from "../../lib/intake/a3Schema";
-import { briefStatusLabel, type IntakeBrief } from "../../lib/intake/types";
+import {
+  REVIEWER_PRIORITIES,
+  REVIEWER_STATUSES,
+  briefStatusLabel,
+  type BriefReviewer,
+  type IntakeBrief,
+  type ReviewerPriority,
+  type ReviewerStatus,
+} from "../../lib/intake/types";
 import { describeCoverageForAudit } from "../../lib/related/coverage";
 import type { QueueDef } from "../../lib/workfront/queueConfig";
 import { buildWorkfrontPayload } from "../../lib/workfront/submitToWorkfront";
@@ -28,6 +26,7 @@ interface RequestSummaryPanelProps {
   row: QueueRow;
   queueConfig: QueueDef;
   onClose: () => void;
+  onUpdateReviewer: (next: Partial<BriefReviewer>) => void;
 }
 
 type PanelTab = "summary" | "payload";
@@ -37,6 +36,7 @@ export function RequestSummaryPanel({
   row,
   queueConfig,
   onClose,
+  onUpdateReviewer,
 }: RequestSummaryPanelProps) {
   const [tab, setTab] = useState<PanelTab>("summary");
   const [showFull, setShowFull] = useState(false);
@@ -50,8 +50,6 @@ export function RequestSummaryPanel({
     [brief, queueConfig],
   );
 
-  // 2.4.3 Focus Order: focus moves into the panel on open, and Escape closes it (a dialog that
-  // traps a keyboard user is worse than no dialog).
   useEffect(() => {
     headingRef.current?.focus();
   }, []);
@@ -91,10 +89,6 @@ export function RequestSummaryPanel({
           </button>
         </div>
 
-        {/*
-          Tabs, not two screens: the payload is the same request in Workfront's own words, and moving
-          between them should not lose the reader's place.
-        */}
         <div className="aaa-panel-tabs" role="tablist" aria-label="Request views">
           <button
             type="button"
@@ -122,19 +116,69 @@ export function RequestSummaryPanel({
 
         {tab === "summary" ? (
           <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary">
+            <section
+              className="aaa-panel-reviewer"
+              aria-labelledby="panel-reviewer-heading"
+            >
+              <h3 id="panel-reviewer-heading" className="aaa-panel-section-heading">
+                Reviewer (local)
+              </h3>
+              <p className="aaa-panel-reason">
+                Saved in this browser only. Not included in the Workfront payload yet.
+              </p>
+              <div className="aaa-panel-reviewer-fields">
+                <label>
+                  Status
+                  <select
+                    value={brief.reviewer.status}
+                    onChange={(event) =>
+                      onUpdateReviewer({
+                        status: event.target.value as ReviewerStatus,
+                      })
+                    }
+                  >
+                    {REVIEWER_STATUSES.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Priority
+                  <select
+                    value={brief.reviewer.priority}
+                    onChange={(event) =>
+                      onUpdateReviewer({
+                        priority: event.target.value as ReviewerPriority,
+                      })
+                    }
+                  >
+                    {REVIEWER_PRIORITIES.map((priority) => (
+                      <option key={priority} value={priority}>
+                        {priority}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+
             <dl className="aaa-panel-list">
               <div>
                 <dt>ALAN number</dt>
                 <dd>{brief.alanNumber ?? "None yet - new piece"}</dd>
               </div>
               <div>
-                <dt>Status</dt>
+                <dt>Lifecycle</dt>
                 <dd>{briefStatusLabel(brief.status)}</dd>
               </div>
               <div>
+                <dt>Channels</dt>
+                <dd>{row.channels.join(", ") || "—"}</dd>
+              </div>
+              <div>
                 <dt>Sent to Workfront</dt>
-                {/* Just "No". The label already says what the answer is about, and repeating it
-                    read as a stray debug string in the rendered panel. */}
                 <dd>No</dd>
               </div>
               <div>
@@ -145,13 +189,14 @@ export function RequestSummaryPanel({
                 </dd>
               </div>
               <div>
-                <dt>Requesting team</dt>
-                {/* Name and department. Never the email. */}
-                <dd>{row.requesterLabel}</dd>
+                <dt>Requestor</dt>
+                <dd>
+                  {row.requesterName}
+                  {row.requesterDepartment ? `, ${row.requesterDepartment}` : ""}
+                </dd>
               </div>
               <div>
                 <dt>Duplicate check</dt>
-                {/* Coverage-qualified, so an empty result is never read as an all-clear. */}
                 <dd>{describeCoverageForAudit(brief.matchCoverage)}</dd>
               </div>
             </dl>
@@ -164,7 +209,6 @@ export function RequestSummaryPanel({
                 <ul className="aaa-panel-matches" role="list">
                   {brief.resolvedMatches.map((match) => (
                     <li key={match.recordId}>
-                      {/* Summary only: identifier, title, and why it surfaced. No brief body. */}
                       {match.alanNumber ?? match.title} - marked {match.resolution}, surfaced
                       as {match.classification}
                     </li>
@@ -186,11 +230,6 @@ export function RequestSummaryPanel({
               </section>
             ) : null}
 
-            {/*
-              The brief body is behind a deliberate action, not a default. Once the corpus is
-              Workfront-backed this panel shows other teams' requests, and guardrail 6 allows a
-              summary in that listing but never the body.
-            */}
             {showFull ? (
               <section aria-labelledby="panel-full">
                 <h3 id="panel-full" className="aaa-panel-section-heading">
@@ -228,13 +267,8 @@ export function RequestSummaryPanel({
           <div id="panel-payload" role="tabpanel" aria-labelledby="tab-payload">
             <p className="aaa-panel-reason">
               This is exactly what would be posted to Workfront, with the internal field names it
-              expects. It has not been posted. Blank Workfront IDs are the reason.
+              expects. Local reviewer Status and Priority are not included. It has not been posted.
             </p>
-            {/*
-              Shown as JSON on purpose. The point of this view is that the request is complete and
-              inspectable rather than mysterious, and a prettified version would hide which internal
-              field names are actually being sent.
-            */}
             <pre className="aaa-panel-payload" tabIndex={0} aria-label="The Workfront payload">
               {JSON.stringify(payload, null, 2)}
             </pre>

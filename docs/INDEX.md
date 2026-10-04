@@ -73,10 +73,12 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/creative-request-interface.png` | 2026-09-16 | Step 1, identity capture | active |
 | `assets/mocks/creative-request-context-interface.png` | 2026-09-16 | Step 2, free-text context plus the attachment dropzone | active |
 | `assets/mocks/creative-request-guided-questions-interface.png` | 2026-09-16 | Step 3, one question of nine with a progress bar | active |
+| `assets/mocks/request-queue-reviewer-interface.png` | 2026-10-04 | Reviewer-style Request queue: Subject, Channels, Status, Priority, Entry Date, Requestor; page tabs for Request queue and Executive dashboard | active |
+| `docs/knowledge/reviewer-queue-fields.md` | 2026-10-04 | Local reviewer Status/Priority and preferred Workfront field map (native status/priority; no invented A3 names yet) | active |
 
 No mock exists for Related activity, Generating, Review draft, Confirmed, or the Manage questions
 admin view. Those five surfaces are built from established patterns and are **flagged for review**
-rather than treated as designed.
+rather than treated as designed. The Request Queue list itself now has a reviewer mock (above).
 
 ## Audits
 
@@ -154,3 +156,4 @@ Tracked so their absence stays visible instead of being quietly designed around.
 | 2026-09-22 | No new documents. `assets/mocks/add-tools-dialog-interface` is referenced by decision 026 but was supplied in chat rather than saved to the repo, so the dialog's layout source is currently unversioned |
 | 2026-09-23 | Added `scripts/test-snapshot.mjs`. Queue snapshots are the first thing this project writes to a file the user then keeps, so the snapshot format and what it deliberately omits are documented in decision 028 rather than only in code. A **snapshot file is not a document and does not belong in `docs/`** — it holds requester PII and is gitignored under `assets/exports/` |
 | 2026-10-04 | Step 4 Workfront proxy. `workfront-proxy/` health action + local stand-in; Mission Control reads Connected from `/api/workfront/health`. Decision 029. Dual-write remains Step 6 |
+| 2026-10-04 | Reviewer-style Request Queue UI. Local Status/Priority; Executive dashboard tab; Workfront field map in `docs/knowledge/reviewer-queue-fields.md`. Decision 030 |

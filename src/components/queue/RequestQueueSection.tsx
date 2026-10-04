@@ -1,20 +1,19 @@
 /**
- * The requests half of the Request Queue: Workfront's Submitted Requests list, built from briefs
- * saved in this browser.
+ * Reviewer-style Request Queue list (mock: request-queue-reviewer-interface.png).
  *
- * Connection state is a first-class element rather than a footnote: the header reads proxy health
- * ("Workfront: connected (mission-control-v1)" or "not connected"), every row still says
- * "Sent to Workfront: No" until dual-write exists, and the payload view proves the request is
- * complete. No fabricated reference number, no fabricated Entered By, no green "Sent" state.
- *
- * Desktop gets the table; narrow widths get cards. Same rows, same order, same actions - a table with
- * six columns cannot be read at 390px, and horizontal scrolling a data table is a 1.4.10 reflow
- * failure rather than a compromise.
+ * Keeps Workfront connection health, payload summary, and local Ready-to-send flow. Reviewer
+ * Status/Priority are local and editable; they are not posted to Workfront yet.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { loadBriefs, loadIdentity, upsertBrief } from "../../lib/intake/storage";
-import type { IntakeBrief } from "../../lib/intake/types";
+import {
+  REVIEWER_PRIORITIES,
+  REVIEWER_STATUSES,
+  type IntakeBrief,
+  type ReviewerPriority,
+  type ReviewerStatus,
+} from "../../lib/intake/types";
 import { loadQueueConfig } from "../../lib/workfront/queueConfig";
 import {
   fetchWorkfrontHealth,
@@ -28,6 +27,7 @@ import {
   ariaSortFor,
   filterRows,
   formatQueueDate,
+  searchRows,
   sortQueueRows,
   toQueueRow,
   type QueueColumn,
@@ -44,6 +44,7 @@ export function RequestQueueSection() {
   const [health, setHealth] = useState<WorkfrontProxyHealth | null>(null);
 
   const [filter, setFilter] = useState<QueueFilter>("all");
+  const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
   const [openBriefId, setOpenBriefId] = useState<string | null>(null);
   const [status, setStatus] = useState(
@@ -69,8 +70,9 @@ export function RequestQueueSection() {
   );
 
   const rows = useMemo(
-    () => sortQueueRows(filterRows(allRows, filter), sort),
-    [allRows, filter, sort],
+    () =>
+      sortQueueRows(searchRows(filterRows(allRows, filter), search), sort),
+    [allRows, filter, search, sort],
   );
 
   const activeFilter = QUEUE_FILTERS.find((item) => item.key === filter) ?? QUEUE_FILTERS[0];
@@ -78,7 +80,6 @@ export function RequestQueueSection() {
   const openRow = allRows.find((row) => row.briefId === openBriefId) ?? null;
   const draftCount = allRows.filter((row) => row.isDraft).length;
 
-  /** Clicking a sortable header toggles direction, or takes over the sort at descending. */
   function toggleSort(column: QueueColumn) {
     setSort((current) =>
       current.column === column
@@ -87,13 +88,62 @@ export function RequestQueueSection() {
     );
   }
 
-  /**
-   * Submits a draft from the queue, through the same validator the Review step uses.
-   *
-   * This adds a second way in rather than moving the first. Someone who left a brief unfinished
-   * comes back to the queue, not to the flow, and making them re-walk seven steps to press a button
-   * they can already see is the kind of friction that gets a tool abandoned.
-   */
+  function patchBrief(briefId: string, patch: (brief: IntakeBrief) => IntakeBrief) {
+    const current = briefs.find((brief) => brief.id === briefId);
+    if (!current) return;
+    const next = patch(current);
+    const saved = upsertBrief(next);
+    if (!saved.ok) {
+      setError(saved.reason ?? "That request could not be saved to this browser.");
+      return;
+    }
+    setBriefs((list) => list.map((item) => (item.id === next.id ? next : item)));
+    setError("");
+  }
+
+  function markReviewed(briefId: string) {
+    patchBrief(briefId, (brief) => {
+      if (brief.reviewer.firstReviewedAt) return brief;
+      return {
+        ...brief,
+        updatedAt: new Date().toISOString(),
+        reviewer: {
+          ...brief.reviewer,
+          firstReviewedAt: new Date().toISOString(),
+        },
+      };
+    });
+  }
+
+  function openSummary(briefId: string) {
+    markReviewed(briefId);
+    setOpenBriefId(briefId);
+  }
+
+  function updateReviewerStatus(briefId: string, nextStatus: ReviewerStatus) {
+    patchBrief(briefId, (brief) => ({
+      ...brief,
+      updatedAt: new Date().toISOString(),
+      reviewer: {
+        ...brief.reviewer,
+        status: nextStatus,
+        firstReviewedAt: brief.reviewer.firstReviewedAt ?? new Date().toISOString(),
+      },
+    }));
+  }
+
+  function updatePriority(briefId: string, priority: ReviewerPriority) {
+    patchBrief(briefId, (brief) => ({
+      ...brief,
+      updatedAt: new Date().toISOString(),
+      reviewer: {
+        ...brief.reviewer,
+        priority,
+        firstReviewedAt: brief.reviewer.firstReviewedAt ?? new Date().toISOString(),
+      },
+    }));
+  }
+
   async function submitDraft(brief: IntakeBrief) {
     const result = await submitToWorkfront(brief, queueConfig);
     if (!result.ok) {
@@ -120,30 +170,31 @@ export function RequestQueueSection() {
       current.map((item) => (item.id === next.id ? next : item)),
     );
     setError("");
-    // Says what actually happened, and no more. Nothing was transmitted.
     setStatus(
       `"${result.issueName}" is marked Ready to send and saved in this browser. It has not been sent to Workfront.`,
     );
   }
 
   return (
-    <section className="aaa-queue" aria-labelledby="queue-requests-heading">
-      <div className="aaa-queue-head">
-        <div>
-          <h2 id="queue-requests-heading" className="aaa-queue-heading">
-            Requests
-          </h2>
-          <p className="aaa-queue-sub">
-            Requests built in the guided flow, shaped the way Workfront's Submitted Requests list
-            shows them. Everything here is saved in this browser only.
-          </p>
+    <section className="aaa-queue aaa-queue-reviewer" aria-labelledby="queue-requests-heading">
+      <div className="aaa-queue-hero">
+        <div className="aaa-queue-hero-main">
+          <div className="aaa-queue-hero-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-10Z"
+                stroke="currentColor"
+                strokeWidth="1.75"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 id="queue-requests-heading" className="aaa-queue-heading">
+              Request queue
+            </h2>
+            <p className="aaa-queue-sub">What would you like to review today?</p>
+          </div>
         </div>
-
-        {/*
-          Connection state comes from the Workfront proxy health check. The word carries the state
-          (1.4.1); the dot is decorative. A failed or unreachable proxy stays "not connected" rather
-          than implying organization-wide coverage.
-        */}
         <p
           className={
             health?.connected
@@ -167,6 +218,23 @@ export function RequestQueueSection() {
         </p>
       </div>
 
+      <label className="aaa-queue-search">
+        <span className="sr-only">Search by title, requestor, or channel</span>
+        <span className="aaa-queue-search-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.75" />
+            <path d="M16 16l4 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+          </svg>
+        </span>
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search by title, requestor, or channel..."
+          autoComplete="off"
+        />
+      </label>
+
       <div className="sr-only" role="status" aria-live="polite">
         {status}
         {error}
@@ -178,11 +246,6 @@ export function RequestQueueSection() {
       ) : null}
       {status && !error ? <p className="aaa-page-status">{status}</p> : null}
 
-      {/*
-        Buttons in a group rather than role="tablist": these filter a list that stays in place, they
-        do not switch panels, and announcing them as tabs would promise a panel change that never
-        comes. `aria-pressed` carries the state instead.
-      */}
       <div className="aaa-queue-filters" role="group" aria-label="Filter requests">
         {QUEUE_FILTERS.map((item) => (
           <button
@@ -201,19 +264,19 @@ export function RequestQueueSection() {
 
       {rows.length === 0 ? (
         <p className="aaa-queue-empty">
-          {filter === "drafts"
-            ? "No drafts in this browser."
-            : "No submitted requests in this browser yet."}{" "}
-          <Link to="/request" className="aaa-link-quiet">
-            Start Request
-          </Link>
+          {search.trim()
+            ? "No requests match that search in this browser."
+            : filter === "drafts"
+              ? "No drafts in this browser."
+              : "No ready-to-send requests in this browser yet."}{" "}
+          <Link to="/request">Start a request</Link>
         </p>
       ) : (
         <>
           <div className="aaa-queue-table-wrap">
-            <table className="aaa-queue-table">
+            <table className="aaa-queue-table aaa-queue-table-reviewer">
               <caption className="sr-only">
-                Requests saved in this browser, sorted by{" "}
+                Sorted by{" "}
                 {QUEUE_COLUMNS.find((column) => column.key === sort.column)?.label}{" "}
                 {sort.direction === "asc" ? "ascending" : "descending"}
               </caption>
@@ -234,19 +297,11 @@ export function RequestQueueSection() {
                           onClick={() => toggleSort(column.key)}
                         >
                           {column.label}
-                          <span className="sr-only">
-                            , sort by {column.label}
-                            {sort.column === column.key
-                              ? sort.direction === "asc"
-                                ? ", currently ascending"
-                                : ", currently descending"
-                              : ""}
-                          </span>
                           <span aria-hidden="true" className="aaa-queue-sort-caret">
                             {sort.column === column.key
                               ? sort.direction === "asc"
-                                ? "\u25B2"
-                                : "\u25BC"
+                                ? " ▲"
+                                : " ▼"
                               : ""}
                           </span>
                         </button>
@@ -255,7 +310,6 @@ export function RequestQueueSection() {
                       )}
                     </th>
                   ))}
-                  <th scope="col">Sent to Workfront</th>
                   <th scope="col">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -267,31 +321,91 @@ export function RequestQueueSection() {
                   return (
                     <tr key={row.briefId}>
                       <th scope="row" className="aaa-queue-name">
-                        {row.name}
+                        <button
+                          type="button"
+                          className="aaa-queue-subject"
+                          onClick={() => openSummary(row.briefId)}
+                        >
+                          {row.name}
+                        </button>
+                        {row.isNew ? (
+                          <span className="aaa-queue-new">NEW</span>
+                        ) : null}
                       </th>
                       <td>
-                        {/* Empty until Workfront converts the issue. */}
-                        <span className="sr-only">Not converted</span>
+                        <ul className="aaa-queue-pills" aria-label="Channels">
+                          {row.channels.length === 0 ? (
+                            <li className="aaa-queue-pill is-empty">—</li>
+                          ) : (
+                            row.channels.map((channel) => (
+                              <li key={channel} className="aaa-queue-pill">
+                                {channel}
+                              </li>
+                            ))
+                          )}
+                        </ul>
                       </td>
                       <td>
-                        {row.path}
-                        {row.routeSource === "derived" ? (
-                          <span className="aaa-queue-derived"> (derived)</span>
-                        ) : null}
+                        <label className="aaa-queue-status-control">
+                          <span
+                            className={`aaa-queue-status-dot status-${row.reviewerStatus}`}
+                            aria-hidden="true"
+                          />
+                          <span className="sr-only">Status</span>
+                          <select
+                            value={row.reviewerStatus}
+                            onChange={(event) =>
+                              updateReviewerStatus(
+                                row.briefId,
+                                event.target.value as ReviewerStatus,
+                              )
+                            }
+                          >
+                            {REVIEWER_STATUSES.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                       </td>
-                      <td>{row.status}</td>
+                      <td>
+                        <label className="aaa-queue-priority-control">
+                          <span className="sr-only">Priority</span>
+                          <select
+                            className="aaa-queue-priority-select"
+                            value={row.priority}
+                            onChange={(event) =>
+                              updatePriority(
+                                row.briefId,
+                                event.target.value as ReviewerPriority,
+                              )
+                            }
+                          >
+                            {REVIEWER_PRIORITIES.map((priority) => (
+                              <option key={priority} value={priority}>
+                                {priority}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </td>
                       <td>{formatQueueDate(row.entryDate)}</td>
-                      <td>{formatQueueDate(row.lastUpdateDate)}</td>
-                      {/* Never conveyed by color alone (1.4.1): the word is the state. */}
-                      <td className="aaa-queue-sent">No</td>
+                      <td>
+                        <span className="aaa-queue-requestor">
+                          <span className="aaa-queue-avatar" aria-hidden="true">
+                            {row.requesterInitials}
+                          </span>
+                          {row.requesterName}
+                        </span>
+                      </td>
                       <td className="aaa-queue-actions">
                         <button
                           type="button"
                           className="aaa-btn-text"
-                          onClick={() => setOpenBriefId(row.briefId)}
+                          onClick={() => openSummary(row.briefId)}
                         >
                           Summary
-                          <span className="sr-only"> for {row.name}</span>
                         </button>
                         {row.isDraft && brief ? (
                           <button
@@ -299,8 +413,7 @@ export function RequestQueueSection() {
                             className="aaa-btn-text"
                             onClick={() => submitDraft(brief)}
                           >
-                            Submit
-                            <span className="sr-only"> {row.name}</span>
+                            Mark ready to send
                           </button>
                         ) : null}
                       </td>
@@ -316,40 +429,89 @@ export function RequestQueueSection() {
               const brief = briefs.find((item) => item.id === row.briefId);
               return (
                 <li key={row.briefId} className="aaa-queue-card">
-                  <p className="aaa-queue-card-name">{row.name}</p>
+                  <p className="aaa-queue-card-name">
+                    {row.name}
+                    {row.isNew ? <span className="aaa-queue-new">NEW</span> : null}
+                  </p>
                   <dl className="aaa-queue-card-list">
                     <div>
-                      <dt>Path</dt>
+                      <dt>Channels</dt>
+                      <dd>{row.channels.join(", ") || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>
+                        <label className="aaa-queue-status-control">
+                          <span
+                            className={`aaa-queue-status-dot status-${row.reviewerStatus}`}
+                            aria-hidden="true"
+                          />
+                          <select
+                            value={row.reviewerStatus}
+                            onChange={(event) =>
+                              updateReviewerStatus(
+                                row.briefId,
+                                event.target.value as ReviewerStatus,
+                              )
+                            }
+                          >
+                            {REVIEWER_STATUSES.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Priority</dt>
+                      <dd>
+                        <select
+                          className="aaa-queue-priority-select"
+                          value={row.priority}
+                          onChange={(event) =>
+                            updatePriority(
+                              row.briefId,
+                              event.target.value as ReviewerPriority,
+                            )
+                          }
+                        >
+                          {REVIEWER_PRIORITIES.map((priority) => (
+                            <option key={priority} value={priority}>
+                              {priority}
+                            </option>
+                          ))}
+                        </select>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Entry Date</dt>
+                      <dd>{formatQueueDate(row.entryDate)}</dd>
+                    </div>
+                    <div>
+                      <dt>Requestor</dt>
+                      <dd>{row.requesterName}</dd>
+                    </div>
+                    <div>
+                      <dt>Workfront path</dt>
                       <dd>
                         {row.path}
                         {row.routeSource === "derived" ? " (derived)" : ""}
                       </dd>
                     </div>
                     <div>
-                      <dt>Status</dt>
-                      <dd>{row.status}</dd>
-                    </div>
-                    <div>
                       <dt>Sent to Workfront</dt>
                       <dd>No</dd>
-                    </div>
-                    <div>
-                      <dt>Entry Date</dt>
-                      <dd>{formatQueueDate(row.entryDate) || "Not submitted"}</dd>
-                    </div>
-                    <div>
-                      <dt>Last Update Date</dt>
-                      <dd>{formatQueueDate(row.lastUpdateDate)}</dd>
                     </div>
                   </dl>
                   <div className="aaa-queue-actions">
                     <button
                       type="button"
                       className="aaa-btn-text"
-                      onClick={() => setOpenBriefId(row.briefId)}
+                      onClick={() => openSummary(row.briefId)}
                     >
                       Summary
-                      <span className="sr-only"> for {row.name}</span>
                     </button>
                     {row.isDraft && brief ? (
                       <button
@@ -357,8 +519,7 @@ export function RequestQueueSection() {
                         className="aaa-btn-text"
                         onClick={() => submitDraft(brief)}
                       >
-                        Submit
-                        <span className="sr-only"> {row.name}</span>
+                        Mark ready to send
                       </button>
                     ) : null}
                   </div>
@@ -370,12 +531,8 @@ export function RequestQueueSection() {
       )}
 
       <p className="aaa-queue-footnote">
-        Ref # and Entered By are assigned by Workfront when an issue is created, so neither is shown
-        here - a locally invented value for either would look like a Workfront identifier without
-        being one.{" "}
-        <Link to="/settings/queue" className="aaa-link-quiet">
-          Manage the queue
-        </Link>
+        Reviewer Status and Priority are saved in this browser only. They are not sent to Workfront
+        yet. Every row still shows Sent to Workfront: No until dual-write is enabled.
       </p>
 
       {openBrief && openRow ? (
@@ -384,6 +541,18 @@ export function RequestQueueSection() {
           row={openRow}
           queueConfig={queueConfig}
           onClose={() => setOpenBriefId(null)}
+          onUpdateReviewer={(next) => {
+            patchBrief(openBrief.id, (brief) => ({
+              ...brief,
+              updatedAt: new Date().toISOString(),
+              reviewer: {
+                ...brief.reviewer,
+                ...next,
+                firstReviewedAt:
+                  brief.reviewer.firstReviewedAt ?? new Date().toISOString(),
+              },
+            }));
+          }}
         />
       ) : null}
     </section>

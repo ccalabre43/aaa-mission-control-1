@@ -2081,6 +2081,355 @@ select.select {
   color: var(--aaa-muted);
 }
 
+/* Page tabs: Request queue | Executive dashboard */
+.aaa-page-tabs {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0 1.5rem;
+  border-bottom: 1px solid var(--aaa-border);
+}
+
+.aaa-page-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0.625rem 0;
+  margin-bottom: -1px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--aaa-muted); /* 6.69:1 estimated on white */
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.aaa-page-tab:hover {
+  color: var(--aaa-ink);
+}
+
+.aaa-page-tab.is-active {
+  color: var(--aaa-blue); /* 7.65:1 estimated on white */
+  border-bottom-color: var(--aaa-blue);
+  font-weight: 700;
+}
+
+.aaa-page-tab:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
+}
+
+/* Reviewer queue hero + search */
+.aaa-queue-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.aaa-queue-hero-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+
+.aaa-queue-hero-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  background: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 on digital blue */
+}
+
+.aaa-queue-search {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  max-width: 40rem;
+  margin-bottom: 1rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.aaa-queue-search-icon {
+  color: var(--aaa-muted);
+  display: grid;
+  place-items: center;
+}
+
+.aaa-queue-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--aaa-ink);
+}
+
+.aaa-queue-search input:focus {
+  outline: none;
+}
+
+.aaa-queue-search:focus-within {
+  border-color: var(--aaa-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--aaa-blue) 25%, transparent);
+}
+
+.aaa-queue-subject {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+}
+
+.aaa-queue-subject:hover {
+  color: var(--aaa-blue);
+  text-decoration-color: var(--aaa-blue);
+}
+
+.aaa-queue-new {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 999px;
+  background: #d9f0e1;
+  color: var(--aaa-green-safe); /* 7.00:1 estimated on #d9f0e1 */
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.aaa-queue-pills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3125rem;
+}
+
+.aaa-queue-pill {
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  background: var(--aaa-surface-gray);
+  color: var(--aaa-ink); /* 8.29:1 estimated on #EEEEEE */
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.aaa-queue-pill.is-empty {
+  background: transparent;
+  color: var(--aaa-muted);
+  font-weight: 500;
+}
+
+.aaa-queue-status-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+}
+
+.aaa-queue-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  flex: none;
+  background: var(--aaa-blue);
+}
+
+.aaa-queue-status-dot.status-needs_clarification,
+.aaa-queue-status-dot.status-escalated {
+  background: #c45c16; /* estimated ~4.7:1 on white — pair with text label */
+}
+
+.aaa-queue-status-dot.status-approved {
+  background: var(--aaa-green-safe);
+}
+
+.aaa-queue-status-dot.status-closed,
+.aaa-queue-status-dot.status-deferred {
+  background: var(--aaa-muted);
+}
+
+.aaa-queue-status-control select,
+.aaa-queue-priority-select,
+.aaa-panel-reviewer-fields select {
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aaa-ink);
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: #ffffff;
+  max-width: 12rem;
+}
+
+.aaa-queue-priority-select {
+  border-radius: 999px;
+  background: var(--aaa-surface-gray);
+}
+
+.aaa-queue-requestor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aaa-queue-avatar {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--aaa-blue);
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 800;
+  flex: none;
+}
+
+.aaa-panel-reviewer {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--aaa-border);
+}
+
+.aaa-panel-reviewer-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.aaa-panel-reviewer-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-muted);
+}
+
+/* Executive dashboard */
+.aaa-exec {
+  margin-bottom: 2rem;
+}
+
+.aaa-exec-icon {
+  background: var(--aaa-ink);
+}
+
+.aaa-exec-coverage {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  background: var(--aaa-wash);
+  color: var(--aaa-ink);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.aaa-exec-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.aaa-exec-card {
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.aaa-exec-card-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-muted);
+}
+
+.aaa-exec-card-value {
+  margin: 0.375rem 0 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--aaa-ink);
+  line-height: 1.1;
+}
+
+.aaa-exec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.aaa-exec-section-heading {
+  margin: 0 0 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.aaa-exec-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--aaa-border);
+  background: #ffffff;
+}
+
+.aaa-exec-list li:first-child {
+  border-top: 0;
+}
+
+.aaa-exec-stubs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.75rem;
+}
+
+.aaa-exec-stub {
+  padding: 1rem 1.125rem;
+  border: 1px dashed var(--aaa-border);
+  border-radius: 0.5rem;
+  background: var(--aaa-surface-gray);
+}
+
+.aaa-exec-stub p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--aaa-muted);
+}
+
 /* ---------------------------------------------------------------- *
  * The Summary panel
  * ---------------------------------------------------------------- */

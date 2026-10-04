@@ -949,6 +949,24 @@ Local Node `fetch` on this corp laptop failed TLS (`UNABLE_TO_GET_ISSUER_CERT_LO
 `curl` succeeded; the health helper falls back to curl only for that issuer error so local verify
 matches Production without disabling TLS verification globally.
 
+## 2026-10-04 - 030 - Reviewer-style Request Queue UI; local Status/Priority; Workfront path kept
+
+**Status:** accepted
+
+The Request Queue list is restyled to the reviewer mock (`assets/mocks/request-queue-reviewer-interface.png`)
+while remaining a request list aimed at Workfront `mission-control-v1`.
+
+Local `brief.reviewer` holds Status, Priority, and `firstReviewedAt` (NEW badge). Those values are
+editable in the app queue and summary panel. They are **not** added to `a3Schema.ts` and are **not**
+posted by `buildWorkfrontPayload`. Preferred later targets are native Issue `status` / `priority`
+(see `docs/knowledge/reviewer-queue-fields.md`); a custom A3 dropdown is a config request only if
+native statuses cannot match.
+
+Page tabs: Request queue | Executive dashboard. Executive summaries are computed from this browser’s
+briefs and tracker rows, with an explicit coverage line. Hours/capacity slots stay stubbed until a
+Workfront assignment API is approved. The Project tracker moves under the Executive tab so it is not
+deleted.
+
 ## Open items awaiting outside input
 
 | Item | Blocked on | Entry |
@@ -969,6 +987,8 @@ matches Production without disabling TLS verification globally.
 | Whether Entered By may be the integration account, or the tool must move inside Workfront as a UI Extension to preserve the requester | Workfront admin, Marketing | 023 |
 | Adobe Runtime deploy of `workfront-proxy` on the S2S Console project, with `WORKFRONT_CLIENT_SECRET` as a Runtime secret (local health verified; production Runtime URL still needed) | Workfront admin, App Builder owner | 023, 029 |
 | Vendor Management acknowledgement for the live Workfront S2S + Runtime path | Vendor Management | 023, 029 |
+| Confirm request-queue native Issue status group vs custom `A3IntakeReviewStatus`; confirm P1–P3 → priority enum | Workfront admin | 030 |
+| Workfront hours / Resource Planner for Executive dashboard (typed adapter first) | Workfront admin, Vendor Management | 030 |
 | How attachments reach Workfront. Documents need a separate upload call and this app never persists file contents | Workfront admin | 023 |
 | Sign-off on red for a destructive delete link, and on the tracker's existing row delete that already used it | Brand team | 024 |
 | Sign-off on `#ECB350` replacing the guide's antique bronze, and on whether the `--aaa-bronze` token should be renamed to match the gold it now holds | Brand team | 025 |
