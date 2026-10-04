@@ -1,0 +1,28 @@
+# Experience Cloud Shell extension shell — used here only as the Runtime package host.
+# Mission Control remains the SPA in the repo root; this folder is the Workfront proxy.
+
+operations:
+  view:
+    - type: web
+      impl: index.html
+
+actions: actions
+
+runtimeManifest:
+  packages:
+    mission-control:
+      license: Apache-2.0
+      actions:
+        workfront-health:
+          function: actions/workfront-health/index.js
+          web: "yes"
+          runtime: nodejs:22
+          inputs:
+            LOG_LEVEL: info
+            WORKFRONT_CLIENT_ID: $WORKFRONT_CLIENT_ID
+            WORKFRONT_CLIENT_SECRET: $WORKFRONT_CLIENT_SECRET
+            WORKFRONT_HOST: $WORKFRONT_HOST
+            WORKFRONT_PROJECT_ID: $WORKFRONT_PROJECT_ID
+          annotations:
+            require-adobe-auth: false
+            final: true

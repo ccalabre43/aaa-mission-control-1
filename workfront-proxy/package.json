@@ -1,0 +1,15 @@
+{
+  "name": "mission-control-workfront-proxy",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Adobe App Builder Runtime proxy for Mission Control → Workfront (S2S secrets stay server-side).",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node local-server.mjs",
+    "health": "node local-server.mjs --once",
+    "deploy": "aio app deploy"
+  }
+}

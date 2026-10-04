@@ -2,3 +2,17 @@ node_modules
 dist
 .DS_Store
 *.local
+
+# Environment files. Committing one is how a credential reaches a repository, so the ignore is
+# broad and the example is the single exception.
+.env
+.env.*
+!.env.example
+!workfront-proxy/.env.example
+
+# Screenshots and briefs produced by verification runs and exports. Generated output, and a brief
+# can contain a requester's name and email, which is PII. The directory itself is kept, because the
+# project layout in .cursor/rules/intake-project.mdc names it and scripts/verify-flow.mjs writes
+# into it.
+assets/exports/*
+!assets/exports/.gitkeep

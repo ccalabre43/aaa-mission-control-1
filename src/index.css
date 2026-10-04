@@ -1,97 +1,125 @@
 @import "tailwindcss";
 
-/* Gotham Condensed is a licensed Hoefler & Co. face. These rules reference the
-   locally installed font only; no font file is bundled or served. */
-@font-face {
-  font-family: "Gotham Condensed";
-  src:
-    local("Gotham Cond Book"),
-    local("GothamCond-Book"),
-    local("Gotham Condensed Book");
-  font-weight: 400;
-  font-style: normal;
-}
+/* AAA Life digital brand theme.
+   Source: assets/brand/AAAL-Brand-Visual-Style-Guide.pdf (MAR 2025), digital/ADA-adjusted palette.
+   Every ratio in the comments is computed with .cursor/skills/verify-live-ux/scripts/contrast.py.
 
-@font-face {
-  font-family: "Gotham Condensed";
-  src:
-    local("Gotham Cond Medium"),
-    local("GothamCond-Medium"),
-    local("Gotham Condensed Medium");
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Gotham Condensed";
-  src:
-    local("Gotham Condensed Bold"),
-    local("GothamCondensed-Bold"),
-    local("Gotham Cond Bold"),
-    local("GothamCond-Bold");
-  font-weight: 600 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Gotham Condensed";
-  src:
-    local("Gotham Cond Black"),
-    local("GothamCond-Black"),
-    local("Gotham Condensed Black");
-  font-weight: 800 900;
-  font-style: normal;
-}
+   Typography: the brand primary is Gotham, which is licensed and cannot be shipped in a web app.
+   The guide's designated web substitute is Open Sans, and the guide forbids pairing the two, so
+   Open Sans is used alone. It is self-hosted via @fontsource (imported in main.tsx) rather than
+   fetched from Google Fonts, so no user request leaves the origin. */
 
 @plugin "daisyui" {
-  themes: aaa-michigan --default;
+  themes: aaa-life --default;
 }
 
 @plugin "daisyui/theme" {
-  name: "aaa-michigan";
+  name: "aaa-life";
   default: true;
   prefersdark: false;
   color-scheme: light;
+
+  /* Surfaces */
   --color-base-100: #ffffff;
-  --color-base-200: #f4f4f4;
-  --color-base-300: #eaeaea;
-  --color-base-content: #222222;
-  --color-primary: #98150b;
+  --color-base-200: #eeeeee;
+  --color-base-300: #e2e2e2;
+  --color-base-content: #424242; /* 10.05:1 on white, 8.66:1 on #EEEEEE */
+
+  /* Primary blue, PMS 287 */
+  --color-primary: #05539f; /* white on it 7.65:1 */
   --color-primary-content: #ffffff;
-  --color-secondary: #003087;
+
+  /* Headline blue */
+  --color-secondary: #06549c; /* 7.62:1 on white */
   --color-secondary-content: #ffffff;
-  --color-accent: #003087;
+
+  /* Dark navy */
+  --color-accent: #0b233f; /* 15.83:1 on white */
   --color-accent-content: #ffffff;
-  --color-neutral: #222222;
+
+  --color-neutral: #424242;
   --color-neutral-content: #ffffff;
-  --color-info: #003087;
+
+  --color-info: #05539f;
   --color-info-content: #ffffff;
-  --color-success: #0d5c2e;
+
+  /* Darker success green - the bright green fails as text or as a small indicator */
+  --color-success: #0d5c2e; /* white on it 8.12:1; 7.00:1 on #EEEEEE */
   --color-success-content: #ffffff;
-  --color-warning: #8a5a00;
+
+  --color-warning: #8a5a00; /* white on it 5.93:1 */
   --color-warning-content: #ffffff;
-  --color-error: #98150b;
+
+  /* Digital red. The official print red #ED1C2F gives white only 4.37:1 and fails AA. */
+  --color-error: #e31e2e; /* white on it 4.68:1 */
   --color-error-content: #ffffff;
+
+  /* The guide prefers pills but explicitly allows rectangles with rounded corners,
+     which is what every mock draws. */
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
-  --radius-box: 0.375rem;
+  --radius-box: 0.5rem;
   --border: 1px;
   --depth: 0;
   --noise: 0;
 }
 
 :root {
-  --aaa-navy: #003087;
-  --aaa-red: #98150b;
-  --aaa-ink: #222222;
-  --aaa-surface: #f4f4f4;
-  --aaa-header-row: #eaeaea;
-  --aaa-border: #dddddd;
-  --aaa-field-stroke: #cacaca;
+  /* Brand blues */
+  --aaa-blue: #05539f;
+  --aaa-blue-headline: #06549c;
+  --aaa-blue-hover: #0a63b8; /* rollover slightly lighter, per the guide */
+  --aaa-blue-active: #044383; /* pressed slightly darker */
+  --aaa-navy: #0b233f;
+
+  /* Red is reserved for the final submit and genuine errors, never a layout primary */
+  --aaa-red: #e31e2e;
+  --aaa-red-text: #a3141f; /* 7.84:1 on white, 6.47:1 on the wash - safe as TEXT */
+
+  /* Warning/amber, used as text and as a left bar */
+  --aaa-amber: #8a5a00; /* 5.93:1 on white */
+
+  /* Requested gold, replacing the guide's antique bronze #5F6240 as this token's value. Logged as a
+     brand exception; the guide's own value stays recorded in docs/knowledge/brand-system.md.
+
+     It is far too light to carry a white glyph - white on it computes to 1.89:1, well under 1.4.11's
+     3:1 - so the one tile using it pairs it with a dark glyph and a darker gold edge. Both figures
+     are on .aaa-tile-bronze. Do not put white on this color. */
+  --aaa-bronze: #ecb350;
+  --aaa-bronze-edge: #b57d1a; /* 3.55:1 on white, computed - makes the light fill's shape read */
+  --aaa-bronze-glyph: #3d3116; /* 6.75:1 on the fill, computed */
+
+  /* Bright green: logged brand exception, see docs/decisions/decision-log.md.
+     Permitted ONLY as a large tile fill behind a white glyph (3.30:1, clears 1.4.11's 3:1
+     for non-text). Never as text, never as a small indicator such as a stepper dot. */
+  --aaa-green-tile: #16a34a;
+  --aaa-green-safe: #0d5c2e;
+
+  /* Ink and surfaces */
+  --aaa-ink: #424242;
+  --aaa-muted: #5c5c5c; /* 6.69:1 white, 5.76:1 #EEEEEE, 5.52:1 #DAECF7 - passes 1.4.3 on all three */
+  --aaa-surface: #ffffff;
+  --aaa-surface-gray: #eeeeee;
+  --aaa-wash: #daecf7; /* the mocks' pale blue wash; ink on it is 8.29:1 */
+  --aaa-header-row: #eeeeee;
+  --aaa-border: #767676; /* 4.54:1 on white, 3.75:1 on the wash - clears 1.4.11's 3:1 */
+
+  /* Field stroke was #cacaca at 1.64:1, which failed 1.4.11 badly. */
+  --aaa-field-stroke: #767676;
   --aaa-field-height: 2.75rem;
-  --focus-outline: 3px solid #003087;
+
+  /* The focus ring is 3px of brand blue with a 2px offset. The offset is load-bearing:
+     against a #767676 field border the blue is only 1.68:1, so the ring must be separated
+     from the border by the page background, where it reaches 7.65:1 on white,
+     6.60:1 on #EEEEEE, and 6.31:1 on the wash. Never remove the offset. */
+  --focus-ring-color: #05539f;
+  --focus-outline: 3px solid var(--focus-ring-color);
   --focus-outline-offset: 2px;
-  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+
+  --aaa-track: #c9c9c9; /* progress track; blue fill on it is 4.62:1 */
+
+  font-family:
+    "Open Sans", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   color: var(--aaa-ink);
   background: var(--aaa-surface);
   color-scheme: light;
@@ -105,13 +133,15 @@ body,
   color: var(--aaa-ink);
 }
 
+/* Open Sans throughout. Gotham is never paired with it, per the guide. */
 h1,
 h2,
+h3,
 .font-display,
 .font-header {
-  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 :focus {
@@ -123,9 +153,33 @@ h2,
 .btn:has(:focus-visible),
 .select:focus-visible,
 .tracker-input:focus-visible,
-summary:focus-visible {
-  outline: 3px solid var(--aaa-navy);
-  outline-offset: 2px;
+.aaa-input:focus-visible,
+.aaa-textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* A heading that receives focus on a step change must not draw a focus ring: the user did not put
+   focus there, and a ring would read as an interactive element. The whole screen changing is the
+   visual signal; screen readers get the heading announcement.
+
+   Both :focus and :focus-visible are needed. Programmatic .focus() on a non-interactive element does
+   not match :focus-visible in Chrome, so a :focus-visible-only rule leaves the user-agent's default
+   :focus outline showing - verified as a 3px currentColor ring on the step heading. */
+h1[tabindex="-1"]:focus,
+h1[tabindex="-1"]:focus-visible,
+h2[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus-visible,
+h3[tabindex="-1"]:focus,
+h3[tabindex="-1"]:focus-visible {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -138,6 +192,1504 @@ summary:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------- *
+ * Screen-reader-only utility
+ * ---------------------------------------------------------------- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ---------------------------------------------------------------- *
+ * Skip link (2.4.1)
+ * ---------------------------------------------------------------- */
+
+.aaa-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  color: var(--aaa-blue);
+  font-weight: 700;
+  border: 2px solid var(--aaa-blue);
+  border-radius: 0.25rem;
+}
+
+.aaa-skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* ---------------------------------------------------------------- *
+ * App header
+ * ---------------------------------------------------------------- */
+
+.aaa-header {
+  background: var(--aaa-surface-gray);
+  border-bottom: 1px solid var(--aaa-navy);
+}
+
+.aaa-header-logo {
+  /* The PNG bakes in clear space, so the artwork is 164/226 of the image height:
+     44px of image gives about 32px of visible mark, matching the mock. */
+  height: 2.75rem;
+  width: auto;
+  display: block;
+}
+
+.aaa-header-home {
+  display: block;
+  border-radius: 0.25rem;
+}
+
+.aaa-header-divider {
+  width: 1px;
+  height: 2.25rem;
+  background: var(--aaa-border);
+  flex: none;
+}
+
+.aaa-header-eyebrow {
+  font-size: 0.75rem;
+  color: var(--aaa-muted); /* 5.76:1 on #EEEEEE */
+  line-height: 1.3;
+}
+
+.aaa-header-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--aaa-ink); /* 8.66:1 on #EEEEEE */
+  line-height: 1.3;
+}
+
+@media (min-width: 640px) {
+  .aaa-header-title {
+    font-size: 1.25rem;
+  }
+}
+
+.aaa-header-sep {
+  color: var(--aaa-muted);
+  margin: 0 0.4rem;
+  font-weight: 400;
+}
+
+.aaa-header-route {
+  color: var(--aaa-blue); /* 6.60:1 on #EEEEEE */
+}
+
+/* ---------------------------------------------------------------- *
+ * Stepper (in the header on large screens)
+ * ---------------------------------------------------------------- */
+
+.aaa-stepper ol {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.aaa-stepper-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.aaa-stepper-rule {
+  width: 1.75rem;
+  height: 1px;
+  background: var(--aaa-border);
+  flex: none;
+  margin: 0 0.5rem;
+}
+
+.aaa-stepper-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--aaa-border); /* 4.54:1 as a non-text indicator */
+  flex: none;
+}
+
+/* Darker green, because bright green on the gray header is 2.84:1 and fails 1.4.11. */
+.aaa-stepper-dot[data-state="done"],
+.aaa-stepper-dot[data-state="current"] {
+  background: var(--aaa-green-safe); /* 7.00:1 on #EEEEEE */
+}
+
+.aaa-stepper-label {
+  color: var(--aaa-muted);
+  white-space: nowrap;
+}
+
+.aaa-stepper-current .aaa-stepper-label {
+  color: var(--aaa-ink);
+  font-weight: 700;
+}
+
+.aaa-stepper-done .aaa-stepper-label {
+  color: var(--aaa-ink);
+}
+
+/* ---------------------------------------------------------------- *
+ * Buttons
+ * ---------------------------------------------------------------- */
+
+.aaa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 2.5.8 Target Size Minimum */
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.25rem;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.aaa-btn-primary {
+  background: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 */
+  border-color: var(--aaa-blue);
+}
+
+.aaa-btn-primary:hover:not(:disabled) {
+  background: var(--aaa-blue-hover);
+  border-color: var(--aaa-blue-hover);
+  color: #ffffff;
+}
+
+.aaa-btn-primary:active:not(:disabled) {
+  background: var(--aaa-blue-active);
+  border-color: var(--aaa-blue-active);
+}
+
+/* Outlined, the guide's sanctioned way to show hierarchy without a second filled button. */
+.aaa-btn-secondary {
+  background: transparent;
+  color: var(--aaa-blue);
+  border-color: var(--aaa-blue);
+}
+
+.aaa-btn-secondary:hover:not(:disabled) {
+  background: #f2f7fc;
+}
+
+/* Final submit only, per the guide's caution about red on screens containing form fields. */
+.aaa-btn-submit {
+  background: var(--aaa-red);
+  color: #ffffff; /* 4.68:1 */
+  border-color: var(--aaa-red);
+}
+
+.aaa-btn-submit:hover:not(:disabled) {
+  background: #c41927;
+  border-color: #c41927;
+}
+
+/* Disabled state is never conveyed by color alone: the blocking reason is always
+   named in adjacent text (3.3.1). */
+.aaa-btn:disabled {
+  background: #eeeeee;
+  border-color: var(--aaa-border);
+  color: #5c5c5c; /* 5.76:1 on #EEEEEE */
+  cursor: not-allowed;
+}
+
+/* Back and inline actions are text buttons, never competing filled buttons.
+   Underlined because they are clickable, per the guide. */
+.aaa-btn-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  color: var(--aaa-blue);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.aaa-btn-text:hover:not(:disabled) {
+  color: var(--aaa-blue-hover);
+}
+
+.aaa-btn-text:disabled {
+  color: var(--aaa-muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.aaa-btn-text-danger {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  color: var(--aaa-red-text); /* 7.84:1 on white */
+  font-weight: 700;
+  font-size: 0.875rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.aaa-link-quiet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--aaa-blue);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.aaa-link-quiet:hover {
+  color: var(--aaa-blue-hover);
+}
+
+/* ---------------------------------------------------------------- *
+ * Fields
+ * ---------------------------------------------------------------- */
+
+.aaa-field-group {
+  margin-bottom: 1rem;
+}
+
+.aaa-field-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .aaa-field-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.aaa-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-ink);
+  margin-bottom: 0.375rem;
+}
+
+.aaa-input,
+.aaa-textarea {
+  width: 100%;
+  min-height: var(--aaa-field-height);
+  background: #ffffff;
+  border: 1px solid var(--aaa-field-stroke); /* 4.54:1, clears 1.4.11 */
+  border-radius: 0.25rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--aaa-ink);
+  font: inherit;
+}
+
+.aaa-textarea {
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.aaa-input::placeholder,
+.aaa-textarea::placeholder {
+  color: var(--aaa-muted); /* 6.69:1 - a placeholder still has to be readable */
+  opacity: 1;
+}
+
+.aaa-input:hover:not(:disabled),
+.aaa-textarea:hover:not(:disabled) {
+  background: #fafafa;
+}
+
+.aaa-input:focus-visible,
+.aaa-textarea:focus-visible {
+  border-color: var(--aaa-blue);
+  background: #ffffff;
+}
+
+.aaa-input[aria-invalid="true"] {
+  border-color: var(--aaa-red);
+  border-width: 2px;
+}
+
+/* Date inputs render their own picker glyph; keep room for it. */
+.aaa-input-date {
+  max-width: 16rem;
+}
+
+select.aaa-input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--aaa-ink) 50%),
+    linear-gradient(135deg, var(--aaa-ink) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) calc(50% + 2px),
+    calc(100% - 0.8rem) calc(50% + 2px);
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem;
+}
+
+.aaa-field-hint {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+  margin-top: 0.375rem;
+  line-height: 1.5;
+}
+
+.aaa-field-error {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aaa-red-text); /* 7.84:1, and the text itself carries the meaning */
+  margin-top: 0.375rem;
+  min-height: 1.2em;
+}
+
+.aaa-field-warning {
+  font-size: 0.8125rem;
+  color: var(--aaa-amber); /* 5.93:1 */
+  margin-top: 0.375rem;
+  min-height: 1.2em;
+  line-height: 1.5;
+}
+
+.aaa-optional {
+  color: var(--aaa-muted);
+  font-weight: 400;
+}
+
+.aaa-required {
+  color: var(--aaa-red-text);
+}
+
+.aaa-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* 2.5.8 Target Size: the 2.75rem row, not the control itself, is the 44px touch target. */
+.aaa-radio-row,
+.aaa-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.aaa-radio,
+.aaa-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--aaa-blue);
+  flex: none;
+}
+
+/* ---------------------------------------------------------------- *
+ * Home screen
+ * ---------------------------------------------------------------- */
+
+.aaa-home {
+  background: var(--aaa-surface);
+}
+
+/* The mobile mock sits on the pale blue wash; the desktop mock is white. */
+@media (max-width: 639px) {
+  .aaa-home {
+    background: linear-gradient(180deg, var(--aaa-wash) 0%, #f2f9fd 100%);
+  }
+}
+
+.aaa-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.625rem;
+  background: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 */
+  margin-bottom: 1.25rem;
+}
+
+.aaa-hero-heading {
+  font-size: 1.625rem;
+  line-height: 1.25;
+  color: var(--aaa-ink);
+}
+
+@media (min-width: 640px) {
+  .aaa-hero-heading {
+    font-size: 2rem;
+  }
+}
+
+.aaa-hero-sub {
+  margin-top: 0.875rem;
+  max-width: 34rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--aaa-muted);
+}
+
+.aaa-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 60rem;
+  margin-top: 2.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+@media (min-width: 900px) {
+  .aaa-tool-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.aaa-tool-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  height: 100%;
+  padding: 1.25rem 1rem;
+  background: #ffffff;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.aaa-tool-card-ready {
+  border-color: var(--aaa-blue);
+  border-width: 2px;
+}
+
+.aaa-tool-card-ready:hover {
+  background: #f2f7fc;
+}
+
+/* Dashed, muted, and labeled - so an unbuilt tool does not look like a working one. */
+.aaa-tool-card-soon {
+  border-style: dashed;
+  background: #fbfbfb;
+}
+
+.aaa-tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  flex: none;
+  margin-bottom: 0.25rem;
+}
+
+/* White glyphs verified: blue 7.65:1, green 3.30:1, ink 10.05:1. All clear 1.4.11's 3:1 for
+   non-text. The green is the logged brand exception and is permitted here specifically because this
+   is a large fill behind a white glyph.
+
+   The bronze tile is the exception to the white glyph and sets its own colors below. */
+.aaa-tile-blue {
+  background: var(--aaa-blue);
+}
+
+.aaa-tile-green {
+  background: var(--aaa-green-tile);
+}
+
+/* The only tile that does not take a white glyph. The requested gold is light enough that white on
+   it is 1.89:1, so the glyph goes dark instead, and a darker gold edge keeps the square itself from
+   dissolving into the white card - the fill alone is also 1.89:1 against that card.
+
+   Declared after .aaa-tool-icon so the color override lands without needing extra specificity. */
+.aaa-tile-bronze {
+  background: var(--aaa-bronze);
+  border: 1px solid var(--aaa-bronze-edge); /* 3.55:1 on the white card, computed */
+  color: var(--aaa-bronze-glyph); /* 6.75:1 on the fill, computed */
+}
+
+.aaa-tile-ink {
+  background: var(--aaa-ink);
+}
+
+.aaa-tool-label {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-tool-desc {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+  line-height: 1.45;
+}
+
+.aaa-tool-soon {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--aaa-muted);
+}
+
+.aaa-home-note {
+  margin-top: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-home-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-clear-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-cleared-note {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-green-safe); /* 8.12:1 on white */
+}
+
+/* ---------------------------------------------------------------- *
+ * Request flow layout
+ * ---------------------------------------------------------------- */
+
+.aaa-flow {
+  padding: 2rem 1rem 4rem;
+}
+
+@media (min-width: 640px) {
+  .aaa-flow {
+    padding: 3rem 1.5rem 5rem;
+  }
+}
+
+.aaa-flow-centered {
+  max-width: 30rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.aaa-flow-panel {
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+/* Once matches exist, the panel widens and the summary sits beside the question. */
+.aaa-flow-with-aside {
+  max-width: 62rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .aaa-flow-with-aside {
+    grid-template-columns: minmax(0, 34rem) minmax(0, 22rem);
+  }
+}
+
+.aaa-flow-main {
+  min-width: 0;
+}
+
+.aaa-flow-aside {
+  min-width: 0;
+}
+
+.aaa-flow-heading {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: var(--aaa-ink);
+}
+
+@media (min-width: 640px) {
+  .aaa-flow-heading {
+    font-size: 1.875rem;
+  }
+}
+
+.aaa-flow-heading-left {
+  font-size: 1.375rem;
+  line-height: 1.3;
+  color: var(--aaa-ink);
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .aaa-flow-heading-left {
+    font-size: 1.5rem;
+  }
+}
+
+.aaa-flow-sub {
+  margin-top: 0.875rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--aaa-muted);
+}
+
+.aaa-flow-sub-left {
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--aaa-muted);
+}
+
+.aaa-flow-footnote {
+  margin-top: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--aaa-muted);
+}
+
+.aaa-form {
+  width: 100%;
+  text-align: left;
+  margin-top: 0.5rem;
+}
+
+.aaa-flow-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.aaa-flow-actions-center {
+  justify-content: center;
+}
+
+.aaa-flow-alert {
+  margin-bottom: 1.25rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--aaa-red-text);
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: var(--aaa-red-text); /* 7.84:1, and the message text carries the meaning */
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.aaa-flow-alert ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+/* ---------------------------------------------------------------- *
+ * Step chrome
+ * ---------------------------------------------------------------- */
+
+.aaa-step-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.aaa-step-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aaa-blue); /* 7.65:1 on white */
+  margin-bottom: 0.5rem;
+}
+
+.aaa-step-count {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+}
+
+/* A real <progress>, so its value reaches assistive tech without ARIA bookkeeping.
+
+   The 1px border is an accessibility fix, not decoration. 1.4.11 needs the bar's extent to be
+   discernible, and the track alone is #C9C9C9 on white at 1.66:1. That cannot be solved by
+   darkening the track, because the two requirements are mutually exclusive with this blue: the
+   fill must clear 3:1 against the track AND the track must clear 3:1 against the page, which
+   works out to needing the track's relative luminance to be both >= 0.362 and <= 0.300. So the
+   border carries the extent (#767676, 4.54:1 on white) and the fill/track pair carries the
+   progress (4.62:1). Both facts are also restated as "Question N of M" text. */
+.aaa-progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 999px;
+  background: var(--aaa-track);
+  color: var(--aaa-blue);
+  overflow: hidden;
+}
+
+.aaa-progress::-webkit-progress-bar {
+  background: var(--aaa-track);
+  border-radius: 999px;
+}
+
+/* Fill on track is 4.62:1, well past 1.4.11's 3:1, and the same information is
+   restated as "Question N of M" so it is never color-only. */
+.aaa-progress::-webkit-progress-value {
+  background: var(--aaa-blue);
+  border-radius: 999px;
+  transition: width 200ms ease;
+}
+
+.aaa-progress::-moz-progress-bar {
+  background: var(--aaa-blue);
+  border-radius: 999px;
+}
+
+.aaa-question-helper {
+  font-size: 0.9375rem;
+  color: var(--aaa-muted);
+  margin-bottom: 1rem;
+  line-height: 1.55;
+}
+
+.aaa-next-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aaa-next-hint {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+}
+
+/* ---------------------------------------------------------------- *
+ * Attachments and ALAN
+ * ---------------------------------------------------------------- */
+
+.aaa-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--aaa-border); /* 4.54:1 */
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: var(--aaa-muted);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.aaa-dropzone:hover {
+  background: #fafafa;
+  color: var(--aaa-ink);
+}
+
+.aaa-dropzone-active {
+  border-color: var(--aaa-blue);
+  border-style: solid;
+  background: #f2f7fc;
+  color: var(--aaa-ink);
+}
+
+.aaa-attachment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.aaa-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.aaa-attachment-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--aaa-ink);
+}
+
+.aaa-attachment-size {
+  color: var(--aaa-muted);
+  font-size: 0.8125rem;
+  flex: none;
+}
+
+.aaa-alan-block {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: #fbfdff;
+}
+
+/* ---------------------------------------------------------------- *
+ * Related activity
+ * ---------------------------------------------------------------- */
+
+.aaa-related {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.aaa-related-compact {
+  padding: 1rem;
+  margin: 0;
+}
+
+.aaa-related-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: var(--aaa-ink);
+  margin-bottom: 0.75rem;
+}
+
+.aaa-related-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 */
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Neutral ink, deliberately not success green: an empty result is information, not a
+   clearance, and green would read as an organization-wide all-clear. */
+.aaa-related-empty {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--aaa-ink);
+}
+
+.aaa-related-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.aaa-related-group-heading {
+  font-size: 0.875rem;
+  color: var(--aaa-ink);
+  margin-bottom: 0.25rem;
+}
+
+.aaa-related-group-blurb {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+  margin-bottom: 0.625rem;
+  line-height: 1.5;
+}
+
+.aaa-related-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aaa-related-card {
+  padding: 0.875rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.375rem;
+  background: #ffffff;
+}
+
+.aaa-related-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.aaa-related-alan {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  letter-spacing: 0.02em;
+}
+
+.aaa-related-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--aaa-ink);
+  line-height: 1.4;
+}
+
+.aaa-related-meta {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+  margin-top: 0.125rem;
+}
+
+/* Every match states its signal. This list is the audit trail, not decoration. */
+.aaa-related-reasons {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.8125rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-related-reasons li::before {
+  content: "-";
+  margin-right: 0.375rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-related-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* The always-visible coverage disclosure. States what was actually searched, so a negative
+   is never read as an organization-wide statement of fact. */
+.aaa-related-coverage {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--aaa-border);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--aaa-muted); /* 6.69:1 - quiet, but still fully readable */
+}
+
+.aaa-related-note {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--aaa-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aaa-chip:hover {
+  background: #f4f4f4;
+}
+
+/* Selection is carried by fill AND by aria-pressed, never by color alone. */
+.aaa-chip-selected {
+  background: var(--aaa-blue);
+  border-color: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 */
+}
+
+/* ---------------------------------------------------------------- *
+ * Badges
+ * ---------------------------------------------------------------- */
+
+.aaa-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.aaa-badge-duplicate {
+  color: var(--aaa-red-text); /* 7.84:1 on white */
+}
+
+.aaa-badge-overlap {
+  color: var(--aaa-amber); /* 5.93:1 on white */
+}
+
+.aaa-badge-related {
+  color: var(--aaa-blue); /* 7.65:1 on white */
+}
+
+.aaa-badge-opportunity {
+  color: var(--aaa-green-safe); /* 8.12:1 on white */
+}
+
+.aaa-badge-locked,
+.aaa-badge-custom {
+  color: var(--aaa-muted); /* 6.69:1 on white */
+  margin-left: 0.5rem;
+}
+
+/* ---------------------------------------------------------------- *
+ * Compliance flags
+ * ---------------------------------------------------------------- */
+
+.aaa-flag-block {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--aaa-border);
+  border-left: 4px solid var(--aaa-amber);
+  border-radius: 0.375rem;
+  background: #fffdf8;
+}
+
+.aaa-flag-heading {
+  font-size: 0.9375rem;
+  color: var(--aaa-ink);
+  margin-bottom: 0.25rem;
+}
+
+.aaa-flag-intro {
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.aaa-flag-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aaa-flag {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--aaa-ink);
+}
+
+/* ---------------------------------------------------------------- *
+ * Generating
+ * ---------------------------------------------------------------- */
+
+.aaa-spinner {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  margin: 1.5rem auto 0;
+  border: 3px solid var(--aaa-track);
+  border-top-color: var(--aaa-blue);
+  border-radius: 999px;
+  animation: aaa-spin 900ms linear infinite;
+}
+
+@keyframes aaa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Review draft
+ * ---------------------------------------------------------------- */
+
+.aaa-review {
+  margin: 0;
+}
+
+.aaa-review-section {
+  margin-bottom: 1.75rem;
+}
+
+.aaa-review-section-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--aaa-blue); /* 7.65:1 */
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--aaa-border);
+  margin-bottom: 0.75rem;
+}
+
+.aaa-review-row {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.aaa-review-row-missing {
+  border-left: 4px solid var(--aaa-red-text);
+  padding-left: 0.75rem;
+  background: #fffafa;
+}
+
+.aaa-review-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  margin-bottom: 0.25rem;
+}
+
+.aaa-review-value {
+  margin: 0;
+}
+
+.aaa-review-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--aaa-ink);
+  white-space: pre-wrap;
+}
+
+/* ---------------------------------------------------------------- *
+ * Confirmed
+ * ---------------------------------------------------------------- */
+
+.aaa-confirm-summary {
+  width: 100%;
+  margin: 1.5rem 0;
+  text-align: left;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.aaa-confirm-summary > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.125rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+@media (min-width: 640px) {
+  .aaa-confirm-summary > div {
+    grid-template-columns: 11rem 1fr;
+    gap: 1rem;
+  }
+}
+
+.aaa-confirm-summary > div:last-child {
+  border-bottom: none;
+}
+
+.aaa-confirm-summary dt {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-muted);
+}
+
+.aaa-confirm-summary dd {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--aaa-ink);
+  line-height: 1.5;
+}
+
+.aaa-confirm-next {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--aaa-wash); /* ink on it is 8.29:1 */
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--aaa-ink);
+}
+
+.aaa-confirm-next-heading {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+/* ---------------------------------------------------------------- *
+ * The routing callout on Review draft
+ *
+ * The pale wash rather than a colored state chip: this is neither good news nor
+ * an error, it is a fact about where the work lands. Ink on the wash is 8.29:1
+ * and muted on the wash is 5.52:1, both already verified in the palette above.
+ * ---------------------------------------------------------------- */
+
+.aaa-route-callout {
+  margin: 1.25rem 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--aaa-wash);
+  border-left: 4px solid var(--aaa-blue); /* white-on-blue is 7.65:1; as a rule, decorative only */
+}
+
+.aaa-route-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aaa-muted);
+}
+
+.aaa-route-path {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  margin-top: 0.125rem;
+}
+
+.aaa-route-reason {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--aaa-muted);
+  margin-top: 0.25rem;
+}
+
+/* ---------------------------------------------------------------- *
+ * Simple page chrome and the Manage questions admin view
+ * ---------------------------------------------------------------- */
+
+.aaa-page-heading {
+  font-size: 1.625rem;
+  color: var(--aaa-ink);
+  margin-bottom: 0.5rem;
+}
+
+.aaa-page-sub {
+  font-size: 0.9375rem;
+  color: var(--aaa-muted);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+/* Second-level heading on an admin page, between the h1 and a group of cards. */
+.aaa-page-subheading {
+  font-size: 1.25rem;
+  color: var(--aaa-ink);
+  margin-top: 2rem;
+  margin-bottom: 0.375rem;
+}
+
+.aaa-page-status {
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-green-safe); /* 8.12:1 on white */
+}
+
+.aaa-notice {
+  padding: 0.875rem 1.125rem;
+  border-radius: 0.375rem;
+  background: var(--aaa-wash);
+  color: var(--aaa-ink); /* 8.29:1 on the wash */
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.aaa-question-admin-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.aaa-question-admin {
+  padding: 1.125rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.aaa-question-admin-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.aaa-question-admin-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--aaa-surface-gray);
+  border: 1px solid var(--aaa-border);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  flex: none;
+}
+
+.aaa-question-admin-target {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+}
+
+.aaa-question-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e2e2;
+}
+
+/* Delete sits at the far right of the actions row, away from Move up and Move down, so the
+   destructive control is not adjacent to the two an admin clicks repeatedly.
+
+   Composed onto .aaa-btn-text rather than .aaa-btn-text-danger: the request was for the same style
+   as the move controls, and the danger class runs a step smaller (0.875rem) and is used elsewhere.
+   This overrides only the color and the position. */
+.aaa-question-admin-delete {
+  margin-left: auto;
+  color: var(--aaa-red-text); /* 7.84:1 on #FFFFFF, verified */
+}
+
+.aaa-question-admin-delete:hover:not(:disabled) {
+  color: #8a1019; /* 9.68:1 on #FFFFFF, computed - darkens on hover, never lightens */
+}
+
+/* The confirm step takes the trigger's place, so it inherits the same right-edge alignment. */
+.aaa-question-admin-confirm {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Reset the auto margin the trigger uses: inside this group it would shove the buttons away from
+   the prompt they answer. */
+.aaa-question-admin-confirm .aaa-question-admin-delete {
+  margin-left: 0;
+}
+
+.aaa-question-admin-confirm-prompt {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--aaa-ink); /* 10.05:1 on #FFFFFF, computed */
+}
+
+.aaa-question-admin-locked {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aaa-muted);
+}
+
+.aaa-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.aaa-toggle-row input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--aaa-blue);
+}
+
+.aaa-admin-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--aaa-border);
+}
+
+/* ---------------------------------------------------------------- *
+ * Existing tracker styles, retained. Storage key and behavior unchanged.
+ * ---------------------------------------------------------------- */
 
 .tracker-input {
   width: 100%;
@@ -172,7 +1724,7 @@ select.select {
   border: 1px solid var(--aaa-field-stroke);
   border-radius: 0.25rem;
   background: #ffffff;
-  color: var(--aaa-navy);
+  color: var(--aaa-blue);
   font-size: 1.125rem;
   line-height: 1;
   cursor: grab;
@@ -187,12 +1739,12 @@ select.select {
 }
 
 .tracker-handle:disabled {
-  color: #767676;
+  color: var(--aaa-muted);
   cursor: not-allowed;
 }
 
 .tracker-row-target td {
-  box-shadow: inset 0 3px 0 0 var(--aaa-navy);
+  box-shadow: inset 0 3px 0 0 var(--aaa-blue);
 }
 
 .tracker-menu {
@@ -216,7 +1768,7 @@ select.select {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--aaa-navy);
+  color: var(--aaa-blue);
 }
 
 .tracker-menu button {
@@ -232,25 +1784,907 @@ select.select {
 }
 
 .tracker-menu button:hover:not(:disabled) {
-  background: var(--aaa-surface);
+  background: var(--aaa-surface-gray);
 }
 
 .tracker-menu button:disabled {
-  color: #767676;
+  color: var(--aaa-muted);
   cursor: not-allowed;
 }
 
 .tracker-menu button.tracker-menu-danger {
-  color: var(--aaa-red);
+  color: var(--aaa-red-text);
 }
 
 .tracker-input:hover,
 .select:hover {
-  background-color: #f4f4f4;
+  background-color: #fafafa;
 }
 
 .tracker-input:focus-visible,
 .select:focus-visible {
   background-color: #ffffff;
-  border-color: var(--aaa-navy);
+  border-color: var(--aaa-blue);
+}
+
+/* ---------------------------------------------------------------- *
+ * The Request Queue
+ *
+ * Two sections on one screen, so each gets a visible boundary rather
+ * than relying on the heading alone. Every color here is a token
+ * already verified in the palette block at the top of this file.
+ * ---------------------------------------------------------------- */
+
+.aaa-queue {
+  margin-top: 1.5rem;
+}
+
+.aaa-queue-tracker {
+  margin-top: 3rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--aaa-border);
+}
+
+.aaa-queue-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 900px) {
+  .aaa-queue-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.aaa-queue-heading {
+  font-size: 1.375rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-queue-sub {
+  margin-top: 0.25rem;
+  max-width: 48rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--aaa-muted); /* 6.69:1 on white */
+}
+
+/* The connection slot. Deliberately not red: nothing is broken, it is
+   simply not connected yet. The dot is decorative; the word carries
+   the state, per 1.4.1. */
+.aaa-queue-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 999px;
+  background: var(--aaa-surface-gray);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-muted); /* 5.76:1 on #EEEEEE */
+  white-space: nowrap;
+}
+
+.aaa-queue-connection-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--aaa-muted);
+}
+
+.aaa-queue-connection.is-connected {
+  color: var(--aaa-ink); /* 8.29:1 estimated on surface gray */
+  border-color: var(--aaa-blue);
+}
+
+.aaa-queue-connection.is-connected .aaa-queue-connection-dot {
+  background: var(--aaa-green-safe);
+}
+
+.aaa-queue-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 1rem;
+}
+
+/* Pill filters. The active one is filled blue, which is 7.65:1 with
+   white text, so the state does not rely on weight alone. */
+.aaa-queue-filter {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 999px;
+  background: var(--aaa-surface);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aaa-blue); /* 7.65:1 on white */
+  cursor: pointer;
+}
+
+.aaa-queue-filter:hover {
+  background: var(--aaa-wash);
+}
+
+.aaa-queue-filter.is-active {
+  background: var(--aaa-blue);
+  border-color: var(--aaa-blue);
+  color: #ffffff;
+}
+
+.aaa-queue-filter-note {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--aaa-muted);
+}
+
+.aaa-queue-empty {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px dashed var(--aaa-border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--aaa-muted);
+}
+
+/* Table on wide screens, cards below. 1.4.10 Reflow: a six-column data
+   table cannot be read at 320px, and side-scrolling it is the failure
+   rather than the fix. */
+.aaa-queue-table-wrap {
+  display: none;
+  margin-top: 1rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.aaa-queue-cards {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .aaa-queue-table-wrap {
+    display: block;
+  }
+
+  .aaa-queue-cards {
+    display: none;
+  }
+}
+
+.aaa-queue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.aaa-queue-table thead th {
+  padding: 0.625rem 0.75rem;
+  background: var(--aaa-header-row);
+  border-bottom: 1px solid var(--aaa-border);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--aaa-muted); /* 5.76:1 on #EEEEEE */
+  white-space: nowrap;
+}
+
+.aaa-queue-table tbody th,
+.aaa-queue-table tbody td {
+  padding: 0.6875rem 0.75rem;
+  border-bottom: 1px solid #e2e2e2;
+  color: var(--aaa-ink);
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+}
+
+.aaa-queue-table tbody tr:last-child th,
+.aaa-queue-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.aaa-queue-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.aaa-queue-name {
+  font-weight: 700;
+  max-width: 22rem;
+}
+
+/* A sort control has to be a real button so it is reachable and
+   operable from the keyboard (2.1.1); the header cell carries
+   aria-sort. */
+.aaa-queue-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.aaa-queue-sort:hover {
+  color: var(--aaa-blue);
+}
+
+.aaa-queue-sort-caret {
+  font-size: 0.625rem;
+}
+
+.aaa-queue-derived,
+.aaa-queue-sent {
+  color: var(--aaa-muted);
+}
+
+.aaa-queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  white-space: nowrap;
+}
+
+.aaa-queue-card {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: var(--aaa-surface);
+}
+
+.aaa-queue-card-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  margin-bottom: 0.5rem;
+}
+
+.aaa-queue-card-list > div {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.3125rem 0;
+  font-size: 0.8125rem;
+}
+
+.aaa-queue-card-list dt {
+  font-weight: 700;
+  color: var(--aaa-muted);
+}
+
+.aaa-queue-card-list dd {
+  margin: 0;
+  color: var(--aaa-ink);
+}
+
+.aaa-queue-footnote {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--aaa-muted);
+}
+
+/* ---------------------------------------------------------------- *
+ * The Summary panel
+ * ---------------------------------------------------------------- */
+
+.aaa-panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(11, 35, 63, 0.45); /* the navy token, softened */
+}
+
+.aaa-panel {
+  width: 100%;
+  max-width: 34rem;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.25rem 1.375rem 2.5rem;
+  background: var(--aaa-surface);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.18);
+}
+
+.aaa-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--aaa-border);
+}
+
+.aaa-panel-heading {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  line-height: 1.4;
+}
+
+.aaa-panel-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 1rem 0;
+}
+
+.aaa-panel-tab {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.875rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-blue);
+  cursor: pointer;
+}
+
+/* Underline plus weight, so the selected tab is not signalled by color
+   alone (1.4.1). */
+.aaa-panel-tab.is-active {
+  border-bottom-color: var(--aaa-blue);
+  color: var(--aaa-ink);
+}
+
+.aaa-panel-list {
+  margin: 0.5rem 0 1.25rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.aaa-panel-list > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.125rem;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+@media (min-width: 480px) {
+  .aaa-panel-list > div {
+    grid-template-columns: 10rem 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.aaa-panel-list > div:last-child {
+  border-bottom: none;
+}
+
+.aaa-panel-list dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--aaa-muted);
+}
+
+.aaa-panel-list dd {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--aaa-ink);
+  overflow-wrap: anywhere;
+}
+
+.aaa-panel-reason {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--aaa-muted);
+}
+
+.aaa-panel-section-heading {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  margin: 1.25rem 0 0.375rem;
+}
+
+.aaa-panel-matches {
+  display: grid;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--aaa-ink);
+}
+
+.aaa-panel-matches li {
+  padding-left: 0.875rem;
+  position: relative;
+}
+
+.aaa-panel-matches li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: var(--aaa-muted);
+}
+
+/* Scrollable and focusable, so a keyboard user can reach the scroll
+   region (2.1.1). Monospace is the point: these are field names. */
+.aaa-panel-payload {
+  margin: 0.75rem 0;
+  padding: 0.875rem;
+  max-height: 24rem;
+  overflow: auto;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: var(--aaa-surface-gray);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--aaa-ink); /* 8.66:1 on #EEEEEE */
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* ---------------------------------------------------------------- *
+ * "Needs attention", which is not the same as "error"
+ *
+ * Amber and a left rule, matching the compliance-flag treatment. Used
+ * where something is pending rather than wrong - a queue waiting on
+ * Workfront IDs is the normal state of an unconnected queue, and
+ * painting it red trains an administrator to ignore red.
+ *
+ * Verified: amber #8A5A00 on #FFFDF8 is 5.83:1, ink #424242 on it is
+ * 9.89:1.
+ * ---------------------------------------------------------------- */
+
+.aaa-attention {
+  margin: 1rem 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border-left: 4px solid var(--aaa-amber);
+  border-radius: 0.375rem;
+  background: #fffdf8;
+}
+
+.aaa-attention-heading {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-amber); /* 5.83:1 on #FFFDF8 */
+  margin-bottom: 0.375rem;
+}
+
+.aaa-attention-list {
+  display: grid;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--aaa-ink); /* 9.89:1 on #FFFDF8 */
+}
+
+.aaa-attention-list li {
+  padding-left: 0.875rem;
+  position: relative;
+}
+
+.aaa-attention-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: var(--aaa-amber);
+}
+
+/* ---------------------------------------------------------------- *
+ * Dashboard card reordering and the Add Tools dialog
+ *
+ * Every color below is computed with
+ * .cursor/skills/verify-live-ux/scripts/contrast.py, not estimated.
+ * ---------------------------------------------------------------- */
+
+/* The cell positions the grip against the card without nesting it inside the card's link -
+   a button inside an anchor is invalid and unreachable by keyboard in the order you expect. */
+.aaa-tool-cell {
+  position: relative;
+  display: flex;
+}
+
+.aaa-tool-cell > .aaa-tool-card {
+  flex: 1;
+}
+
+.aaa-tool-reorder {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  /* Above the card so the grip stays clickable over the link's full-bleed hit area. */
+  z-index: 1;
+}
+
+/* Revealed on rollover by request. Three guards keep it from becoming a control some people can
+   never reach, because hiding an affordance is only safe if every user has some way to surface it:
+
+   1. Gated on `hover: hover` and `pointer: fine`, so it only hides where a pointer can actually
+      hover. A touch screen reports `hover: none` and keeps the grip permanently visible - there is
+      no rollover on a phone, so hiding it there would remove reordering outright.
+   2. `:has(:focus-visible)` reveals it, so a keyboard user tabbing to the grip can see where focus
+      is rather than chasing an invisible control (2.4.7 Focus Visible, 2.1.1 Keyboard).
+   3. The drop target stays revealed during a drag, since native drag operations do not keep `:hover`
+      reliably updated and React sets that class on dragenter.
+
+   `:has(:focus-visible)` rather than `:focus-within` on purpose. Chrome focuses a button when you
+   click it, so `:focus-within` kept the grip pinned visible after the pointer left the card - the
+   grabber would not go away once clicked. `:focus-visible` distinguishes focus that arrived by
+   keyboard from focus that arrived by mouse click, which is exactly the line needed here.
+
+   Opacity, not `display: none` or `visibility: hidden`: those remove the grip from the tab order
+   entirely, which would fail 2.1.1 and take the 2.5.7 Move buttons with it.
+
+   The transition is covered by the global prefers-reduced-motion rule above. */
+@media (hover: hover) and (pointer: fine) {
+  .aaa-tool-reorder {
+    opacity: 0;
+    transition: opacity 120ms ease-in-out;
+  }
+
+  .aaa-tool-cell:hover .aaa-tool-reorder,
+  .aaa-tool-cell:has(:focus-visible) .aaa-tool-reorder,
+  .aaa-tool-cell-over .aaa-tool-reorder {
+    opacity: 1;
+  }
+}
+
+.aaa-tool-handle,
+.aaa-tool-nudge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 1.75rem is 28px, which clears 2.5.8 Target Size (Minimum)'s 24px floor. */
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--aaa-border); /* 4.54:1 on white, 4.39:1 on the dashed card, computed */
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: var(--aaa-muted); /* 6.69:1 on white, 6.46:1 on #FBFBFB, computed */
+  cursor: grab;
+  line-height: 1;
+}
+
+.aaa-tool-nudge {
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.aaa-tool-handle:hover,
+.aaa-tool-nudge:hover:not(:disabled) {
+  background: var(--aaa-wash); /* grip on the wash is 5.52:1, computed */
+}
+
+.aaa-tool-nudge:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Armed is carried by aria-pressed for assistive tech and by fill plus the two Move buttons
+   appearing for everyone else, so the state is never color alone. */
+.aaa-tool-handle[aria-pressed="true"] {
+  background: var(--aaa-blue);
+  border-color: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 on the blue, computed */
+  cursor: grab;
+}
+
+.aaa-tool-cell-armed > .aaa-tool-card {
+  border-color: var(--aaa-blue);
+}
+
+/* The drop target gets an outline, not just the wash: the wash is 1.21:1 against the white card,
+   so tint alone would be invisible to many users and would convey state by color only. */
+.aaa-tool-cell-over > .aaa-tool-card {
+  outline: 3px solid var(--aaa-blue); /* 7.65:1 on white, computed */
+  outline-offset: 2px;
+  background: var(--aaa-wash);
+}
+
+.aaa-grid-hint {
+  margin-top: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--aaa-muted); /* 6.69:1 on white, computed */
+  max-width: 34rem;
+}
+
+/* ---- Add Tools dialog ---- */
+
+.aaa-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+  background: rgba(11, 35, 63, 0.45); /* the navy token, softened - matches the summary panel */
+}
+
+/* Capped and column-flexed so the body scrolls while the heading and the footer stay put. Without
+   this the footer's Add card sits below the fold on a laptop, and the primary action of a dialog
+   should not need to be hunted for. */
+.aaa-modal {
+  width: 100%;
+  max-width: 34rem;
+  max-height: calc(100vh - 3rem);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid var(--aaa-border);
+  text-align: left;
+}
+
+.aaa-modal-head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem;
+  border-bottom: 1px solid var(--aaa-border);
+}
+
+.aaa-modal-heading {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  color: var(--aaa-ink); /* 10.05:1 on white, computed */
+}
+
+.aaa-modal-close {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--aaa-border);
+  background: #ffffff;
+  color: var(--aaa-ink);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.aaa-modal-close:hover {
+  background: var(--aaa-wash);
+}
+
+.aaa-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.aaa-modal-subheading {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--aaa-muted); /* 6.69:1 on white, computed */
+}
+
+.aaa-card-draft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: var(--aaa-surface-gray);
+  border-radius: 0.5rem;
+}
+
+.aaa-draft-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+}
+
+.aaa-draft-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.aaa-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.aaa-picker legend {
+  /* A flex container ignores a legend's normal placement, so it sits inline with the options. */
+  float: left;
+  width: 100%;
+  margin-bottom: 0.375rem;
+}
+
+.aaa-picker-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--aaa-ink); /* 8.66:1 on #EEEEEE, computed */
+}
+
+/* The swatch never carries the meaning on its own; the adjacent text names the choice. */
+.aaa-picker-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  color: #ffffff;
+}
+
+.aaa-modal-listhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.aaa-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.aaa-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+}
+
+.aaa-card-row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.aaa-card-row .aaa-tool-label,
+.aaa-card-row .aaa-tool-desc {
+  text-align: left;
+}
+
+.aaa-card-check {
+  flex: none;
+  display: inline-flex;
+  /* 1.5rem is 24px, meeting 2.5.8's minimum target size for the checkbox. */
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.aaa-card-pinned {
+  flex: none;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--aaa-muted); /* 6.69:1 on white, computed */
+}
+
+.aaa-modal-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--aaa-border);
+}
+
+/* Pushed to the far end: a destructive reset should not sit against the primary action. */
+.aaa-modal-reset {
+  margin-left: auto;
+}
+
+.aaa-modal-confirm {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aaa-modal-confirm-prompt {
+  font-size: 0.8125rem;
+  color: var(--aaa-ink);
+}
+
+/* ---------------------------------------------------------------- *
+ * Saved versions of the Request Queue
+ *
+ * Colors reuse existing verified tokens; no new value is introduced,
+ * so there is nothing here that contrast.py has not already measured.
+ * ---------------------------------------------------------------- */
+
+.aaa-queue-versions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.aaa-versions-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* A file input is wrapped in a label styled as a button, so the ring has to come from the input
+   inside it - the label itself never receives focus. Same approach as the tracker's Import Excel. */
+.aaa-versions-actions label:has(input:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.aaa-versions-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1rem;
+  background: var(--aaa-surface-gray);
+  border-radius: 0.5rem;
+}
+
+.aaa-versions-subheading {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--aaa-muted); /* 5.76:1 on #EEEEEE, computed */
+}
+
+/* The privacy note is the last thing on the section and stays plain text rather than an alert.
+   It is a standing condition of the feature, not an error, and styling it as a warning would train
+   people to dismiss it. */
+.aaa-versions-privacy {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--aaa-border);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--aaa-ink); /* 10.05:1 on #FFFFFF, computed */
 }

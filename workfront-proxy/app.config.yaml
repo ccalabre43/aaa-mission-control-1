@@ -1,0 +1,9 @@
+application:
+  actions: dist/dx-excshell-1/actions
+  web: web-src
+  runtimeManifest:
+    packages: {}
+
+extensions:
+  dx/excshell/1:
+    $include: src/dx-excshell-1/ext.config.yaml
