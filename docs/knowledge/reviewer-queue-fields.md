@@ -1,7 +1,8 @@
 # Reviewer queue fields and Workfront mapping
 
 - **Status:** active for local reviewer UI; Workfront write of these fields is not enabled
-- **UI source:** `assets/mocks/request-queue-reviewer-interface.png`
+- **UI source:** `assets/mocks/request-queue-reviewer-interface.png`,
+  `assets/mocks/request-summary-page.png`
 - **Related:** `docs/workfront-auth.md`, `docs/knowledge/a3-schema.md`, decision 030
 
 The Mission Control Request Queue is reviewer-styled but still a **request list** aimed at the
@@ -20,6 +21,7 @@ until a Workfront admin confirms the targets below.
 | Entry Date | `submittedAt` or `createdAt` | Issue `entryDate` |
 | Requestor | Identity name + initials (no email in the table) | `A3IntakeRequestedBy`; Entered By under S2S is the tech account |
 | NEW badge | Submitted/ready and `reviewer.firstReviewedAt` is null | Derived from entry date + status; no new field |
+| Impact / Effort / Risk | `brief.reviewer.impact` / `effort` / `risk` (local High/Medium/Low) | No A3 field yet; possible custom dropdowns later as a Workfront config request only |
 
 ## Preferred Workfront targets
 
@@ -56,8 +58,10 @@ Intake form. Do **not** add that name in client schema until the form actually h
 | Workload counts | Issue search by `status`, `priority`, `queueTopicID`, `assignedToID` on project `6abae2b600041e3ecb6a8da4dbe7b4a1` |
 | Hours / capacity | Assignment `work` / `workRequired` / `percentComplete`; Resource Planner later |
 
-Until then, the Executive tab states that figures come from **this browser’s saved requests and
-tracker rows**, not Workfront Resource Planner (guardrail 7).
+Until then, the Executive tab uses the Concept v1 2×3 layout (`assets/mocks/executive-dashboard-concept-v1.png`).
+Queue counts and escalations come from **this browser’s saved requests**; tracker “jobs in motion”
+from `aaa-project-tracker`. Hours, capacity, turnaround, and on-time % are labeled placeholders — not
+Workfront Resource Planner, and not organization-wide (guardrail 7). Decision 034.
 
 ## Open items for Workfront admin
 

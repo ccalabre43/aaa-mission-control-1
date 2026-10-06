@@ -1,4 +1,14 @@
-import * as XLSX from "xlsx";
+/**
+ * Spreadsheet import and export for the Request Queue's project tracker.
+ *
+ * SheetJS is loaded on demand rather than imported at the top level. It is by far the largest
+ * dependency here, and only this one view uses it, so a static import made every visitor download
+ * it to reach a dashboard that may never open the tracker. `await import()` moves it into its own
+ * chunk that is fetched the first time someone actually imports or exports a file.
+ *
+ * The type-only import is erased at build time and pulls nothing into the bundle.
+ */
+import type * as XlsxNamespace from "xlsx";
 import {
   EXPORT_HEADERS,
   createRow,
@@ -6,6 +16,19 @@ import {
   type Priority,
   type TrackerRow,
 } from "./types";
+
+type Xlsx = typeof XlsxNamespace;
+
+/**
+ * Cached so a second import or export does not re-await the chunk. The promise itself is cached,
+ * not the resolved module, so two overlapping calls share one fetch instead of racing.
+ */
+let xlsxPromise: Promise<Xlsx> | null = null;
+
+function loadXlsx(): Promise<Xlsx> {
+  xlsxPromise ??= import("xlsx");
+  return xlsxPromise;
+}
 
 function normalizeHeader(value: unknown): string {
   return String(value ?? "")
@@ -32,7 +55,7 @@ const HEADER_ALIASES: Record<string, keyof TrackerRow | "skip"> = {
   priority: "priority",
 };
 
-function toIsoDate(value: unknown): string | null {
+function toIsoDate(XLSX: Xlsx, value: unknown): string | null {
   if (value == null || value === "") return null;
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value.toISOString().slice(0, 10);
@@ -50,7 +73,7 @@ function toIsoDate(value: unknown): string | null {
   return date.toISOString().slice(0, 10);
 }
 
-function toIsoDateTime(value: unknown, fallback: string): string {
+function toIsoDateTime(XLSX: Xlsx, value: unknown, fallback: string): string {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value.toISOString();
   }
@@ -100,7 +123,7 @@ function rowToExportArray(row: TrackerRow): string[] {
   ];
 }
 
-function workbookFromRows(rows: TrackerRow[]): XLSX.WorkBook {
+function workbookFromRows(XLSX: Xlsx, rows: TrackerRow[]): XlsxNamespace.WorkBook {
   const sheet = XLSX.utils.aoa_to_sheet([
     [...EXPORT_HEADERS],
     ...rows.map(rowToExportArray),
@@ -127,7 +150,8 @@ function slug(value: string): string {
   return cleaned || "deliverable";
 }
 
-export function parseSpreadsheet(buffer: ArrayBuffer): TrackerRow[] {
+export async function parseSpreadsheet(buffer: ArrayBuffer): Promise<TrackerRow[]> {
+  const XLSX = await loadXlsx();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
   const firstSheetName = workbook.SheetNames[0];
   if (!firstSheetName) return [];
@@ -153,9 +177,9 @@ export function parseSpreadsheet(buffer: ArrayBuffer): TrackerRow[] {
       if (!field) return;
       const value = line[index];
       if (field === "estimatedCompletionDate") {
-        values.estimatedCompletionDate = toIsoDate(value);
+        values.estimatedCompletionDate = toIsoDate(XLSX, value);
       } else if (field === "createdAt") {
-        values.createdAt = toIsoDateTime(value, now);
+        values.createdAt = toIsoDateTime(XLSX, value, now);
       } else if (field === "priority") {
         values.priority = parsePriority(value);
       } else if (field === "project") {
@@ -188,11 +212,19 @@ export function parseSpreadsheet(buffer: ArrayBuffer): TrackerRow[] {
   return rows;
 }
 
-export function downloadWorkbook(rows: TrackerRow[]): void {
-  XLSX.writeFile(workbookFromRows(rows), "AAA-Michigan-Project-Tracker.xlsx");
+/*
+ * Export filenames say AAA-Life, not the AAA-Michigan they said before. The company is AAA Life
+ * Insurance Company; "AAA Michigan" is a different organization and was left over from the
+ * tracker's original scaffold. This changes the name of a file the user receives, so it is called
+ * out rather than buried.
+ */
+export async function downloadWorkbook(rows: TrackerRow[]): Promise<void> {
+  const XLSX = await loadXlsx();
+  XLSX.writeFile(workbookFromRows(XLSX, rows), "AAA-Life-Project-Tracker.xlsx");
 }
 
-export function downloadRow(row: TrackerRow): void {
-  const filename = `AAA-Michigan-${slug(row.project)}-${row.createdAt.slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbookFromRows([row]), filename);
+export async function downloadRow(row: TrackerRow): Promise<void> {
+  const XLSX = await loadXlsx();
+  const filename = `AAA-Life-${slug(row.project)}-${row.createdAt.slice(0, 10)}.xlsx`;
+  XLSX.writeFile(workbookFromRows(XLSX, [row]), filename);
 }

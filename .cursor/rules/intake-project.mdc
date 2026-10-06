@@ -1,0 +1,102 @@
+---
+description: Mission Control intake project conventions - folder layout, documentation format, storage keys, Workfront field discipline, adapter-stub pattern, hosting portability, and the session-start documentation scan.
+alwaysApply: true
+---
+
+# Mission Control project conventions
+
+These evolve. Changing one gets a dated entry in `docs/decisions/decision-log.md`.
+
+## Repository layout
+
+`/Users/p92654/Desktop/Intake-Agent-Practice` is the single project root.
+
+```
+.cursor/rules/    aaa-company-guardrails.mdc, intake-project.mdc, uxui-architect.mdc
+.cursor/skills/   verify-live-ux, unrestricted-research
+.cursor/plans/    canonical working plans
+assets/brand/     style guide PDF, EPS print masters, web logo derivatives
+assets/mocks/     UI screens, flow diagrams, the Workfront form example
+assets/exports/   generated briefs and screenshots
+docs/INDEX.md     manifest of every document
+docs/knowledge/   requirements, flows, brand system, A3 schema
+docs/briefs/      brief templates and real AAA Life brief artifacts
+docs/decisions/   decision log
+docs/audits/      AAA Life UX audits
+docs/plans/       date-stamped snapshots of superseded plans
+src/              app code
+```
+
+## Naming and formats
+
+- **No colons or spaces in file or folder names.** macOS Finder renders a colon as a slash, so
+  `knowledge:` looked normal in Finder while being invisible to directory listings - the brand PDF and
+  every design asset were unreachable by pattern and only readable by exact path. That is the failure
+  this rule prevents.
+- **Markdown for all new documentation. No new RTF.** RTF control codes cannot be diffed.
+- Canonical plans live in `.cursor/plans/`. Snapshots in `docs/plans/` are date-stamped so two
+  versions never compete silently.
+- Never delete a source file before its replacement is verified. Converted originals move to
+  `docs/knowledge/source-originals/`.
+
+## Storage
+
+- **`aaa-project-tracker` is the deliverables tracker's `localStorage` key. Never rename it without a
+  migration.** It holds real user data with no server copy.
+- Intake storage mirrors `src/lib/storage.ts`: a primary key plus a backup key, quota messaging, and
+  a repair-not-reject parse. A single bad value must never cost the user a record, let alone all of
+  them.
+- All data is per-browser. There is no server copy of anything.
+
+## Workfront discipline
+
+- **The app never invents a Workfront field.** Anything submitted must map to a field that exists on
+  the A3 Creative Intake custom form; see `docs/knowledge/a3-schema.md`.
+- Data with no home in the schema is written into the Issue name or description as a labeled audit
+  line, and raised as a **Workfront configuration request**. The ALAN number and match coverage are
+  both currently in this state.
+- Internal field names (`A3Intake*`) are the contract. Do not rename them to something friendlier.
+- `submitToWorkfront` is a local stub. It makes no network call and always reports `local`.
+
+## Integration pattern
+
+Every external system enters as a **typed adapter behind an interface**, with a deterministic local
+implementation shipping first:
+
+| Interface | Sprint 1 implementation | Later |
+| --- | --- | --- |
+| `IntakeAssistant` | `TemplateAssistant` | `LlmAssistant` behind a server proxy |
+| `RelatedWorkMatcher` | `LocalMatcher` | `WorkfrontMatcher`, semantic matcher |
+| `AlanNumberDetector` | `NoopDetector` | `PdfAlanDetector` |
+
+This is why the matcher takes its corpus as an argument instead of reaching for storage itself: a
+Workfront-backed corpus becomes a swap, not a rewrite.
+
+## Hosting portability
+
+The app must stay deployable to any static host without code changes.
+
+- The base path comes from the `APP_BASE_PATH` build variable and reaches the router through
+  `import.meta.env.BASE_URL`. Never hard-code an absolute asset or route path.
+- Client-side routes are not real files, so every host needs an SPA history fallback. Configs for
+  Vercel, Netlify, Azure Static Web Apps, and IIS are maintained together - update all of them or
+  none. See `docs/deployment.md`.
+- No secret in a `VITE_`-prefixed variable, ever. Those are compiled into the public bundle.
+- Keep the app free of third-party runtime requests so a strict Content-Security-Policy stays
+  achievable. Self-host fonts and assets.
+
+## Session-start documentation scan
+
+At the start of each planning or build session:
+
+1. Scan `docs/` and `assets/`, newest first, **by explicit path as well as by pattern**. A listing can
+   miss files that are really there; this has already happened once.
+2. Diff against `docs/INDEX.md`. Anything unlisted is new.
+3. Read what is new, summarize it in a sentence or two, and state plainly whether it changes scope, a
+   guardrail, or nothing.
+4. If it changes scope or a guardrail, **propose the edit and wait for confirmation**. New
+   documentation never silently rewrites an approved plan.
+5. Update `docs/INDEX.md`, and append to `docs/decisions/decision-log.md` when a decision resulted.
+
+Guardrails are **append-and-supersede**: a changed guardrail gets a new dated entry marking the prior
+one superseded, so the reasoning stays auditable for Compliance and for whoever inherits this.

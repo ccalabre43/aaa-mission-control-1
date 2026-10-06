@@ -75,7 +75,7 @@ export function TrackerTable({
           {rows.length === 0 ? (
             <tr>
               <td colSpan={8} className="py-16 text-center text-[#222222]">
-                No deliverables yet. Add one or import an Excel file.
+                No rows yet. Add one or import an Excel file.
               </td>
             </tr>
           ) : (

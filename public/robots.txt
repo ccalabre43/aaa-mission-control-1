@@ -1,0 +1,8 @@
+# Mission Control is an internal AAA Life tool. It has no public audience and should not appear in
+# search results.
+#
+# This is a request, not a control. A crawler that ignores robots.txt is not prevented from reading
+# anything, and neither is a person with the URL. The actual boundary is where the app is hosted:
+# an internal network, a VPN, or an authenticating reverse proxy. See docs/deployment.md.
+User-agent: *
+Disallow: /

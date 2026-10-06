@@ -19,6 +19,7 @@ import {
   type ComplianceFlag,
   type IntakeBrief,
   type RequesterIdentity,
+  type ReviewerAssessmentLevel,
   type ReviewerPriority,
   type ReviewerStatus,
 } from "./types";
@@ -225,6 +226,22 @@ const REVIEWER_STATUS_VALUES: readonly ReviewerStatus[] = [
 
 const REVIEWER_PRIORITY_VALUES: readonly ReviewerPriority[] = ["P1", "P2", "P3"];
 
+const REVIEWER_ASSESSMENT_VALUES: readonly ReviewerAssessmentLevel[] = [
+  "high",
+  "medium",
+  "low",
+];
+
+function normalizeAssessment(
+  value: unknown,
+  fallback: ReviewerAssessmentLevel,
+): ReviewerAssessmentLevel {
+  const raw = text(value).trim().toLowerCase();
+  return REVIEWER_ASSESSMENT_VALUES.includes(raw as ReviewerAssessmentLevel)
+    ? (raw as ReviewerAssessmentLevel)
+    : fallback;
+}
+
 /** Repair-not-reject: unknown or missing reviewer data becomes the safe default. */
 function normalizeReviewer(value: unknown): BriefReviewer {
   const defaults = defaultReviewer();
@@ -242,6 +259,9 @@ function normalizeReviewer(value: unknown): BriefReviewer {
     firstReviewedAt: text(raw.firstReviewedAt).trim()
       ? isoDateTime(raw.firstReviewedAt)
       : null,
+    impact: normalizeAssessment(raw.impact, defaults.impact),
+    effort: normalizeAssessment(raw.effort, defaults.effort),
+    risk: normalizeAssessment(raw.risk, defaults.risk),
   };
 }
 

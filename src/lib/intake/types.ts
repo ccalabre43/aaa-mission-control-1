@@ -32,11 +32,17 @@ export type ReviewerStatus =
 
 export type ReviewerPriority = "P1" | "P2" | "P3";
 
+/** Local triage assessment on the summary page. Not an A3 / Workfront field. */
+export type ReviewerAssessmentLevel = "high" | "medium" | "low";
+
 export interface BriefReviewer {
   status: ReviewerStatus;
   priority: ReviewerPriority;
   /** ISO when a reviewer first opened or changed status; null drives the NEW badge. */
   firstReviewedAt: string | null;
+  impact: ReviewerAssessmentLevel;
+  effort: ReviewerAssessmentLevel;
+  risk: ReviewerAssessmentLevel;
 }
 
 export const REVIEWER_STATUSES: readonly { value: ReviewerStatus; label: string }[] = [
@@ -50,8 +56,28 @@ export const REVIEWER_STATUSES: readonly { value: ReviewerStatus; label: string 
 
 export const REVIEWER_PRIORITIES: readonly ReviewerPriority[] = ["P1", "P2", "P3"] as const;
 
+export const REVIEWER_ASSESSMENT_LEVELS: readonly {
+  value: ReviewerAssessmentLevel;
+  label: string;
+}[] = [
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+] as const;
+
 export function defaultReviewer(): BriefReviewer {
-  return { status: "needs_review", priority: "P2", firstReviewedAt: null };
+  return {
+    status: "needs_review",
+    priority: "P2",
+    firstReviewedAt: null,
+    impact: "high",
+    effort: "medium",
+    risk: "low",
+  };
+}
+
+export function assessmentLabel(level: ReviewerAssessmentLevel): string {
+  return REVIEWER_ASSESSMENT_LEVELS.find((item) => item.value === level)?.label ?? level;
 }
 
 export function reviewerStatusLabel(status: ReviewerStatus): string {

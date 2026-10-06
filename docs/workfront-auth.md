@@ -63,6 +63,17 @@ flowchart LR
 - Success body: `{ connected: true, project: { ID, name } }` — no token, no secret.
 - Request Queue header and Manage Queue notice read that health result.
 
+## Publish / Runtime go-live — rotate the client secret
+
+Treat go-live of the hosted app or of `aio app deploy` as a credential rotation event.
+
+1. Adobe Developer Console → OAuth Server-to-Server → **add a new client secret**.
+2. Update gitignored `.env.workfront.local`. If deploying the proxy, set Runtime `WORKFRONT_CLIENT_SECRET` to the **new** value only. Never `VITE_*`.
+3. **Delete the old secret** in Console.
+4. Run `npm run workfront:health`. Do not paste values into chat.
+
+A secret pasted in a conversation is already compromised; rotate as soon as practical, then confirm the rotated value on first production publish. Procedure is also on the deployment checklist in `docs/deployment.md`.
+
 ## Attribution: whose name is on the request?
 
 Server-to-Server authenticates as one service identity. Every issue it creates would show that

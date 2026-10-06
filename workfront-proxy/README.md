@@ -14,6 +14,8 @@ a health endpoint for Mission Control. The Vite app never sees `client_secret`.
    - `WORKFRONT_HOST` = `https://aaalife.my.workfront.com`
    - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1`
 
+   **Rotate `WORKFRONT_CLIENT_SECRET` on first production publish** (and whenever a value has been pasted in chat): add a new secret in Developer Console, put only the new value in `.env.workfront.local` and in Runtime secrets, delete the old secret, then `npm run workfront:health`. Never paste secrets into chat. Never `VITE_*`.
+
 3. From this folder, with `@adobe/aio-cli` installed and logged in:
 
    ```bash

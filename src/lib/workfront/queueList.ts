@@ -286,16 +286,20 @@ export function ariaSortFor(
   return sort.direction === "asc" ? "ascending" : "descending";
 }
 
-/** Mock-style Entry Date: M/D/YY, h:mm AM/PM */
+/** Entry Date column: MM/DD/YY with leading zeros, no time. */
 export function formatQueueDate(iso: string | null): string {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(undefined, {
-    year: "2-digit",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${month}/${day}/${year}`;
+}
+
+/** Display-only Subject truncation for the queue table. Full title stays on the row. */
+export function truncateWords(text: string, maxWords = 4): string {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return text.trim();
+  return `${words.slice(0, maxWords).join(" ")}...`;
 }

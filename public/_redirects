@@ -1,0 +1,9 @@
+# Netlify SPA history fallback.
+#
+# Client-side routes such as /request and /deliverables are not real files. Without this, a direct
+# link or a refresh mid-flow asks Netlify for a file that does not exist and returns 404.
+#
+# The 200 status matters: a 301 or 302 would change the URL in the address bar and the router would
+# lose the route the user actually asked for. Netlify checks real files first, so hashed assets in
+# /assets/ are still served normally and never hit this rule.
+/*  /index.html  200

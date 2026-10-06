@@ -79,15 +79,13 @@
   /* Warning/amber, used as text and as a left bar */
   --aaa-amber: #8a5a00; /* 5.93:1 on white */
 
-  /* Requested gold, replacing the guide's antique bronze #5F6240 as this token's value. Logged as a
-     brand exception; the guide's own value stays recorded in docs/knowledge/brand-system.md.
-
-     It is far too light to carry a white glyph - white on it computes to 1.89:1, well under 1.4.11's
-     3:1 - so the one tile using it pairs it with a dark glyph and a darker gold edge. Both figures
-     are on .aaa-tile-bronze. Do not put white on this color. */
-  --aaa-bronze: #ecb350;
-  --aaa-bronze-edge: #b57d1a; /* 3.55:1 on white, computed - makes the light fill's shape read */
-  --aaa-bronze-glyph: #3d3116; /* 6.75:1 on the fill, computed */
+  /* Deep Dive tile fill — brighter orange than the prior gold `#9C6A15`. White on `#EA580C` is
+     3.56:1 (1.4.11); fill on white card 3.56:1. Lighter oranges (e.g. `#F97316`) fail at 2.80:1.
+     See decisions 032 and 033. */
+  --aaa-bronze: #ea580c;
+  /* Kept for provenance / older notes; unused by `.aaa-tile-bronze` after 032. */
+  --aaa-bronze-edge: #b57d1a;
+  --aaa-bronze-glyph: #3d3116;
 
   /* Bright green: logged brand exception, see docs/decisions/decision-log.md.
      Permitted ONLY as a large tile fill behind a white glyph (3.30:1, clears 1.4.11's 3:1
@@ -728,11 +726,9 @@ select.aaa-input {
   margin-bottom: 0.25rem;
 }
 
-/* White glyphs verified: blue 7.65:1, green 3.30:1, ink 10.05:1. All clear 1.4.11's 3:1 for
-   non-text. The green is the logged brand exception and is permitted here specifically because this
-   is a large fill behind a white glyph.
-
-   The bronze tile is the exception to the white glyph and sets its own colors below. */
+/* White glyphs verified: blue 7.65:1, green 3.30:1, Deep Dive orange 3.56:1, ink 10.05:1. All clear
+   1.4.11's 3:1 for non-text. The green is the logged brand exception and is permitted here
+   specifically because this is a large fill behind a white glyph. */
 .aaa-tile-blue {
   background: var(--aaa-blue);
 }
@@ -741,15 +737,9 @@ select.aaa-input {
   background: var(--aaa-green-tile);
 }
 
-/* The only tile that does not take a white glyph. The requested gold is light enough that white on
-   it is 1.89:1, so the glyph goes dark instead, and a darker gold edge keeps the square itself from
-   dissolving into the white card - the fill alone is also 1.89:1 against that card.
-
-   Declared after .aaa-tool-icon so the color override lands without needing extra specificity. */
+/* Inherits white from `.aaa-tool-icon`. Fill `#EA580C` — brighter orange, white 3.56:1 (decision 033). */
 .aaa-tile-bronze {
   background: var(--aaa-bronze);
-  border: 1px solid var(--aaa-bronze-edge); /* 3.55:1 on the white card, computed */
-  color: var(--aaa-bronze-glyph); /* 6.75:1 on the fill, computed */
 }
 
 .aaa-tile-ink {
@@ -2325,17 +2315,308 @@ select.select {
   color: var(--aaa-muted);
 }
 
-/* Executive dashboard */
+/* Executive dashboard — Concept v1 2×3 cards. Chip text/fill ratios computed with contrast.py. */
 .aaa-exec {
   margin-bottom: 2rem;
 }
 
-.aaa-exec-icon {
-  background: var(--aaa-ink);
+.aaa-exec-hero {
+  margin-bottom: 0.5rem;
+}
+
+.aaa-exec-eyebrow {
+  margin: 0 0 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-exec-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 72rem) {
+  .aaa-exec-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .aaa-exec-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aaa-exec-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.125rem 1.25rem 1.25rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.75rem;
+  background: #ffffff;
+  min-height: 14rem;
+}
+
+.aaa-exec-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.aaa-exec-panel-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-chip {
+  margin: 0;
+  flex: none;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.aaa-exec-chip-muted {
+  background: var(--aaa-surface-gray);
+  color: var(--aaa-ink); /* 8.66:1 on #EEEEEE */
+}
+
+.aaa-exec-chip-ok {
+  background: #d4edda;
+  color: var(--aaa-green-safe); /* 6.54:1 */
+}
+
+.aaa-exec-chip-info {
+  background: #d6e8f8;
+  color: var(--aaa-blue-active); /* 7.85:1 */
+}
+
+.aaa-exec-chip-alert {
+  background: #fce8ea;
+  color: #7a1a22; /* 8.94:1 */
+}
+
+.aaa-exec-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.aaa-exec-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-stat-unit {
+  font-size: 0.9375rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-exec-caption {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--aaa-muted);
+}
+
+.aaa-exec-caption-split {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--aaa-border);
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-caption-split strong {
+  font-weight: 800;
+}
+
+.aaa-exec-bar {
+  display: flex;
+  height: 0.5rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--aaa-surface-gray);
+}
+
+.aaa-exec-bar.is-empty {
+  background: var(--aaa-surface-gray);
+}
+
+.aaa-exec-bar-empty {
+  flex: 1;
+  background: #d8d8d8;
+}
+
+.aaa-exec-bar-seg {
+  min-width: 0.35rem;
+}
+
+.aaa-exec-seg-approved {
+  background: var(--aaa-green-safe);
+}
+
+.aaa-exec-seg-review {
+  background: var(--aaa-blue);
+}
+
+.aaa-exec-seg-clarify {
+  background: var(--aaa-bronze);
+}
+
+.aaa-exec-seg-deferred {
+  background: var(--aaa-muted);
+}
+
+.aaa-exec-seg-escalated {
+  background: var(--aaa-red);
+}
+
+.aaa-exec-seg-closed {
+  background: var(--aaa-border);
+}
+
+.aaa-exec-seg-job-not-started {
+  background: #9ec5e8;
+}
+
+.aaa-exec-seg-job-in-progress {
+  background: var(--aaa-blue);
+}
+
+.aaa-exec-seg-job-blocked {
+  background: var(--aaa-bronze);
+}
+
+.aaa-exec-seg-job-complete {
+  background: var(--aaa-navy);
+}
+
+.aaa-exec-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.aaa-exec-legend li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-legend li span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+}
+
+.aaa-exec-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.aaa-exec-weeks {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  height: 5.5rem;
+  margin-top: auto;
+}
+
+.aaa-exec-week {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.aaa-exec-week-col {
+  display: block;
+  width: 100%;
+  max-width: 2.5rem;
+  height: 1.25rem;
+  border-radius: 0.25rem 0.25rem 0 0;
+  background: #d6e8f8;
+}
+
+.aaa-exec-week-label {
+  font-size: 0.6875rem;
+  color: var(--aaa-muted);
+  text-align: center;
+}
+
+.aaa-exec-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-exec-attention {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.5rem;
+  background: #fce8ea;
+}
+
+.aaa-exec-attention li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.8125rem;
+  color: #7a1a22;
+}
+
+.aaa-exec-attention-link {
+  font-weight: 700;
+  color: var(--aaa-blue);
+  text-decoration: underline;
+}
+
+.aaa-exec-duesoon {
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.5rem;
+  background: #f3e0d0;
+  color: #6b3b00; /* 7.28:1 */
+}
+
+.aaa-exec-duesoon-title {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.aaa-exec-duesoon p {
+  margin: 0;
+  font-size: 0.8125rem;
 }
 
 .aaa-exec-coverage {
-  margin: 0 0 1.25rem;
+  margin: 0;
   padding: 0.75rem 1rem;
   border-radius: 0.375rem;
   background: var(--aaa-wash);
@@ -2344,90 +2625,250 @@ select.select {
   line-height: 1.55;
 }
 
-.aaa-exec-cards {
+/* ---------------------------------------------------------------- *
+ * Full-page request summary (reviewer)
+ * ---------------------------------------------------------------- */
+
+.aaa-summary-page {
+  color: var(--aaa-ink);
+}
+
+.aaa-summary-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--aaa-blue);
+  text-decoration: underline;
+}
+
+.aaa-summary-back:hover {
+  color: var(--aaa-blue-hover);
+}
+
+.aaa-summary-chrome {
+  margin-bottom: 1.25rem;
+}
+
+.aaa-summary-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.aaa-summary-priority {
+  display: inline-block;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: 0.375rem;
+  background: var(--aaa-surface-gray);
+  color: var(--aaa-ink);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.aaa-summary-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+}
+
+.aaa-summary-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--aaa-ink);
+}
+
+.aaa-summary-meta {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--aaa-muted);
+  line-height: 1.5;
+}
+
+.aaa-summary-tabs {
+  margin-bottom: 1.25rem;
+}
+
+.aaa-summary-card {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.75rem;
+  background: #ffffff;
+  margin-bottom: 1.25rem;
+}
+
+.aaa-summary-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: 1fr;
+  gap: 1.5rem 2rem;
+}
+
+@media (min-width: 768px) {
+  .aaa-summary-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.aaa-summary-fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.aaa-summary-fields > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.aaa-summary-fields dt {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--aaa-blue); /* 7.65:1 estimated on white */
+}
+
+.aaa-summary-fields dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--aaa-ink);
+  white-space: pre-wrap;
+}
+
+.aaa-summary-assessments {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
 
-.aaa-exec-card {
+@media (min-width: 640px) {
+  .aaa-summary-assessments {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.aaa-summary-assessment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 1rem 1.125rem;
   border: 1px solid var(--aaa-border);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   background: #ffffff;
 }
 
-.aaa-exec-card-label {
-  margin: 0;
+.aaa-summary-assessment-label {
   font-size: 0.8125rem;
   font-weight: 700;
   color: var(--aaa-muted);
 }
 
-.aaa-exec-card-value {
-  margin: 0.375rem 0 0;
-  font-size: 1.75rem;
+.aaa-summary-assessment select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--aaa-ink);
-  line-height: 1.1;
+  cursor: pointer;
 }
 
-.aaa-exec-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 1.25rem;
+.aaa-summary-assessment select:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
+}
+
+.aaa-summary-payload {
   margin-bottom: 1.5rem;
 }
 
-.aaa-exec-section-heading {
-  margin: 0 0 0.625rem;
-  font-size: 0.9375rem;
+.aaa-summary-payload-meta {
+  margin: 1rem 0;
+}
+
+.aaa-summary-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding: 1rem 0 0.5rem;
+  background: linear-gradient(
+    to top,
+    var(--aaa-surface) 70%,
+    color-mix(in srgb, var(--aaa-surface) 0%, transparent)
+  );
+}
+
+.aaa-summary-btn {
+  appearance: none;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font: inherit;
+  font-size: 0.875rem;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.aaa-summary-btn:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
+}
+
+.aaa-summary-btn-primary {
+  border: 1px solid var(--aaa-blue);
+  background: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 on digital blue */
+}
+
+.aaa-summary-btn-primary:hover {
+  background: var(--aaa-blue-hover);
+  border-color: var(--aaa-blue-hover);
+}
+
+.aaa-summary-btn-secondary {
+  border: 1px solid #5a6570;
+  background: #5a6570;
+  color: #ffffff; /* estimated ~5.5:1 */
+}
+
+.aaa-summary-btn-secondary:hover {
+  background: #4a545e;
+  border-color: #4a545e;
+}
+
+.aaa-summary-btn-ghost {
+  border: 1px solid var(--aaa-border);
+  background: #ffffff;
   color: var(--aaa-ink);
 }
 
-.aaa-exec-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--aaa-border);
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-.aaa-exec-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.875rem;
-  border-top: 1px solid var(--aaa-border);
-  background: #ffffff;
-}
-
-.aaa-exec-list li:first-child {
-  border-top: 0;
-}
-
-.aaa-exec-stubs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 0.75rem;
-}
-
-.aaa-exec-stub {
-  padding: 1rem 1.125rem;
-  border: 1px dashed var(--aaa-border);
-  border-radius: 0.5rem;
+.aaa-summary-btn-ghost:hover {
   background: var(--aaa-surface-gray);
 }
 
-.aaa-exec-stub p {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.55;
-  color: var(--aaa-muted);
+.aaa-summary-btn-danger-text {
+  border: 1px solid var(--aaa-border);
+  background: #ffffff;
+  color: var(--aaa-red-text); /* 7.84:1 on white; text only, not a filled red control */
+}
+
+.aaa-summary-btn-danger-text:hover {
+  background: #fff5f5;
 }
 
 /* ---------------------------------------------------------------- *

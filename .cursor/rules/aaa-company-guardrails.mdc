@@ -1,0 +1,136 @@
+---
+description: AAA Life Insurance Company guardrails - compliance escalation, advertising baseline, disclaimers, brand rules, data privacy, least privilege, auditable recommendations, vendor review, accessibility floor, and standing copy corrections. Applies to all work in this project.
+alwaysApply: true
+---
+
+# AAA Life company guardrails
+
+These are company-level constraints, not project preferences. They outrank convenience, deadlines,
+and my own suggestions. If a request conflicts with one of these, say so plainly rather than quietly
+complying.
+
+Sources: AAA Life Insurance Company Corporate Compliance Policy (CCP), the AAA Life Brand Visual
+Style Guide (MAR 2025), and WCAG 2.2. The CCP and style guide are **proprietary and internal-use
+only** - apply their frameworks, never reproduce or export their text.
+
+## 1. Compliance escalation
+
+- Compliance is the **second line of defense**. The design and marketing team owns day-to-day
+  adherence; Compliance is not a safety net that makes carelessness fine.
+- Any compliance **exception requires CCO approval**. A tight deadline is not an exception.
+- Interpretation questions go to the **Compliance Department**. Legal risk goes to **Legal**.
+- Suspected violations are reportable through management, Compliance, HR, or the **Speak-Up
+  Helpline**, with non-retaliation protection. Surface this path if a request appears to knowingly
+  skirt a rule.
+- When work has real regulatory stakes, say so and recommend routing to Compliance. Never present a
+  general best-practice baseline as a substitute for actual CCP procedure.
+
+## 2. Advertising baseline
+
+Apply to every piece of copy this project generates or drafts:
+
+- Truthful and not misleading. No deceptive comparisons.
+- **No guaranteed coverage or rates without qualification.** Flag any copy implying either.
+- No implied government affiliation or endorsement.
+- Testimonials must be genuine, current, and representative, with FTC endorsement disclosure.
+- "No medical exam" claims must be accurate and qualified.
+- Senior-targeted messaging must avoid scare tactics, false urgency, and overstated simplicity.
+- Producer and agent CTAs must reflect valid state licensing language.
+- Design patterns that pressure an unsuitable purchase - dark patterns, forced urgency, misleading
+  visual hierarchy, hidden terms - are a **market conduct** issue, not a UX nitpick.
+
+## 3. Disclaimer presets
+
+Starting points for a brief's mandatories, drawn from the style guide's own samples. **Compliance
+owns final wording** - these are drafts, never authorities:
+
+- Underwritten by AAA Life Insurance Company, Livonia, MI.
+- Products and features may vary by state.
+- AAA Life is licensed in all states except New York.
+- California Certificate of Authority #07861.
+- See policy for full terms, conditions, and exclusions.
+- Subject to underwriting; coverage is not in effect until the policy is issued.
+
+## 4. Brand rules
+
+- Use the **digital** palette on screens, never the print palette. The print red `#ED1C2F` gives
+  white text only 4.37:1 and fails AA; the digital red `#E31E2E` is 4.68:1.
+- **Red and bronze are never primary.** Red is reserved for a final submit action and genuine errors.
+  The guide specifically cautions against red buttons on screens containing form fields, since red
+  reads as an error state.
+- Keep layouts light and cool.
+- **Underline only clickable links.** Keep links bold, in blue or red.
+- **Never pair Gotham with Open Sans.** Gotham is licensed and cannot ship in a web app, so Open Sans
+  is used alone. Nunito Sans, Oswald, Roboto, and Gotham Condensed are not brand fonts.
+- **Never alter the logo** - no stretching, recoloring, rotating, disassembling, or rebuilding from
+  parts. Honor its clear space, equal to half the red oval's height on all sides.
+- Deviations from the guide are recorded as dated exceptions in `docs/decisions/decision-log.md`
+  pending brand-team sign-off. An undocumented deviation is drift.
+
+## 5. Data privacy
+
+- Requester **name, email, and department are PII**.
+- **No PII leaves the device without privacy review.** This project stores everything in
+  `localStorage` and makes no network call; changing that is a privacy decision, not a refactor.
+- Never commit customer data, credentials, tokens, or `.env` files.
+- Webfonts, analytics, and CDN assets are **third-party requests that leak IP address and user
+  agent**. Self-host instead. This is why Google Fonts was removed from `index.html`.
+- On a hosted, shared-machine origin, PII persisting in `localStorage` is a real exposure. Provide a
+  way for a user to clear their own data on the device.
+
+## 6. Least privilege across teams
+
+- Cross-team request data is **summary only**: ALAN number, title, requesting team, status, and match
+  reason.
+- **Never** a brief body, an attachment, or a requester's email in a match card or any cross-team
+  listing.
+- Widening that visibility is a decision to be logged, never a default.
+
+## 7. Recommendations must be auditable
+
+- Any surfaced match, duplicate call, or suggestion **states the signal behind it** - "shares
+  ALAN-29541-624-00", "same deliverable type and deadline week". No unexplained scoring in a
+  compliance-sensitive workflow. A recommendation a user cannot audit gets either ignored or blindly
+  trusted, and both are worse than no recommendation.
+
+- **An absence of results is also a recommendation, and carries the same burden.** A bare "no
+  duplicates found" reads as an organization-wide statement of fact. It must instead state the corpus
+  it was drawn from and how complete that corpus was. A negative result is **never** presented as
+  organization-wide unless the corpus actually was organization-wide.
+
+- **Degrade coverage claims explicitly.** If a remote corpus is unreachable and the search silently
+  falls back to local data while still implying full coverage, that is worse than returning nothing.
+  Say what was actually searched and why it was incomplete.
+
+## 8. Third-party vendors
+
+Any new API, MCP server, LLM provider, analytics tool, font host, hosted service, or dependency
+installed from outside the public npm registry is a **Vendor Management Policy consideration** and is
+flagged before adoption, not after.
+
+- Integrations start as **typed adapter stubs** with no live call.
+- No live third-party API call without explicit approval.
+- Credentials are a Vendor Management and privacy gate.
+- **Never** put a secret in a `VITE_`-prefixed variable. Vite compiles those into the public client
+  bundle. Server-side secrets belong behind a proxy.
+- When resolving a dependency advisory, verify the replacement is legitimate. Convenience forks
+  promising a quick fix are a known malware vector; `xlsx-enhanced` is a documented example.
+
+## 9. Accessibility as compliance
+
+- **WCAG 2.2 AA is the floor**, not the goal. ADA Title III exposure applies to insurer properties.
+- Every recommendation carries a **Law-of-UX rationale and a WCAG citation**.
+- **Contrast is computed, never asserted.** Use
+  `.cursor/skills/verify-live-ux/scripts/contrast.py` and label every figure verified or estimated -
+  including when a brand document itself makes an ADA claim. The style guide's own ADA guidance has
+  been measured and found wrong in three places; see `docs/knowledge/brand-system.md`.
+- An approved brand exception **never** approves a WCAG failure. Darken the value instead.
+- Never convey state by color alone. Never rely on placeholder text as a label.
+
+## 10. Copy corrections (standing rule)
+
+- Spelling, grammar, and capitalization errors in any source are **corrected in shipped copy** rather
+  than reproduced. Mocks are layout references, not copy decks.
+- Known corrections: `Misson` to **Mission**; `que` to **queue**.
+- Brand spellings: **Workfront**, **Monday.com**, **AAA Life Insurance Company**.
+- Anything that changes **meaning** is surfaced to the user, not silently applied.

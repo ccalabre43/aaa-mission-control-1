@@ -5,7 +5,7 @@
  * Status/Priority are local and editable; they are not posted to Workfront yet.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { loadBriefs, loadIdentity, upsertBrief } from "../../lib/intake/storage";
 import {
   REVIEWER_PRIORITIES,
@@ -30,13 +30,14 @@ import {
   searchRows,
   sortQueueRows,
   toQueueRow,
+  truncateWords,
   type QueueColumn,
   type QueueFilter,
   type SortState,
 } from "../../lib/workfront/queueList";
-import { RequestSummaryPanel } from "./RequestSummaryPanel";
 
 export function RequestQueueSection() {
+  const navigate = useNavigate();
   const [load] = useState(() => loadBriefs());
   const [briefs, setBriefs] = useState<IntakeBrief[]>(load.briefs);
   const [queueConfig] = useState(() => loadQueueConfig().config);
@@ -46,7 +47,6 @@ export function RequestQueueSection() {
   const [filter, setFilter] = useState<QueueFilter>("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
-  const [openBriefId, setOpenBriefId] = useState<string | null>(null);
   const [status, setStatus] = useState(
     load.status === "recovered"
       ? "Recovered your saved requests from the local backup copy."
@@ -76,8 +76,6 @@ export function RequestQueueSection() {
   );
 
   const activeFilter = QUEUE_FILTERS.find((item) => item.key === filter) ?? QUEUE_FILTERS[0];
-  const openBrief = briefs.find((brief) => brief.id === openBriefId) ?? null;
-  const openRow = allRows.find((row) => row.briefId === openBriefId) ?? null;
   const draftCount = allRows.filter((row) => row.isDraft).length;
 
   function toggleSort(column: QueueColumn) {
@@ -101,23 +99,8 @@ export function RequestQueueSection() {
     setError("");
   }
 
-  function markReviewed(briefId: string) {
-    patchBrief(briefId, (brief) => {
-      if (brief.reviewer.firstReviewedAt) return brief;
-      return {
-        ...brief,
-        updatedAt: new Date().toISOString(),
-        reviewer: {
-          ...brief.reviewer,
-          firstReviewedAt: new Date().toISOString(),
-        },
-      };
-    });
-  }
-
   function openSummary(briefId: string) {
-    markReviewed(briefId);
-    setOpenBriefId(briefId);
+    navigate(`/deliverables/requests/${briefId}`);
   }
 
   function updateReviewerStatus(briefId: string, nextStatus: ReviewerStatus) {
@@ -324,9 +307,11 @@ export function RequestQueueSection() {
                         <button
                           type="button"
                           className="aaa-queue-subject"
+                          title={row.name}
+                          aria-label={row.name}
                           onClick={() => openSummary(row.briefId)}
                         >
-                          {row.name}
+                          {truncateWords(row.name, 4)}
                         </button>
                         {row.isNew ? (
                           <span className="aaa-queue-new">NEW</span>
@@ -429,8 +414,9 @@ export function RequestQueueSection() {
               const brief = briefs.find((item) => item.id === row.briefId);
               return (
                 <li key={row.briefId} className="aaa-queue-card">
-                  <p className="aaa-queue-card-name">
-                    {row.name}
+                  <p className="aaa-queue-card-name" title={row.name}>
+                    <span className="sr-only">{row.name}</span>
+                    <span aria-hidden="true">{truncateWords(row.name, 4)}</span>
                     {row.isNew ? <span className="aaa-queue-new">NEW</span> : null}
                   </p>
                   <dl className="aaa-queue-card-list">
@@ -532,29 +518,9 @@ export function RequestQueueSection() {
 
       <p className="aaa-queue-footnote">
         Reviewer Status and Priority are saved in this browser only. They are not sent to Workfront
-        yet. Every row still shows Sent to Workfront: No until dual-write is enabled.
+        yet. Open Summary for the full request page. Sent to Workfront stays No until dual-write is
+        enabled.
       </p>
-
-      {openBrief && openRow ? (
-        <RequestSummaryPanel
-          brief={openBrief}
-          row={openRow}
-          queueConfig={queueConfig}
-          onClose={() => setOpenBriefId(null)}
-          onUpdateReviewer={(next) => {
-            patchBrief(openBrief.id, (brief) => ({
-              ...brief,
-              updatedAt: new Date().toISOString(),
-              reviewer: {
-                ...brief.reviewer,
-                ...next,
-                firstReviewedAt:
-                  brief.reviewer.firstReviewedAt ?? new Date().toISOString(),
-              },
-            }));
-          }}
-        />
-      ) : null}
     </section>
   );
 }

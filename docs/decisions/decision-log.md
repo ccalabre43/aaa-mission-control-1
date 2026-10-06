@@ -967,6 +967,70 @@ briefs and tracker rows, with an explicit coverage line. Hours/capacity slots st
 Workfront assignment API is approved. The Project tracker moves under the Executive tab so it is not
 deleted.
 
+## 2026-10-04 - 031 - Full-page request summary; keep Workfront payload tab
+
+**Status:** accepted
+
+Selecting Summary on the Request Queue opens `/deliverables/requests/:briefId` (comp:
+`assets/mocks/request-summary-page.png`) instead of the slide-over dialog. The page keeps
+**Summary** and **Workfront payload** tabs. Comp field labels map to existing A3 values where
+possible; empty cells show an em dash. Local `brief.reviewer` gains Impact / Effort / Risk
+assessment levels (not posted). Footer actions update local status/priority or run
+`submitToWorkfront` in local mode with honest “not sent” messaging.
+
+## 2026-10-05 - 032 - Deep Dive white glyph: darken bronze fill, superseding 025's dark glyph
+
+**Status:** accepted, pending brand-team sign-off
+
+Request: white magnifying glass on the Deep Dive (former Sales Tools) tile. White on the shipped
+`#ECB350` fill is **1.89:1** and fails WCAG 1.4.11. Guardrail 9 forbids shipping that pairing.
+
+Applied the alternative recorded in decision 025: darken `--aaa-bronze` to **`#9C6A15`**. Verified
+with `contrast.py`:
+
+| Pairing | Computed | Floor |
+| --- | --- | --- |
+| White glyph on `#9C6A15` | **4.68:1** | 3:1 (1.4.11) |
+| `#9C6A15` fill on white card | **4.68:1** | 3:1 (1.4.11) |
+
+`.aaa-tile-bronze` again inherits white from `.aaa-tool-icon`. The dark glyph and gold edge tokens
+remain in the stylesheet for provenance but are unused. Decision 025's choice of light fill + dark
+glyph is superseded for this tile; `#ECB350` stays documented as the rejected light value.
+
+## 2026-10-05 - 033 - Deep Dive tile brighter orange `#EA580C`
+
+**Status:** accepted, pending brand-team sign-off
+
+Request: brighter, more orange fill on the Deep Dive card than the muted gold `#9C6A15` from 032.
+Chosen **`#EA580C`**. Verified with `contrast.py`:
+
+| Pairing | Computed | Floor |
+| --- | --- | --- |
+| White glyph on `#EA580C` | **3.56:1** | 3:1 (1.4.11) |
+| `#EA580C` fill on white card | **3.56:1** | 3:1 (1.4.11) |
+
+Lighter candidates such as `#F97316` fail at **2.80:1** and were rejected. White glyph stays. Add Tools
+picker label for this tint is **Orange**. Token id remains `aaa-tile-bronze` / `--aaa-bronze` until a
+rename is decided with brand.
+
+## 2026-10-06 - 034 - Executive dashboard Concept v1 layout; hours still placeholders
+
+**Status:** accepted
+
+The Executive dashboard tab is restyled to the 2×3 card layout from A3 Creative Intake Concept v1
+(Figma proto node `312:3061`, mock `assets/mocks/executive-dashboard-concept-v1.png`). Request Queue,
+Workfront proxy, storage keys, and the Project tracker block under the tab are unchanged.
+
+Queue counts, tracker job bars, and escalations use this browser’s saved briefs and
+`aaa-project-tracker` rows. Hours booked, open hours, week capacity bars, average days-to-decision,
+and on-time % stay em dashes with a “placeholder / not connected” chip — the prototype’s 80% / 2.1
+days are not shown as live facts (guardrail 7). Reviewer status labels stay the shipped set (Needs
+review, Needs clarification, Escalated, Approved — transfer, Closed, Deferred to backlog), not the
+Figma “Accepted / Awaiting review” wording.
+
+Chip contrast vs fill, verified with `contrast.py`: muted 8.66:1, ok 6.54:1, info 7.85:1, alert 8.94:1,
+due-soon 7.28:1.
+
 ## Open items awaiting outside input
 
 | Item | Blocked on | Entry |
@@ -991,7 +1055,7 @@ deleted.
 | Workfront hours / Resource Planner for Executive dashboard (typed adapter first) | Workfront admin, Vendor Management | 030 |
 | How attachments reach Workfront. Documents need a separate upload call and this app never persists file contents | Workfront admin | 023 |
 | Sign-off on red for a destructive delete link, and on the tracker's existing row delete that already used it | Brand team | 024 |
-| Sign-off on `#ECB350` replacing the guide's antique bronze, and on whether the `--aaa-bronze` token should be renamed to match the gold it now holds | Brand team | 025 |
+| Sign-off on Deep Dive tile `#EA580C` (and prior steps from `#ECB350` / `#9C6A15`), and on whether `--aaa-bronze` should be renamed | Brand team | 025, 032, 033 |
 | Whether a user-added card should ever get a real destination, and who decides it. Added cards are placeholders today, and pointing one anywhere is a scope decision rather than a setting | Marketing | 026 |
 | Whether a dashboard layout should be shared across a team rather than per-browser. It is a per-device display preference today, so two people on one machine share one layout and one person on two machines has two | Marketing | 026 |
 | Whether anyone actually finds card reordering now that the grip only appears on rollover. Worth watching, since a hint sentence is the only standing cue | Marketing | 027 |

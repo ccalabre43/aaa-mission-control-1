@@ -22,7 +22,7 @@ export function TrackerCards({
   if (rows.length === 0) {
     return (
       <div className="rounded-md border border-[#dddddd] bg-white px-4 py-16 text-center md:hidden">
-        No deliverables yet. Add one or import an Excel file.
+        No rows yet. Add one or import an Excel file.
       </div>
     );
   }

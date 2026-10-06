@@ -130,3 +130,22 @@ export function saveOrderMode(mode: OrderMode): void {
     /* order preference is not worth surfacing an error for */
   }
 }
+
+/**
+ * Removes the tracker's data from this device, including the backup copy.
+ *
+ * There is no server copy of any of this, so it is genuinely gone. The confirm step on the calling
+ * screen is what makes that acceptable, not this function.
+ *
+ * Kept separate from the intake app's `clearIntakeData`: each screen clears only the data it owns,
+ * so neither control can quietly delete the other feature's records.
+ */
+export function clearTrackerData(): void {
+  for (const key of [STORAGE_KEY, BACKUP_KEY, ORDER_MODE_KEY]) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* nothing useful to do if storage is blocked */
+    }
+  }
+}
