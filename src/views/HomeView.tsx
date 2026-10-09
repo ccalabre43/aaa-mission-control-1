@@ -1,25 +1,13 @@
 /**
- * Mission Control home, per assets/mocks/main-dashboard-interface.png and
- * main-mobile-dashboard-interface.png.
+ * Mission Control home. Hero/copy from assets/mocks/main-dashboard-interface.png;
+ * tool cards from assets/mocks/home-tool-cards-figma.png (Figma node 369-4361):
+ * Marketing Request / Comms Requests / Deep Dive / Add Tools in a 2×2 grid.
  *
- * Copy reconciliation between the two mocks:
- * - Desktop asks "What would you like to do today?", mobile "What do you want to do today?".
- *   The desktop wording is canonical.
- * - Desktop labels the tiles "Intake Form / Strategy / Deep Dive / Add Tools" with a description
- *   line each; mobile drops the descriptions and says "Intake Tools / Strategy Tools". The desktop
- *   labels and descriptions are canonical, since a tile that explains itself is worth the space.
- * - Only the mobile mock draws a "Start request" button. It is kept at every breakpoint: three of
- *   the four tiles are not built yet, so an unmistakable primary action matters more than matching
- *   the desktop mock exactly (Von Restorff Effect, and a single clear CTA per screen). It ships as
- *   "Start Request" by request. That is the only title-case action label in the app; every other
- *   one is sentence case, so match the neighbors rather than this if you add a button nearby.
+ * - Desktop asks "What would you like to do today?" (canonical vs mobile wording).
+ * - "Start Request" stays at every breakpoint as the primary CTA for intake.
+ * - Tiles with nowhere to go render as unavailable ("Not built yet"), including custom cards.
  *
- * Tiles with nowhere to go are rendered as genuinely unavailable rather than as working links. A tile
- * that looks clickable and does nothing is worse than one that says it is not ready. That state now
- * carries added cards too, which are roadmap placeholders by design.
- *
- * The tiles come from `localStorage` rather than a constant here, so they can be added to, removed,
- * and reordered. `defaultCards()` still holds the shipped four.
+ * The tiles come from `localStorage`; `defaultCards()` holds the shipped four.
  */
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";

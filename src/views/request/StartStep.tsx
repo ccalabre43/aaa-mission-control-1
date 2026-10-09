@@ -11,6 +11,7 @@
  */
 import { useState, type RefObject } from "react";
 import { Link } from "react-router-dom";
+import { ToolIcon } from "../../components/dashboard/ToolIcon";
 import { emptyIdentity, type RequesterIdentity } from "../../lib/intake/types";
 
 /**
@@ -85,9 +86,7 @@ export default function StartStep({
   return (
     <div className="aaa-flow-centered">
       <span className="aaa-hero-badge" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.9} focusable="false">
-          <path d="M5 7h10M5 10h10M5 13h6" strokeLinecap="round" />
-        </svg>
+        <ToolIcon icon="lines" />
       </span>
 
       <h1 className="aaa-flow-heading" tabIndex={-1} ref={headingRef}>
@@ -204,7 +203,7 @@ export default function StartStep({
 
         <div className="aaa-flow-actions aaa-flow-actions-center">
           <button type="submit" className="aaa-btn aaa-btn-primary">
-            Start request
+            Next
           </button>
         </div>
       </form>

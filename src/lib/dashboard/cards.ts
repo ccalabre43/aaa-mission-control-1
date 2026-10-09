@@ -19,7 +19,14 @@ export type CardTint =
   | "aaa-tile-bronze"
   | "aaa-tile-ink";
 
-export type CardIcon = "lines" | "document" | "window" | "search" | "plus";
+export type CardIcon =
+  | "lines"
+  | "document"
+  | "window"
+  | "search"
+  | "plus"
+  | "palette"
+  | "chat";
 
 /** Offered in the dialog's picker. `plus` is excluded: it reads as "add", not as a tool. */
 export const PICKABLE_ICONS: readonly CardIcon[] = [
@@ -27,6 +34,8 @@ export const PICKABLE_ICONS: readonly CardIcon[] = [
   "document",
   "window",
   "search",
+  "palette",
+  "chat",
 ];
 
 /**
@@ -67,34 +76,33 @@ export const MAX_CARD_LABEL = 40;
 export const MAX_CARD_DESCRIPTION = 80;
 
 /**
- * The four cards the app ships with, carried over verbatim from `HomeView`'s `TOOLS`.
+ * The four cards the app ships with (Figma home tool cards / assets/mocks/home-tool-cards-figma.png).
  *
- * Copy follows the home grid, not the Add Tools dialog mock. Per guardrail 10 a mock is a layout
- * reference rather than a copy deck; the third tile is Deep Dive / Request meeting.
+ * Deep Dive subtitle is "Reservations" per that mock (was "Request meeting").
  */
 export function defaultCards(): DashboardCard[] {
   return [
     {
       id: "intake",
-      label: "Intake Form",
-      description: "Start a creative request",
+      label: "Marketing Request",
+      description: "Tell us what you need",
       to: "/request",
       tint: "aaa-tile-blue",
-      icon: "lines",
+      icon: "palette",
       custom: false,
     },
     {
       id: "strategy",
-      label: "Strategy",
-      description: "Create strategy documents",
-      tint: "aaa-tile-green",
-      icon: "document",
+      label: "Comms Requests",
+      description: "Tell us what you need",
+      tint: "aaa-tile-blue",
+      icon: "chat",
       custom: false,
     },
     {
       id: "sales",
       label: "Deep Dive",
-      description: "Request meeting",
+      description: "Reservations",
       tint: "aaa-tile-bronze",
       icon: "search",
       custom: false,
@@ -102,7 +110,7 @@ export function defaultCards(): DashboardCard[] {
     {
       id: "add",
       label: "Add Tools",
-      description: "Add tools to this dashboard",
+      description: "Pin something new",
       tint: "aaa-tile-ink",
       icon: "plus",
       custom: false,

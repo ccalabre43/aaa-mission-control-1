@@ -640,12 +640,21 @@ select.aaa-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  /* At least 40×40 glyph inside; 48×48 tile matches tool-card icon squares. */
+  width: 3rem;
+  height: 3rem;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 0.625rem;
   background: var(--aaa-blue);
   color: #ffffff; /* 7.65:1 */
   margin-bottom: 1.25rem;
+}
+
+.aaa-hero-badge svg {
+  width: 40px;
+  height: 40px;
+  flex: none;
 }
 
 .aaa-hero-heading {
@@ -668,43 +677,47 @@ select.aaa-input {
   color: var(--aaa-muted);
 }
 
+/* Home tool cards: 2×2 per Figma home-tool-cards-figma.png (home-only class). */
 .aaa-tool-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
   width: 100%;
-  max-width: 60rem;
+  max-width: 40rem;
   margin-top: 2.5rem;
   list-style: none;
   padding: 0;
-}
-
-@media (min-width: 900px) {
-  .aaa-tool-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 
 .aaa-tool-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  justify-content: center;
+  gap: 0.5rem;
   height: 100%;
-  padding: 1.25rem 1rem;
+  min-height: 9.5rem;
+  padding: 1.5rem 1.25rem;
   background: #ffffff;
   border: 1px solid var(--aaa-border);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   text-align: center;
   text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
 }
 
 .aaa-tool-card-ready {
-  border-color: var(--aaa-blue);
-  border-width: 2px;
+  border-width: 1px;
+  border-color: var(--aaa-border);
 }
 
-.aaa-tool-card-ready:hover {
+.aaa-tool-card-ready:hover,
+.aaa-tool-card-ready:focus-visible {
+  border-color: var(--aaa-blue);
+  border-width: 2px;
+  /* Keep outer size stable when border grows. */
+  padding: calc(1.5rem - 1px) calc(1.25rem - 1px);
   background: #f2f7fc;
 }
 
@@ -718,12 +731,27 @@ select.aaa-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.5rem;
+  /* Colored square holds a ≥40×40 glyph (ToolIcon default). */
+  width: 3rem;
+  height: 3rem;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 0.625rem;
   color: #ffffff;
   flex: none;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.aaa-tool-icon svg {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+
+/* Palette glyph fills the colored square like assets/mocks/icon-palette.png. */
+.aaa-tool-icon svg[viewBox="0 0 64 64"] {
+  width: 44px;
+  height: 44px;
 }
 
 /* White glyphs verified: blue 7.65:1, green 3.30:1, Deep Dive orange 3.56:1, ink 10.05:1. All clear
@@ -3613,6 +3641,12 @@ select.select {
   height: 1.5rem;
   border-radius: 0.25rem;
   color: #ffffff;
+}
+
+/* Picker swatches stay compact; card/page tiles use the 40px ToolIcon default. */
+.aaa-picker-swatch svg {
+  width: 14px;
+  height: 14px;
 }
 
 .aaa-modal-listhead {

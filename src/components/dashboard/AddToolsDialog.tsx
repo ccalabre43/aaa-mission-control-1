@@ -47,6 +47,8 @@ const ICON_LABELS: Record<CardIcon, string> = {
   window: "Window",
   search: "Magnifying glass",
   plus: "Plus",
+  palette: "Palette",
+  chat: "Chat",
 };
 
 export function AddToolsDialog({

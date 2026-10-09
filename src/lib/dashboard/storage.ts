@@ -79,9 +79,10 @@ function tint(value: unknown): CardTint {
   return found ?? "aaa-tile-blue";
 }
 
+const ALL_ICONS: readonly CardIcon[] = [...PICKABLE_ICONS, "plus"];
+
 function icon(value: unknown): CardIcon {
-  if (value === "plus") return "plus";
-  const found = PICKABLE_ICONS.find((candidate) => candidate === value);
+  const found = ALL_ICONS.find((candidate) => candidate === value);
   return found ?? "lines";
 }
 
@@ -166,35 +167,42 @@ function ensureManager(cards: DashboardCard[]): {
   return { cards: withManagerLast([...cards, manager]), added: true };
 }
 
+const SHIPPED_CARD_IDS = new Set(["intake", "strategy", "sales", "add"]);
+
 /**
- * Keeps the shipped `sales` tile aligned with `defaultCards()` for label, description, and icon.
+ * Keeps shipped home tiles aligned with `defaultCards()` for label, description, tint, and icon.
  *
- * Layout order and custom cards stay as saved. Only non-custom `id: "sales"` is refreshed, so
- * renames and icon swaps (e.g. Deep Dive + magnifying glass) appear without a full reset.
+ * Layout order and custom cards stay as saved. Non-custom cards with a shipped id are refreshed so
+ * Figma copy/icon updates appear without a full dashboard reset.
  */
-function syncShippedSalesCopy(cards: DashboardCard[]): {
+function syncShippedCardPresentation(cards: DashboardCard[]): {
   cards: DashboardCard[];
   changed: boolean;
 } {
-  const shipped = defaultCards().find((card) => card.id === "sales");
-  if (!shipped) return { cards, changed: false };
-
+  const byId = new Map(defaultCards().map((card) => [card.id, card]));
   let changed = false;
   const next = cards.map((card) => {
-    if (card.id !== "sales" || card.custom || card.manager) return card;
+    if (card.custom || !SHIPPED_CARD_IDS.has(card.id)) return card;
+    const shipped = byId.get(card.id);
+    if (!shipped) return card;
     if (
       card.label === shipped.label &&
       card.description === shipped.description &&
-      card.icon === shipped.icon
+      card.icon === shipped.icon &&
+      card.tint === shipped.tint
     ) {
       return card;
     }
     changed = true;
+    const { to: _prevTo, ...rest } = card;
     return {
-      ...card,
+      ...rest,
       label: shipped.label,
       description: shipped.description,
       icon: shipped.icon,
+      tint: shipped.tint,
+      ...(shipped.manager ? { manager: true as const } : {}),
+      ...(shipped.to ? { to: shipped.to } : {}),
     };
   });
   return { cards: next, changed };
@@ -206,17 +214,24 @@ export function loadCards(): CardsLoadResult {
 
   if (parsed && parsed.cards.length > 0) {
     const { cards, added } = ensureManager(parsed.cards);
-    const synced = syncShippedSalesCopy(cards);
+    const synced = syncShippedCardPresentation(cards);
+    // Quietly persist Figma presentation updates so they do not look like a parse repair.
+    if (synced.changed || added) {
+      saveCards(synced.cards);
+    }
     return {
       cards: synced.cards,
-      status: parsed.repaired || added || synced.changed ? "repaired" : "ok",
+      status: parsed.repaired || added ? "repaired" : "ok",
     };
   }
 
   const backup = parseCards(readKey(CARDS_BACKUP_KEY));
   if (backup && backup.cards.length > 0) {
     const { cards } = ensureManager(backup.cards);
-    const synced = syncShippedSalesCopy(cards);
+    const synced = syncShippedCardPresentation(cards);
+    if (synced.changed) {
+      saveCards(synced.cards);
+    }
     return { cards: synced.cards, status: "recovered" };
   }
 
