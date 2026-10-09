@@ -92,13 +92,18 @@ Two ways out, and they are genuinely different products:
 
 That choice is not the developer's to make quietly. It changes what a Workfront record means.
 
-## What the app still refuses to do
+## Dual-write (Step 6 / decisions 035–036)
 
-- `submitToWorkfront` remains local. It validates, assembles the real payload, and reports
-  `mode: "local"`. Dual-write is Step 6.
-- `sendBlockers` still ends with a live-submit blocker even when proxy health is green.
-- Every row still reads **"Sent to Workfront: No"**, and `scripts/lib/copy-guard.mjs` fails the build
-  on any phrasing that claims otherwise.
+- Ready to send stays local (`mode: "local"`).
+- Summary → **Submit to Workfront Que** dual-writes a **Task** on mission-control-v1 when the
+  proxy has `WORKFRONT_LIVE_SUBMIT=1`, the user confirms Entered By = integration account, and
+  Workfront returns a real Task ID (`mode: "workfront"` + stored `issueId` key holding the Task ID).
+- Request queue **Refresh from Workfront** lists summary Tasks on that project and upserts them
+  into this browser’s Request Queue (Workfront wins on Task ID / exact name match; local-only
+  rows without a match stay). Coverage names the project plus local briefs (never
+  organization-wide). See decision 037.
+- Copy-guard still bans bare **"Sent to Workfront: Yes"**; the UI may show
+  `Yes (Task <id>)` only after a successful create.
 
 ## Also unresolved
 

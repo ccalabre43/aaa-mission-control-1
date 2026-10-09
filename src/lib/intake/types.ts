@@ -213,8 +213,17 @@ export interface IntakeBrief {
    */
   reviewer: BriefReviewer;
 
-  /** Result of the local Workfront stub. No network call is made in this version. */
-  workfront: { mode: "local"; issueName: string; submittedAt: string } | null;
+  /**
+   * Local stub (`mode: "local"`) or live Task create via the proxy (`mode: "workfront"`).
+   * `issueId` / `issueUrl` hold the Workfront Task ID/URL after dual-write (keys kept for storage).
+   */
+  workfront: {
+    mode: "local" | "workfront";
+    issueName: string;
+    submittedAt: string;
+    issueId?: string;
+    issueUrl?: string;
+  } | null;
 }
 
 export function createBrief(partial: Partial<IntakeBrief> = {}): IntakeBrief {

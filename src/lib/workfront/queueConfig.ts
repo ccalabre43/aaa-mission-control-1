@@ -2,11 +2,11 @@
  * The request queue's own configuration, modeled on Workfront's real objects.
  *
  * Workfront does not route requests with a custom-form field. It routes them with a **queue topic**
- * that carries a **routing rule**, and the topic's position under its queue and topic groups is what
- * fills the `Path` column in the Submitted Requests list. The app previously expressed team routing
- * as the `A3IntakeCommunicationType` radio, which is a custom field. That is why a two-team answer
- * was awkward: a radio holds one value, while two topics with two routing rules is ordinary
- * Workfront configuration.
+ * that carries a **routing rule**. Display Path in this app is the queue name plus the topic group
+ * name (topic name only if ungrouped). The app previously expressed team routing as the
+ * `A3IntakeCommunicationType` radio, which is a custom field. That is why a two-team answer was
+ * awkward: a radio holds one value, while two topics with two routing rules is ordinary Workfront
+ * configuration.
  *
  * Type names deliberately match the Workfront objects, including the object codes, so the contract
  * is legible to anyone who has seen the API:
@@ -231,15 +231,17 @@ export function topicForCommunicationTypes(
 }
 
 /**
- * The Path column: queue, then topic groups, then queue topic. Workfront joins these with a slash;
- * this uses the same separator so the string reads the way it would in Workfront.
+ * Display Path: queue name, then topic group name. The queue topic name is omitted so reviewers
+ * see the group title. If the topic sits directly under the queue (no group), the topic name is
+ * the fallback second segment. Slash separator matches Workfront-style paths.
  */
 export const PATH_SEPARATOR = " / ";
 
 export function topicPath(config: QueueDef, topic: QueueTopic | null): string {
   if (!topic) return "";
   const group = findGroup(config, topic.groupId);
-  return [config.name, group?.name, topic.name].filter(Boolean).join(PATH_SEPARATOR);
+  // Prefer group title; if the topic sits directly under the queue, fall back to topic name.
+  return [config.name, group?.name ?? topic.name].filter(Boolean).join(PATH_SEPARATOR);
 }
 
 /**

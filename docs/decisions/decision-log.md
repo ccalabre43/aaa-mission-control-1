@@ -1031,6 +1031,57 @@ Figma “Accepted / Awaiting review” wording.
 Chip contrast vs fill, verified with `contrast.py`: muted 8.66:1, ok 6.54:1, info 7.85:1, alert 8.94:1,
 due-soon 7.28:1.
 
+## 2026-10-07 - 035 - Dual-write Issue create + queue pull; kill switch; honest Yes only with ID
+
+**Status:** accepted (Vendor Management + privacy gates still apply for production Runtime)
+
+Mission Control can dual-write a Ready request to Workfront **mission-control-v1** and pull summary
+Issues back into the Request Queue.
+
+- Proxy: `POST /issues` (create) and `GET /issues` (list). Kill switch `WORKFRONT_LIVE_SUBMIT=1`.
+  Create also requires `confirmLive: true` so the UI must show the Entered By disclosure first.
+- Client: Ready to send stays `mode: "local"`. Summary → Submit to Workfront Que may set
+  `mode: "workfront"` **only** when a real Issue ID returns. Attachments remain names-only.
+- Copy-guard: bare `Sent to Workfront: Yes` stays banned; display uses `Yes (Issue <id>)`.
+- Queue: manual **Refresh from Workfront**; coverage names mission-control-v1 via proxy + local
+  briefs. Proxy failure does not silently imply a full queue. Local drafts stay local; linked rows
+  open Summary / Issue URL when IDs match.
+- Secrets stay on the proxy / Runtime inputs — never `VITE_*`. Chat-exposed secrets must be rotated
+  before Runtime deploy.
+- Success modal (`WorkfrontSentDialog`, mock `assets/mocks/sent-to-workfront-modal.png`) opens only
+  after a live create returns an Issue ID. Heading may say “Sent to Workfront”; body names the route
+  topic and Issue ID. Figma’s combined “Accept — Send to Workfront” stays two buttons here (Accept =
+  local reviewer status; Submit = dual-write).
+
+Walkthrough: `docs/knowledge/workfront-submit-walkthrough.md`.
+
+## 2026-10-07 - 036 - Dual-write creates Tasks, not Issues, on mission-control-v1
+
+**Status:** accepted (column mapping provisional until Workfront admin corrects)
+
+Submit to Workfront Que now `POST TASK` on project `6abae2b600041e3ecb6a8da4dbe7b4a1` so rows
+appear on the project **Tasks** tab, not Issues. Refresh lists `TASK/search` on that project.
+
+Best-guess Task fields: `name`, `description` (audit + A3 body), `projectID`,
+`plannedCompletionDate`, and A3 `parameterValues` when the form accepts them (retry without custom
+form if Workfront rejects). `queueTopicID` / `opTaskType` are omitted (Issue / request-queue fields).
+
+Storage keys `workfront.issueId` / `issueUrl` still hold the Task ID/URL for one release (no
+localStorage migration). User-facing copy says Task. Proxy HTTP paths remain `/issues` temporarily.
+
+**Probe (2026-10-07):** `TASK/search` on mission-control-v1 succeeds (existing Chris test tasks visible).
+`POST TASK` with the S2S credential returns *You do not have sufficient access to add this Task*.
+Issue create previously worked for this integration account; Task create needs project/role access
+granted by a Workfront admin before dual-write can succeed in the UI.
+
+**Probe (2026-10-07, ownership change):** Project owner is now the S2S tech account
+(`e94e6b40-1d68-46a4-974d-af46af7cb631@techacct.adobe.com`, User ID
+`6abfd42f01507a7bcbe5e395960e3f9f`). `PROJECT.permissions.actions` still reports only
+`VIEW`, `ADD_ISSUES`, `ADD_DOCUMENTS` — **no `ADD_TASKS`**. Access Level remains built-in
+**Contributor**. SAMPLE `POST TASK` (proxy + direct API) still fails with the same insufficient-access
+error. Next admin step: raise that user’s Access Level (or Task create privilege on Contributor) so
+Task create is allowed; project ownership alone is not enough.
+
 ## Open items awaiting outside input
 
 | Item | Blocked on | Entry |
@@ -1050,6 +1101,8 @@ due-soon 7.28:1.
 | A triage team for the both-teams topic. `Creative Operations` is a placeholder | Marketing, Creative Operations | 020 |
 | Whether Entered By may be the integration account, or the tool must move inside Workfront as a UI Extension to preserve the requester | Workfront admin, Marketing | 023 |
 | Adobe Runtime deploy of `workfront-proxy` on the S2S Console project, with `WORKFRONT_CLIENT_SECRET` as a Runtime secret (local health verified; production Runtime URL still needed) | Workfront admin, App Builder owner | 023, 029 |
+| ~~Raise S2S tech account Access Level / project Share so `ADD_TASKS` works on mission-control-v1~~ — **done 2026-10-09** (decision 039) | Workfront admin | 036, 038, 039 |
+| Confirm Workfront Task status/priority enum labels so Refresh mapping is exact rather than best-effort | Workfront admin | 037 |
 | Vendor Management acknowledgement for the live Workfront S2S + Runtime path | Vendor Management | 023, 029 |
 | Confirm request-queue native Issue status group vs custom `A3IntakeReviewStatus`; confirm P1–P3 → priority enum | Workfront admin | 030 |
 | Workfront hours / Resource Planner for Executive dashboard (typed adapter first) | Workfront admin, Vendor Management | 030 |
@@ -1061,6 +1114,66 @@ due-soon 7.28:1.
 | Whether anyone actually finds card reordering now that the grip only appears on rollover. Worth watching, since a hint sentence is the only standing cue | Marketing | 027 |
 | Whether snapshot files may be emailed or shared at all, given they carry requester names and emails. Treated as no until reviewed | Compliance, Privacy | 028 |
 | A schema version stamp on the stored records themselves, not just on the snapshot envelope. Currently no brief, queue config, or registry says which shape it is | - | 028 |
+
+## 2026-10-07 - 037 - Refresh from Workfront upserts Tasks into the local Request Queue
+
+**Status:** accepted
+
+**Refresh from Workfront** no longer only fills a side list. A successful `TASK/search` on
+mission-control-v1 **merges into** `aaa-intake-briefs`:
+
+- Match: `workfront.issueId` === Task ID, else case-insensitive exact Task name vs
+  `workfront.issueName` / project summary / subject.
+- Conflict: Workfront wins for Task name, entry date, best-effort status/priority maps, assigned
+  **display name** only (no email), and `workfront: { mode: "workfront", issueId, issueUrl, … }`.
+- Unmatched Tasks create ready-to-send briefs (summary fields only; honest `matchCoverage`).
+- Local drafts/ready rows with no matching Task are **not** deleted.
+- Failed fetch does not mutate briefs.
+
+Subject column prefers `workfront.issueName` when linked. Implementation:
+`src/lib/workfront/mergeRemoteTasks.ts`, wired from `RequestQueueSection`.
+
+Supersedes the pull-only (list-but-do-not-write) reading of decision 035 for the Refresh path;
+create/kill-switch rules in 035–036 are unchanged.
+
+## 2026-10-09 - 038 - Task create still blocked; S2S cannot self-elevate Access Level
+
+**Status:** superseded by 039
+
+Probe confirmed (pre-fix):
+
+- S2S user was **Contributor**
+  (`e94e6b40-1d68-46a4-974d-af46af7cb631@techacct.adobe.com`, ID
+  `6abfd42f01507a7bcbe5e395960e3f9f`).
+- Project permissions on mission-control-v1: `VIEW`, `ADD_ISSUES`, `ADD_DOCUMENTS` — no
+  `ADD_TASKS`. Owner is no longer the tech account.
+- `PUT USER` to Planner/Standard fails: *You are not allowed to change your current access level*.
+- SAMPLE `POST TASK` failed: *insufficient access to add this Task*.
+
+Admin raised Access Level and project Share in the Workfront UI; see 039.
+
+## 2026-10-09 - 039 - S2S Task create unblocked on mission-control-v1
+
+**Status:** accepted
+
+Chris (Workfront admin) completed:
+
+1. Tech account Access Level → **Standard** (was Contributor; briefly Planner mid-fix).
+2. Project **Share** on mission-control-v1 with Manage / **ADD_TASKS**.
+
+Verified:
+
+- `PROJECT.permissions.actions` includes `ADD_TASKS`.
+- `npm run workfront:sample-create` → Task
+  `6ac9271901431125babc988d94344504`.
+- UI: Summary → **Submit to Workfront Que** → confirm → success modal →
+  `Sent to Workfront: Yes (Task …)` → **Refresh from Workfront** upserts the row
+  (Task `6ac9275b0143fe51f3a52fb3ef4c01bd`).
+
+Path A (Entered By = signed-in Adobe user via ExC Bearer) remains a follow-on; S2S Entered By
+is still the techacct user. Walkthrough:
+`docs/knowledge/workfront-add-tasks-acl.md`,
+`docs/knowledge/workfront-submit-walkthrough.md`.
 
 ## Flagged for the user, not applied
 

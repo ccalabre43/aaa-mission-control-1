@@ -295,13 +295,24 @@ function normalizeBrief(value: unknown): IntakeBrief | null {
     reviewer: normalizeReviewer(raw.reviewer),
     workfront:
       raw.workfront && typeof raw.workfront === "object"
-        ? {
-            mode: "local",
-            issueName: text((raw.workfront as Record<string, unknown>).issueName),
-            submittedAt: isoDateTime(
-              (raw.workfront as Record<string, unknown>).submittedAt,
-            ),
-          }
+        ? (() => {
+            const wf = raw.workfront as Record<string, unknown>;
+            const mode =
+              wf.mode === "workfront" && typeof wf.issueId === "string" && wf.issueId
+                ? ("workfront" as const)
+                : ("local" as const);
+            return {
+              mode,
+              issueName: text(wf.issueName),
+              submittedAt: isoDateTime(wf.submittedAt),
+              ...(typeof wf.issueId === "string" && wf.issueId
+                ? { issueId: wf.issueId }
+                : {}),
+              ...(typeof wf.issueUrl === "string" && wf.issueUrl
+                ? { issueUrl: wf.issueUrl }
+                : {}),
+            };
+          })()
         : null,
   });
 }

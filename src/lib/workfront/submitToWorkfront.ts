@@ -1,12 +1,10 @@
 /**
  * Workfront submission adapter.
  *
- * This version makes NO network call and never will: it always reports `local`. Going live needs
- * OAuth credentials via Adobe Developer Console, which is a Vendor Management and privacy gate,
- * not a code change. See docs/knowledge/references.md.
- *
- * The payload is shaped as a real Workfront Issue with a custom-form object keyed by the exact A3
- * internal field names, so the live adapter becomes an HTTP call rather than a remapping exercise.
+ * Default path is local-only (Ready to send). Live dual-write requires the proxy kill switch
+ * `WORKFRONT_LIVE_SUBMIT=1`, an explicit UI confirm (`confirmLive`), and a real Task ID back from
+ * Workfront before `mode` becomes `"workfront"`. Secrets stay on the proxy — never in Vite.
+ * Stored keys remain `issueId` / `issueUrl` (Task ID/URL) — decision 036.
  */
 import {
   A3_SUBMITTED_FIELDS,
@@ -18,11 +16,12 @@ import {
 } from "../intake/a3Schema";
 import { briefTitle, type IntakeBrief } from "../intake/types";
 import { describeCoverageForAudit } from "../related/coverage";
+import { createWorkfrontIssue } from "./proxyClient";
 import { pathLabel, routeExplanation, routeFor } from "./routing";
 import { topicIsSubmittable, type QueueDef } from "./queueConfig";
 
 export interface WorkfrontIssuePayload {
-  /** Issue name. Prefixed with the ALAN number when there is one, so a producer sees it. */
+  /** Task name. Prefixed with the ALAN number when there is one, so a producer sees it. */
   name: string;
   description: string;
   /** From `A3IntakeDesiredCompletionDate`. ISO `YYYY-MM-DD`. */
@@ -55,8 +54,10 @@ export interface WorkfrontIssuePayload {
 }
 
 export interface WorkfrontSubmitResult {
-  mode: "local";
+  mode: "local" | "workfront";
   issueName: string;
+  issueId?: string;
+  issueUrl?: string;
   payload: WorkfrontIssuePayload;
   /**
    * Whether this payload could actually be transmitted if a credential existed.
@@ -68,6 +69,8 @@ export interface WorkfrontSubmitResult {
   readyToSend: boolean;
   /** Plain-language reasons transmission is not possible. Rendered to the user as-is. */
   blockers: string[];
+  /** Set when a live attempt was made and the proxy or Workfront refused it. */
+  liveError?: string;
 }
 
 const MAX_ISSUE_NAME = 140;
@@ -215,10 +218,10 @@ export function buildWorkfrontPayload(
 }
 
 /**
- * Why this payload could not be transmitted. Empty means it could.
+ * Why this payload could not be transmitted. Empty means queue config alone would allow a send.
  *
- * Each reason names the specific missing thing rather than saying "not configured", because the
- * person reading it in the queue is the one who has to go get it from the Workfront administrator.
+ * Live kill-switch and confirm are checked at submit time when `options.live` is set — they are not
+ * listed here so Ready-to-send saves are not punished for an administrator's off switch.
  */
 export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
   const blockers: string[] = [];
@@ -240,12 +243,28 @@ export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
     );
   }
 
-  // Live submit (dual-write) is Step 6. The health proxy can report connected without enabling POST.
-  blockers.push(
-    "Live Workfront submit is not enabled yet. The proxy health check can connect; dual-write is still off. See docs/workfront-auth.md.",
-  );
-
   return blockers;
+}
+
+/**
+ * Display value under the Sent to Workfront label.
+ * Affirmative Yes is only returned with a real Task ID (copy-guard / decisions 035–036).
+ * Storage key remains `issueId` for one release.
+ */
+export function workfrontSentDisplay(
+  workfront: IntakeBrief["workfront"],
+): { sent: boolean; label: string } {
+  if (
+    workfront?.mode === "workfront" &&
+    typeof workfront.issueId === "string" &&
+    workfront.issueId.trim()
+  ) {
+    return {
+      sent: true,
+      label: `Yes (Task ${workfront.issueId.trim()})`,
+    };
+  }
+  return { sent: false, label: "No" };
 }
 
 export interface WorkfrontSubmitError {
@@ -258,19 +277,29 @@ export type WorkfrontSubmitOutcome =
   | ({ ok: true } & WorkfrontSubmitResult)
   | WorkfrontSubmitError;
 
+export interface WorkfrontSubmitOptions {
+  /**
+   * When true, attempt proxy POST /issues after validation. Requires kill switch on the proxy and
+   * `confirmLive: true`. Ready-to-send flows leave this false.
+   */
+  live?: boolean;
+  /** Must be true for a live create. UI shows Entered By disclosure first. */
+  confirmLive?: boolean;
+}
+
 /**
- * Validates against the real required fields, then reports a local submission.
- *
- * Async so the live adapter can drop in without changing a single caller.
+ * Validates against the real required fields, then saves locally and optionally dual-writes.
  *
  * `ok: false` means the requester still has work to do. An unconfigured queue is a different thing
  * and never produces `ok: false`: the request is saved and marked Ready to send, and `blockers`
- * carries what an administrator has to supply before anything could be transmitted. Gating the save
- * on queue configuration would punish the requester for someone else's missing ID.
+ * carries what an administrator has to supply before anything could be transmitted.
+ *
+ * `mode: "workfront"` only when Workfront returns a real Task ID.
  */
 export async function submitToWorkfront(
   brief: IntakeBrief,
   config: QueueDef,
+  options: WorkfrontSubmitOptions = {},
 ): Promise<WorkfrontSubmitOutcome> {
   const validation = validateA3(brief.a3 as A3Values);
   if (!validation.valid) {
@@ -283,17 +312,68 @@ export async function submitToWorkfront(
   const payload = buildWorkfrontPayload(brief, config);
   const route = routeFor(config, brief);
   const blockers = sendBlockers(brief, config);
+  const readyToSend =
+    blockers.length === 0 && topicIsSubmittable(config, route.topic);
+
+  if (!options.live) {
+    return {
+      ok: true,
+      mode: "local",
+      issueName: payload.name,
+      payload,
+      readyToSend,
+      blockers,
+    };
+  }
+
+  if (blockers.length > 0) {
+    return {
+      ok: true,
+      mode: "local",
+      issueName: payload.name,
+      payload,
+      readyToSend: false,
+      blockers,
+      liveError: blockers[0],
+    };
+  }
+
+  if (options.confirmLive !== true) {
+    return {
+      ok: true,
+      mode: "local",
+      issueName: payload.name,
+      payload,
+      readyToSend,
+      blockers: [
+        ...blockers,
+        "Live send needs confirmation of who Entered By will be (signed-in user or integration account).",
+      ],
+      liveError: "confirmLive was not true.",
+    };
+  }
+
+  const created = await createWorkfrontIssue(payload, { confirmLive: true });
+  if (!created.ok) {
+    return {
+      ok: true,
+      mode: "local",
+      issueName: payload.name,
+      payload,
+      readyToSend,
+      blockers: [...blockers, created.error],
+      liveError: created.error,
+    };
+  }
 
   return {
     ok: true,
-    mode: "local",
-    issueName: payload.name,
+    mode: "workfront",
+    issueName: created.name || payload.name,
+    issueId: created.ID,
+    issueUrl: created.url || undefined,
     payload,
-    // `topicIsSubmittable` is the queue config's own opinion about its topic; `blockers` is always
-    // non-empty in this build because of the credential line, so `readyToSend` is always false here.
-    // It is computed rather than hard-coded so that removing the credential line is the only edit
-    // needed when a proxy exists.
-    readyToSend: blockers.length === 0 && topicIsSubmittable(config, route.topic),
-    blockers,
+    readyToSend: true,
+    blockers: [],
   };
 }

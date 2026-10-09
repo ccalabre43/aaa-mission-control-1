@@ -30,7 +30,7 @@ export type RouteSource = "recorded" | "derived" | "none";
 export interface RoutedTopic {
   topic: QueueTopic | null;
   rule: RoutingRule | null;
-  /** Queue / group / topic, ready for the Path column. Empty when unrouted. */
+  /** Queue / group (or topic name if ungrouped), ready for Path display. Empty when unrouted. */
   path: string;
   source: RouteSource;
 }

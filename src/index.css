@@ -1877,6 +1877,20 @@ select.select {
   background: var(--aaa-green-safe);
 }
 
+.aaa-queue-connection-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aaa-queue-coverage {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--aaa-ink);
+}
+
 .aaa-queue-filters {
   display: flex;
   flex-wrap: wrap;
@@ -1994,6 +2008,15 @@ select.select {
   max-width: 22rem;
 }
 
+/* Exactly 50px between Subject content and Status content (25px + 25px adjacent padding). */
+.aaa-queue-table-reviewer .aaa-queue-name {
+  padding-right: 25px;
+}
+
+.aaa-queue-table-reviewer .aaa-queue-col-status {
+  padding-left: 25px;
+}
+
 /* A sort control has to be a real button so it is reachable and
    operable from the keyboard (2.1.1); the header cell carries
    aria-sort. */
@@ -2028,8 +2051,83 @@ select.select {
 .aaa-queue-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.75rem;
   white-space: nowrap;
+}
+
+/* Push Delete away from Summary / Mark ready, same idea as question-admin delete. */
+.aaa-queue-action-delete {
+  margin-left: auto;
+}
+
+.aaa-queue-action-btn {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.aaa-queue-selection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: var(--aaa-wash);
+}
+
+.aaa-queue-selection-count {
+  margin: 0;
+  margin-right: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-ink);
+}
+
+.aaa-queue-select-col {
+  width: 2.5rem;
+  vertical-align: middle;
+}
+
+.aaa-queue-select-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.aaa-queue-select-label input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--aaa-blue);
+  cursor: pointer;
+}
+
+.aaa-queue-table tbody tr.is-selected {
+  background: #f0f6fb;
+}
+
+.aaa-queue-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.aaa-queue-card-top .aaa-queue-card-name {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.aaa-queue-card.is-selected {
+  border-color: var(--aaa-blue);
+  box-shadow: inset 0 0 0 1px var(--aaa-blue);
 }
 
 .aaa-queue-card {
@@ -3203,6 +3301,184 @@ select.select {
   font-size: 0.8125rem;
   color: var(--aaa-muted); /* 6.69:1 on white, computed */
   max-width: 34rem;
+}
+
+/* ---- Sent to Workfront success dialog (summary after dual-write) ---- */
+
+.aaa-sent-dialog-scrim {
+  align-items: center;
+}
+
+.aaa-sent-dialog {
+  max-width: 26rem;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(11, 35, 63, 0.18);
+}
+
+.aaa-sent-dialog-body {
+  padding: 2rem 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aaa-sent-dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  background: var(--aaa-green-safe);
+  color: #ffffff;
+}
+
+.aaa-sent-dialog-heading {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--aaa-ink); /* 10.05:1 on white */
+}
+
+.aaa-sent-dialog-copy {
+  margin: 0;
+  max-width: 22rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--aaa-muted); /* 6.69:1 on white */
+}
+
+/* Refresh dialog: centered success + Task inventory (mock workfront-refresh-modal) */
+.aaa-refresh-dialog {
+  max-width: 28rem;
+  text-align: center;
+}
+
+.aaa-refresh-dialog-body {
+  align-items: center;
+  text-align: center;
+}
+
+.aaa-refresh-dialog-section {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--aaa-ink); /* 10.05:1 on white */
+}
+
+.aaa-refresh-dialog-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  width: 100%;
+  max-height: min(50vh, 22rem);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.375rem;
+}
+
+.aaa-refresh-dialog-task {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.aaa-refresh-dialog-task-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--aaa-ink);
+  word-break: break-word;
+}
+
+.aaa-refresh-dialog-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--aaa-ink);
+}
+
+.aaa-refresh-dialog-link {
+  display: inline;
+  margin: 0.125rem 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--aaa-blue); /* 7.65:1 on white */
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.aaa-refresh-dialog-link:hover {
+  color: var(--aaa-blue-hover);
+}
+
+.aaa-refresh-dialog-link:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
+}
+
+.aaa-sent-dialog-link {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.aaa-sent-dialog-link a {
+  color: var(--aaa-blue);
+  text-decoration: underline;
+}
+
+.aaa-sent-dialog-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.75rem;
+}
+
+.aaa-sent-dialog-btn-secondary,
+.aaa-sent-dialog-btn-primary {
+  min-height: 2.5rem;
+  min-width: 7rem;
+  padding: 0.5rem 1.125rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aaa-sent-dialog-btn-secondary {
+  border: 1px solid var(--aaa-border);
+  background: #ffffff;
+  color: var(--aaa-ink);
+}
+
+.aaa-sent-dialog-btn-secondary:hover {
+  background: var(--aaa-wash);
+}
+
+.aaa-sent-dialog-btn-primary {
+  border: 1px solid var(--aaa-blue);
+  background: var(--aaa-blue);
+  color: #ffffff; /* 7.65:1 on brand blue */
+}
+
+.aaa-sent-dialog-btn-primary:hover {
+  filter: brightness(0.92);
+}
+
+.aaa-sent-dialog-btn-secondary:focus-visible,
+.aaa-sent-dialog-btn-primary:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
 }
 
 /* ---- Add Tools dialog ---- */

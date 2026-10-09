@@ -1,12 +1,19 @@
 /**
  * Reviewer-style Request Queue list (mock: request-queue-reviewer-interface.png).
  *
- * Keeps Workfront connection health, payload summary, and local Ready-to-send flow. Reviewer
- * Status/Priority are local and editable; they are not posted to Workfront yet.
+ * Local Ready-to-send rows stay in this browser. Refresh upserts summary Tasks from
+ * mission-control-v1 into local briefs (Workfront wins on match); coverage names that corpus
+ * (guardrail 7). Local-only briefs without a matching Task are kept.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loadBriefs, loadIdentity, upsertBrief } from "../../lib/intake/storage";
+import {
+  deleteBrief,
+  loadBriefs,
+  loadIdentity,
+  saveBriefs,
+  upsertBrief,
+} from "../../lib/intake/storage";
 import {
   REVIEWER_PRIORITIES,
   REVIEWER_STATUSES,
@@ -16,9 +23,14 @@ import {
 } from "../../lib/intake/types";
 import { loadQueueConfig } from "../../lib/workfront/queueConfig";
 import {
+  fetchWorkfrontIssues,
+  type WorkfrontRemoteIssue,
+} from "../../lib/workfront/proxyClient";
+import {
   fetchWorkfrontHealth,
   type WorkfrontProxyHealth,
 } from "../../lib/workfront/proxyHealth";
+import { mergeRemoteTasksIntoBriefs } from "../../lib/workfront/mergeRemoteTasks";
 import { submitToWorkfront } from "../../lib/workfront/submitToWorkfront";
 import {
   DEFAULT_SORT,
@@ -27,6 +39,7 @@ import {
   ariaSortFor,
   filterRows,
   formatQueueDate,
+  moveSelectedInVisibleOrder,
   searchRows,
   sortQueueRows,
   toQueueRow,
@@ -35,6 +48,15 @@ import {
   type QueueFilter,
   type SortState,
 } from "../../lib/workfront/queueList";
+import { WorkfrontRefreshDialog } from "./WorkfrontRefreshDialog";
+
+interface RefreshDialogState {
+  issues: WorkfrontRemoteIssue[];
+  added: number;
+  updated: number;
+  linked: number;
+  coverage: string;
+}
 
 export function RequestQueueSection() {
   const navigate = useNavigate();
@@ -43,10 +65,19 @@ export function RequestQueueSection() {
   const [queueConfig] = useState(() => loadQueueConfig().config);
   const viewer = useMemo(() => loadIdentity(), []);
   const [health, setHealth] = useState<WorkfrontProxyHealth | null>(null);
+  const [remoteCoverage, setRemoteCoverage] = useState("");
+  const [remoteError, setRemoteError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshDialog, setRefreshDialog] = useState<RefreshDialogState | null>(
+    null,
+  );
 
   const [filter, setFilter] = useState<QueueFilter>("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>(DEFAULT_SORT);
+  /** When true, display follows `briefs` array order (after Move up/down). */
+  const [manualOrder, setManualOrder] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [status, setStatus] = useState(
     load.status === "recovered"
       ? "Recovered your saved requests from the local backup copy."
@@ -64,25 +95,199 @@ export function RequestQueueSection() {
     return () => controller.abort();
   }, []);
 
+  const refreshFromWorkfront = useCallback(async () => {
+    setRefreshing(true);
+    setRemoteError("");
+    try {
+      const result = await fetchWorkfrontIssues();
+      const remote = result.issues.filter((issue) => issue.ID);
+      setRemoteCoverage(result.coverage);
+      if (!result.ok) {
+        setRemoteError(
+          result.error ??
+            "Workfront Task search failed. Local Request Queue rows were not changed.",
+        );
+        return;
+      }
+
+      // Read storage at click time so a stale React closure cannot drop concurrent edits.
+      const { briefs: current } = loadBriefs();
+      const merged = mergeRemoteTasksIntoBriefs(current, remote);
+      const saved = saveBriefs(merged.briefs);
+      if (!saved.ok) {
+        setError(
+          saved.reason ??
+            "Workfront Tasks were fetched but could not be saved into this browser's Request Queue.",
+        );
+        setStatus("");
+        return;
+      }
+      setBriefs(merged.briefs);
+      setError("");
+      setStatus("");
+      setRefreshDialog({
+        issues: remote,
+        added: merged.added,
+        updated: merged.updated,
+        linked: merged.linked,
+        coverage: result.coverage,
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const refreshLiveAnnouncement = useMemo(() => {
+    if (!refreshDialog) return "";
+    const { added, updated, linked, coverage } = refreshDialog;
+    const summary = `Workfront refresh (mission-control-v1): added ${added}, updated ${updated} in this browser's Request Queue (${linked} Task${linked === 1 ? "" : "s"} linked). Local-only rows without a matching Task were kept.`;
+    return coverage.trim() ? `${summary} ${coverage.trim()}` : summary;
+  }, [refreshDialog]);
+
   const allRows = useMemo(
     () => briefs.map((brief) => toQueueRow(brief, queueConfig, viewer)),
     [briefs, queueConfig, viewer],
   );
 
-  const rows = useMemo(
-    () =>
-      sortQueueRows(searchRows(filterRows(allRows, filter), search), sort),
-    [allRows, filter, search, sort],
-  );
+  const rows = useMemo(() => {
+    const filtered = searchRows(filterRows(allRows, filter), search);
+    if (manualOrder) return filtered;
+    return sortQueueRows(filtered, sort);
+  }, [allRows, filter, search, sort, manualOrder]);
+
+  const visibleIds = useMemo(() => rows.map((row) => row.briefId), [rows]);
+  const selectedCount = useMemo(() => {
+    let count = 0;
+    for (const id of visibleIds) {
+      if (selectedIds.has(id)) count += 1;
+    }
+    return count;
+  }, [visibleIds, selectedIds]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const someVisibleSelected = selectedCount > 0 && !allVisibleSelected;
 
   const activeFilter = QUEUE_FILTERS.find((item) => item.key === filter) ?? QUEUE_FILTERS[0];
   const draftCount = allRows.filter((row) => row.isDraft).length;
+  const localReadyCount = allRows.filter((row) => !row.isDraft).length;
+  const linkedBriefIds = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const brief of briefs) {
+      if (brief.workfront?.mode === "workfront" && brief.workfront.issueId) {
+        map[brief.workfront.issueId] = brief.id;
+      }
+    }
+    return map;
+  }, [briefs]);
+  const coverageLine = useMemo(() => {
+    const localPart = `${localReadyCount} ready-to-send brief${localReadyCount === 1 ? "" : "s"} in this browser`;
+    if (remoteCoverage) {
+      return `${remoteCoverage} Refresh upserts those Tasks into this browser's Request Queue (Workfront wins on match). Showing ${localPart}. Not organization-wide.`;
+    }
+    return `Showing ${localPart}. Use Refresh from Workfront to add or update Tasks from mission-control-v1 into this queue.`;
+  }, [localReadyCount, remoteCoverage]);
 
   function toggleSort(column: QueueColumn) {
+    setManualOrder(false);
     setSort((current) =>
       current.column === column
         ? { column, direction: current.direction === "asc" ? "desc" : "asc" }
         : { column, direction: "desc" },
+    );
+  }
+
+  function toggleRowSelected(briefId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(briefId)) next.delete(briefId);
+      else next.add(briefId);
+      return next;
+    });
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function moveSelection(direction: -1 | 1) {
+    const allIds = briefs.map((brief) => brief.id);
+    const nextOrder = moveSelectedInVisibleOrder(
+      allIds,
+      visibleIds,
+      selectedIds,
+      direction,
+    );
+    if (!nextOrder) {
+      setStatus(
+        direction === -1
+          ? "Selection is already at the top of the visible list."
+          : "Selection is already at the bottom of the visible list.",
+      );
+      return;
+    }
+    const byId = new Map(briefs.map((brief) => [brief.id, brief]));
+    const reordered: IntakeBrief[] = [];
+    for (const id of nextOrder) {
+      const brief = byId.get(id);
+      if (brief) reordered.push(brief);
+    }
+    if (reordered.length !== briefs.length) {
+      setError("That reorder could not be applied. Your saved data was left untouched.");
+      return;
+    }
+    const saved = saveBriefs(reordered);
+    if (!saved.ok) {
+      setError(saved.reason ?? "That reorder could not be saved to this browser.");
+      return;
+    }
+    setBriefs(reordered);
+    setManualOrder(true);
+    setError("");
+    setStatus(
+      `Moved ${selectedCount} selected request${selectedCount === 1 ? "" : "s"} in this browser's Request Queue. Order is saved locally.`,
+    );
+  }
+
+  function removeLocalBrief(briefId: string, subject: string) {
+    const brief = briefs.find((item) => item.id === briefId);
+    const taskId =
+      brief?.workfront?.mode === "workfront" && brief.workfront.issueId
+        ? brief.workfront.issueId
+        : null;
+    const confirmed = window.confirm(
+      [
+        `Delete "${subject}" from this browser's Request Queue?`,
+        "",
+        taskId
+          ? `This only removes the local copy. Workfront Task ${taskId} is not deleted.`
+          : "This only removes the local copy. Nothing is sent to Workfront.",
+      ].join("\n"),
+    );
+    if (!confirmed) return;
+    const saved = deleteBrief(briefId);
+    if (!saved.ok) {
+      setError(saved.reason ?? "That request could not be deleted from this browser.");
+      return;
+    }
+    setBriefs((current) => current.filter((item) => item.id !== briefId));
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      next.delete(briefId);
+      return next;
+    });
+    setError("");
+    setStatus(
+      taskId
+        ? `Removed "${subject}" from this browser. Workfront Task ${taskId} was not deleted.`
+        : `Removed "${subject}" from this browser's Request Queue.`,
     );
   }
 
@@ -178,27 +383,41 @@ export function RequestQueueSection() {
             <p className="aaa-queue-sub">What would you like to review today?</p>
           </div>
         </div>
-        <p
-          className={
-            health?.connected
-              ? "aaa-queue-connection is-connected"
-              : "aaa-queue-connection"
-          }
-          title={
-            health?.connected
-              ? `Proxy health OK via ${health.endpoint}`
-              : health?.error
-                ? `${health.error} (checked ${health.endpoint})`
-                : "Checking the Workfront proxy…"
-          }
-        >
-          <span className="aaa-queue-connection-dot" aria-hidden="true" />
-          {health?.connected && health.project
-            ? `Workfront: connected (${health.project.name})`
-            : health === null
-              ? "Workfront: checking…"
-              : "Workfront: not connected"}
-        </p>
+        <div className="aaa-queue-connection-wrap">
+          <p
+            className={
+              health?.connected
+                ? "aaa-queue-connection is-connected"
+                : "aaa-queue-connection"
+            }
+            title={
+              health?.connected
+                ? `Proxy health OK via ${health.endpoint}${
+                    health.liveSubmit ? "; live submit on" : "; live submit off"
+                  }`
+                : health?.error
+                  ? `${health.error} (checked ${health.endpoint})`
+                  : "Checking the Workfront proxy…"
+            }
+          >
+            <span className="aaa-queue-connection-dot" aria-hidden="true" />
+            {health?.connected && health.project
+              ? `Workfront: connected (${health.project.name}${
+                  health.liveSubmit ? "; live submit on" : ""
+                })`
+              : health === null
+                ? "Workfront: checking…"
+                : "Workfront: not connected"}
+          </p>
+          <button
+            type="button"
+            className="aaa-btn-text"
+            onClick={() => refreshFromWorkfront()}
+            disabled={refreshing}
+          >
+            {refreshing ? "Refreshing…" : "Refresh from Workfront"}
+          </button>
+        </div>
       </div>
 
       <label className="aaa-queue-search">
@@ -219,7 +438,7 @@ export function RequestQueueSection() {
       </label>
 
       <div className="sr-only" role="status" aria-live="polite">
-        {status}
+        {refreshLiveAnnouncement || status}
         {error}
       </div>
       {error ? (
@@ -227,7 +446,9 @@ export function RequestQueueSection() {
           {error}
         </div>
       ) : null}
-      {status && !error ? <p className="aaa-page-status">{status}</p> : null}
+      {status && !error && !refreshDialog ? (
+        <p className="aaa-page-status">{status}</p>
+      ) : null}
 
       <div className="aaa-queue-filters" role="group" aria-label="Filter requests">
         {QUEUE_FILTERS.map((item) => (
@@ -244,6 +465,14 @@ export function RequestQueueSection() {
         ))}
       </div>
       <p className="aaa-queue-filter-note">{activeFilter.description}</p>
+      <p className="aaa-queue-coverage" role="status">
+        {coverageLine}
+      </p>
+      {remoteError ? (
+        <p className="aaa-page-status" role="status">
+          {remoteError}
+        </p>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="aaa-queue-empty">
@@ -256,21 +485,72 @@ export function RequestQueueSection() {
         </p>
       ) : (
         <>
+          {selectedCount > 0 ? (
+            <div
+              className="aaa-queue-selection-toolbar"
+              role="toolbar"
+              aria-label="Selected request actions"
+            >
+              <p className="aaa-queue-selection-count">
+                {selectedCount} selected
+                {manualOrder ? " · custom order" : ""}
+              </p>
+              <button
+                type="button"
+                className="aaa-btn-text"
+                onClick={() => moveSelection(-1)}
+              >
+                Move up
+              </button>
+              <button
+                type="button"
+                className="aaa-btn-text"
+                onClick={() => moveSelection(1)}
+              >
+                Move down
+              </button>
+            </div>
+          ) : null}
+
           <div className="aaa-queue-table-wrap">
             <table className="aaa-queue-table aaa-queue-table-reviewer">
               <caption className="sr-only">
-                Sorted by{" "}
-                {QUEUE_COLUMNS.find((column) => column.key === sort.column)?.label}{" "}
-                {sort.direction === "asc" ? "ascending" : "descending"}
+                {manualOrder
+                  ? "Custom order saved in this browser"
+                  : `Sorted by ${QUEUE_COLUMNS.find((column) => column.key === sort.column)?.label} ${
+                      sort.direction === "asc" ? "ascending" : "descending"
+                    }`}
               </caption>
               <thead>
                 <tr>
+                  <th scope="col" className="aaa-queue-select-col">
+                    <label className="aaa-queue-select-label">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someVisibleSelected;
+                        }}
+                        onChange={() => toggleSelectAllVisible()}
+                      />
+                      <span className="sr-only">Select all visible requests</span>
+                    </label>
+                  </th>
                   {QUEUE_COLUMNS.map((column) => (
                     <th
                       key={column.key}
                       scope="col"
+                      className={
+                        column.key === "name"
+                          ? "aaa-queue-name"
+                          : column.key === "reviewerStatus"
+                            ? "aaa-queue-col-status"
+                            : undefined
+                      }
                       aria-sort={
-                        column.sortable ? ariaSortFor(column.key, sort) : undefined
+                        !manualOrder && column.sortable
+                          ? ariaSortFor(column.key, sort)
+                          : undefined
                       }
                     >
                       {column.sortable ? (
@@ -281,7 +561,7 @@ export function RequestQueueSection() {
                         >
                           {column.label}
                           <span aria-hidden="true" className="aaa-queue-sort-caret">
-                            {sort.column === column.key
+                            {!manualOrder && sort.column === column.key
                               ? sort.direction === "asc"
                                 ? " ▲"
                                 : " ▼"
@@ -301,8 +581,24 @@ export function RequestQueueSection() {
               <tbody>
                 {rows.map((row) => {
                   const brief = briefs.find((item) => item.id === row.briefId);
+                  const isSelected = selectedIds.has(row.briefId);
                   return (
-                    <tr key={row.briefId}>
+                    <tr
+                      key={row.briefId}
+                      className={isSelected ? "is-selected" : undefined}
+                    >
+                      <td className="aaa-queue-select-col">
+                        <label className="aaa-queue-select-label">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleRowSelected(row.briefId)}
+                          />
+                          <span className="sr-only">
+                            Select {row.name}
+                          </span>
+                        </label>
+                      </td>
                       <th scope="row" className="aaa-queue-name">
                         <button
                           type="button"
@@ -316,21 +612,13 @@ export function RequestQueueSection() {
                         {row.isNew ? (
                           <span className="aaa-queue-new">NEW</span>
                         ) : null}
+                        {row.sentToWorkfront ? (
+                          <span className="aaa-queue-sent" title={row.sentToWorkfrontLabel}>
+                            {row.sentToWorkfrontLabel}
+                          </span>
+                        ) : null}
                       </th>
-                      <td>
-                        <ul className="aaa-queue-pills" aria-label="Channels">
-                          {row.channels.length === 0 ? (
-                            <li className="aaa-queue-pill is-empty">—</li>
-                          ) : (
-                            row.channels.map((channel) => (
-                              <li key={channel} className="aaa-queue-pill">
-                                {channel}
-                              </li>
-                            ))
-                          )}
-                        </ul>
-                      </td>
-                      <td>
+                      <td className="aaa-queue-col-status">
                         <label className="aaa-queue-status-control">
                           <span
                             className={`aaa-queue-status-dot status-${row.reviewerStatus}`}
@@ -387,7 +675,7 @@ export function RequestQueueSection() {
                       <td className="aaa-queue-actions">
                         <button
                           type="button"
-                          className="aaa-btn-text"
+                          className="aaa-btn aaa-btn-secondary aaa-queue-action-btn"
                           onClick={() => openSummary(row.briefId)}
                         >
                           Summary
@@ -401,6 +689,15 @@ export function RequestQueueSection() {
                             Mark ready to send
                           </button>
                         ) : null}
+                        {isSelected ? (
+                          <button
+                            type="button"
+                            className="aaa-btn aaa-btn-secondary aaa-queue-action-btn aaa-queue-action-delete"
+                            onClick={() => removeLocalBrief(row.briefId, row.name)}
+                          >
+                            Delete
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   );
@@ -412,18 +709,30 @@ export function RequestQueueSection() {
           <ul className="aaa-queue-cards" role="list">
             {rows.map((row) => {
               const brief = briefs.find((item) => item.id === row.briefId);
+              const isSelected = selectedIds.has(row.briefId);
               return (
-                <li key={row.briefId} className="aaa-queue-card">
-                  <p className="aaa-queue-card-name" title={row.name}>
-                    <span className="sr-only">{row.name}</span>
-                    <span aria-hidden="true">{truncateWords(row.name, 4)}</span>
-                    {row.isNew ? <span className="aaa-queue-new">NEW</span> : null}
-                  </p>
+                <li
+                  key={row.briefId}
+                  className={
+                    isSelected ? "aaa-queue-card is-selected" : "aaa-queue-card"
+                  }
+                >
+                  <div className="aaa-queue-card-top">
+                    <label className="aaa-queue-select-label">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleRowSelected(row.briefId)}
+                      />
+                      <span className="sr-only">Select {row.name}</span>
+                    </label>
+                    <p className="aaa-queue-card-name" title={row.name}>
+                      <span className="sr-only">{row.name}</span>
+                      <span aria-hidden="true">{truncateWords(row.name, 4)}</span>
+                      {row.isNew ? <span className="aaa-queue-new">NEW</span> : null}
+                    </p>
+                  </div>
                   <dl className="aaa-queue-card-list">
-                    <div>
-                      <dt>Channels</dt>
-                      <dd>{row.channels.join(", ") || "—"}</dd>
-                    </div>
                     <div>
                       <dt>Status</dt>
                       <dd>
@@ -488,13 +797,27 @@ export function RequestQueueSection() {
                     </div>
                     <div>
                       <dt>Sent to Workfront</dt>
-                      <dd>No</dd>
+                      <dd>
+                        {row.sentToWorkfrontLabel}
+                        {row.workfrontIssueUrl ? (
+                          <>
+                            {" "}
+                            <a
+                              href={row.workfrontIssueUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Open Task
+                            </a>
+                          </>
+                        ) : null}
+                      </dd>
                     </div>
                   </dl>
                   <div className="aaa-queue-actions">
                     <button
                       type="button"
-                      className="aaa-btn-text"
+                      className="aaa-btn aaa-btn-secondary aaa-queue-action-btn"
                       onClick={() => openSummary(row.briefId)}
                     >
                       Summary
@@ -508,6 +831,15 @@ export function RequestQueueSection() {
                         Mark ready to send
                       </button>
                     ) : null}
+                    {isSelected ? (
+                      <button
+                        type="button"
+                        className="aaa-btn aaa-btn-secondary aaa-queue-action-btn aaa-queue-action-delete"
+                        onClick={() => removeLocalBrief(row.briefId, row.name)}
+                      >
+                        Delete
+                      </button>
+                    ) : null}
                   </div>
                 </li>
               );
@@ -517,10 +849,24 @@ export function RequestQueueSection() {
       )}
 
       <p className="aaa-queue-footnote">
-        Reviewer Status and Priority are saved in this browser only. They are not sent to Workfront
-        yet. Open Summary for the full request page. Sent to Workfront stays No until dual-write is
-        enabled.
+        Reviewer Status and Priority are saved in this browser only. Ready to send stays local until
+        Summary → Submit to Workfront Que succeeds with a real Task ID. Sent to Workfront: No is
+        the default; Yes appears only with that ID. Refresh loads Tasks on mission-control-v1 via
+        the proxy — not the whole organization. Select rows to reorder locally or delete the local
+        copy (Workfront Tasks are not deleted).
       </p>
+
+      {refreshDialog ? (
+        <WorkfrontRefreshDialog
+          issues={refreshDialog.issues}
+          linkedBriefIds={linkedBriefIds}
+          onOpenSummary={(briefId) => {
+            setRefreshDialog(null);
+            openSummary(briefId);
+          }}
+          onClose={() => setRefreshDialog(null)}
+        />
+      ) : null}
     </section>
   );
 }

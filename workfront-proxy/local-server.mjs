@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 /**
- * Local stand-in for the App Builder Runtime health action.
+ * Local stand-in for App Builder Runtime Workfront actions (health, issues).
  *
- * Loads secrets from ../.env.workfront.local (gitignored) or the process environment.
- * Never logs secret values. Same response shape as the Runtime action.
+ * Loads secrets from ../.env.workfront.local (gitignored). Never logs secret values.
  *
- *   npm start --prefix workfront-proxy
+ *   npm run workfront:proxy
  *   curl -sS http://127.0.0.1:8787/health
  */
 
@@ -17,7 +16,12 @@ import { createRequire } from "node:module";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
+const { extractBearerToken } = require("./src/dx-excshell-1/actions/workfront-shared/client.js");
 const { runHealth } = require("./src/dx-excshell-1/actions/workfront-health/health.js");
+const {
+  runCreateIssue,
+  runListIssues,
+} = require("./src/dx-excshell-1/actions/workfront-issues/issues.js");
 
 const PORT = Number(process.env.WORKFRONT_PROXY_PORT || 8787);
 const ENV_FILE = join(__dirname, "..", ".env.workfront.local");
@@ -52,15 +56,65 @@ function sendJson(res, statusCode, body) {
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
   });
   res.end(payload);
 }
 
-async function handleHealth(_req, res) {
-  const result = await runHealth(env);
+/**
+ * @param {import("node:http").IncomingMessage} req
+ */
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      const raw = Buffer.concat(chunks).toString("utf8");
+      if (!raw) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(raw));
+      } catch {
+        reject(new Error("Request body must be JSON."));
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} req
+ */
+function bearerFromReq(req) {
+  return extractBearerToken(req.headers);
+}
+
+async function handleHealth(req, res) {
+  const result = await runHealth(env, { bearerToken: bearerFromReq(req) });
   sendJson(res, result.statusCode, result.body);
+}
+
+async function handleListIssues(req, res) {
+  const result = await runListIssues(env, { bearerToken: bearerFromReq(req) });
+  sendJson(res, result.statusCode, result.body);
+}
+
+async function handleCreateIssue(req, res) {
+  try {
+    const body = await readBody(req);
+    const result = await runCreateIssue(env, body, {
+      bearerToken: bearerFromReq(req),
+    });
+    sendJson(res, result.statusCode, result.body);
+  } catch (error) {
+    sendJson(res, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Invalid create request.",
+    });
+  }
 }
 
 async function once() {
@@ -80,7 +134,7 @@ if (process.argv.includes("--once")) {
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,OPTIONS",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type,Authorization",
         "Access-Control-Max-Age": "86400",
       });
@@ -91,20 +145,43 @@ if (process.argv.includes("--once")) {
       handleHealth(req, res).catch((error) => {
         sendJson(res, 500, {
           connected: false,
+          liveSubmit: false,
           error: error instanceof Error ? error.message : "Local proxy failure.",
         });
       });
       return;
     }
-    sendJson(res, 404, { connected: false, error: "Not found. Use GET /health." });
+    if (req.method === "GET" && url.pathname === "/issues") {
+      handleListIssues(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/issues") {
+      handleCreateIssue(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
+    sendJson(res, 404, {
+      ok: false,
+      error: "Not found. Use GET /health, GET /issues, or POST /issues.",
+    });
   });
 
   server.listen(PORT, "127.0.0.1", () => {
     const hasSecret = Boolean(env.WORKFRONT_CLIENT_SECRET);
     const hasToken = Boolean(env.WORKFRONT_ACCESS_TOKEN);
-    console.log(`Workfront proxy listening on http://127.0.0.1:${PORT}/health`);
+    const live = /^(1|true|yes)$/i.test((env.WORKFRONT_LIVE_SUBMIT || "").trim());
+    console.log(`Workfront proxy listening on http://127.0.0.1:${PORT}`);
     console.log(
-      `Auth config: client_secret=${hasSecret ? "set" : "missing"}, access_token=${hasToken ? "set" : "missing"}`,
+      `Auth: client_secret=${hasSecret ? "set" : "missing"}, access_token=${hasToken ? "set" : "missing"}, liveSubmit=${live}`,
     );
     if (!existsSync(ENV_FILE) && !hasSecret && !hasToken) {
       console.log(`Create ${ENV_FILE} (see workfront-proxy/.env.example).`);

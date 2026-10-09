@@ -4,7 +4,10 @@
  * The browser never holds client_secret. It calls either:
  * - same-origin `/api/workfront/health` (Vite proxies to the local Runtime stand-in), or
  * - an absolute `WORKFRONT_PROXY_URL` baked at build time (non-`VITE_` define).
+ * When ExC Shell supplies an IMS user Bearer, that is sent on the request (Path A).
  */
+
+import { getWorkfrontUserBearer } from "./userBearer";
 
 export interface WorkfrontProxyProject {
   ID: string;
@@ -14,9 +17,13 @@ export interface WorkfrontProxyProject {
 export interface WorkfrontProxyHealth {
   connected: boolean;
   project?: WorkfrontProxyProject;
-  auth?: "client_credentials" | "access_token";
+  auth?: "client_credentials" | "access_token" | "bearer";
   host?: string;
   error?: string;
+  /**
+   * Proxy kill switch (`WORKFRONT_LIVE_SUBMIT=1`). Connected health can be true while this is false.
+   */
+  liveSubmit: boolean;
   /** Where the client called. Named so a negative result is auditable (guardrail 7). */
   endpoint: string;
 }
@@ -44,9 +51,14 @@ export async function fetchWorkfrontHealth(
 ): Promise<WorkfrontProxyHealth> {
   const endpoint = workfrontHealthUrl();
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    const bearer = getWorkfrontUserBearer();
+    if (bearer) {
+      headers.Authorization = `Bearer ${bearer}`;
+    }
     const response = await fetch(endpoint, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers,
       signal,
       cache: "no-store",
     });
@@ -57,6 +69,7 @@ export async function fetchWorkfrontHealth(
     } catch {
       return {
         connected: false,
+        liveSubmit: false,
         endpoint,
         error: `Proxy returned non-JSON (HTTP ${response.status}).`,
       };
@@ -76,10 +89,13 @@ export async function fetchWorkfrontHealth(
       connected,
       project,
       auth:
-        data.auth === "client_credentials" || data.auth === "access_token"
+        data.auth === "client_credentials" ||
+        data.auth === "access_token" ||
+        data.auth === "bearer"
           ? data.auth
           : undefined,
       host: typeof data.host === "string" ? data.host : undefined,
+      liveSubmit: data.liveSubmit === true,
       error:
         typeof data.error === "string"
           ? data.error
@@ -97,6 +113,7 @@ export async function fetchWorkfrontHealth(
           : "Health check failed.";
     return {
       connected: false,
+      liveSubmit: false,
       endpoint,
       error: message,
     };

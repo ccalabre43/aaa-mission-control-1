@@ -1,10 +1,10 @@
 /**
  * Turning saved briefs into reviewer-style Request Queue rows.
  *
- * Primary columns match the reviewer mock (Subject, Channels, Status, Priority, Entry Date,
- * Requestor). Workfront path, blockers, and send state remain on the row for the summary panel so
- * the Workfront connection is not lost. Reviewer Status/Priority are local until dual-write maps
- * them — see docs/knowledge/reviewer-queue-fields.md.
+ * Primary columns: Subject, Status, Priority, Entry Date, Requestor (Channels removed from the
+ * visible table; channel tokens remain on the row for search). Workfront path, blockers, and send
+ * state remain on the row for the summary panel. Reviewer Status/Priority are local until dual-write
+ * maps them — see docs/knowledge/reviewer-queue-fields.md.
  */
 import {
   briefTitle,
@@ -15,7 +15,11 @@ import {
 } from "../intake/types";
 import type { QueueDef } from "./queueConfig";
 import { pathLabel, routeFor, type RouteSource } from "./routing";
-import { buildWorkfrontPayload, sendBlockers } from "./submitToWorkfront";
+import {
+  buildWorkfrontPayload,
+  sendBlockers,
+  workfrontSentDisplay,
+} from "./submitToWorkfront";
 
 /** Known channel tokens for pill display; free-text leftovers still show as pills. */
 const KNOWN_CHANNELS = [
@@ -35,7 +39,7 @@ const KNOWN_CHANNELS = [
 
 export interface QueueRow {
   briefId: string;
-  /** Issue name / subject — same string Workfront would show. */
+  /** Task name / subject — same string Workfront would show. */
   name: string;
   channels: string[];
   reviewerStatus: ReviewerStatus;
@@ -62,11 +66,16 @@ export interface QueueRow {
   blockers: string[];
   /** Local brief lifecycle label for summary. */
   briefLifecycleLabel: string;
+  /** True only when `workfront.mode === "workfront"` and a real Task ID is stored. */
+  sentToWorkfront: boolean;
+  workfrontIssueId: string | null;
+  workfrontIssueUrl: string | null;
+  /** Value under Sent to Workfront — Yes only with Task ID. */
+  sentToWorkfrontLabel: string;
 }
 
 export type QueueColumn =
   | "name"
-  | "channels"
   | "reviewerStatus"
   | "priority"
   | "entryDate"
@@ -80,7 +89,6 @@ export interface ColumnDef {
 
 export const QUEUE_COLUMNS: ColumnDef[] = [
   { key: "name", label: "Subject", sortable: true },
-  { key: "channels", label: "Channels", sortable: false },
   { key: "reviewerStatus", label: "Status", sortable: true },
   { key: "priority", label: "Priority", sortable: true },
   { key: "entryDate", label: "Entry Date", sortable: true },
@@ -192,9 +200,17 @@ export function toQueueRow(
   const lastName = brief.identity.lastName.trim();
   const requesterName = `${firstName} ${lastName}`.trim() || "Unknown requestor";
 
+  const workfrontSubject =
+    brief.workfront?.mode === "workfront"
+      ? brief.workfront.issueName?.trim()
+      : "";
+
   return {
     briefId: brief.id,
-    name: buildWorkfrontPayload(brief, config).name || briefTitle(brief),
+    name:
+      workfrontSubject ||
+      buildWorkfrontPayload(brief, config).name ||
+      briefTitle(brief),
     channels: parseChannels(brief.a3.A3IntakeDeliverables),
     reviewerStatus: reviewer.status,
     reviewerStatusLabel: reviewerStatusLabel(reviewer.status),
@@ -212,6 +228,15 @@ export function toQueueRow(
     routeSource: route.source,
     blockers: sendBlockers(brief, config),
     briefLifecycleLabel: isDraft ? "Draft" : "Ready to send",
+    ...(() => {
+      const sent = workfrontSentDisplay(brief.workfront);
+      return {
+        sentToWorkfront: sent.sent,
+        workfrontIssueId: brief.workfront?.issueId?.trim() || null,
+        workfrontIssueUrl: brief.workfront?.issueUrl?.trim() || null,
+        sentToWorkfrontLabel: sent.label,
+      };
+    })(),
   };
 }
 
@@ -256,8 +281,6 @@ function sortValue(row: QueueRow, column: QueueColumn): string {
   switch (column) {
     case "name":
       return row.name.toLowerCase();
-    case "channels":
-      return row.channels.join(" ").toLowerCase();
     case "reviewerStatus":
       return row.reviewerStatus;
     case "priority":
@@ -276,6 +299,72 @@ export function sortQueueRows(rows: QueueRow[], sort: SortState): QueueRow[] {
     if (compared !== 0) return compared * factor;
     return b.lastUpdateDate.localeCompare(a.lastUpdateDate);
   });
+}
+
+/**
+ * Moves a contiguous block of selected ids one step within the visible ordered list,
+ * then remaps that visible order onto the full brief-id list (hidden ids keep relative order).
+ *
+ * @param allIds Full storage order (every brief id).
+ * @param visibleIds Current filtered/sorted display order.
+ * @param selectedIds Ids to move as a block (order among them follows visibleIds).
+ * @param direction -1 = up (toward start), +1 = down (toward end).
+ * @returns New full id order, or null if the move is a no-op / blocked.
+ */
+export function moveSelectedInVisibleOrder(
+  allIds: string[],
+  visibleIds: string[],
+  selectedIds: ReadonlySet<string>,
+  direction: -1 | 1,
+): string[] | null {
+  if (selectedIds.size === 0 || visibleIds.length === 0) return null;
+
+  const selectedVisible = visibleIds.filter((id) => selectedIds.has(id));
+  if (selectedVisible.length === 0) return null;
+
+  const selectedSet = new Set(selectedVisible);
+  const unselectedVisible = visibleIds.filter((id) => !selectedSet.has(id));
+
+  // Insert the selected block before/after the neighbor of the first/last selected item.
+  const firstIndex = visibleIds.indexOf(selectedVisible[0]);
+  const lastIndex = visibleIds.indexOf(selectedVisible[selectedVisible.length - 1]);
+  if (firstIndex < 0 || lastIndex < 0) return null;
+
+  let insertAt: number;
+  if (direction === -1) {
+    if (firstIndex === 0) return null;
+    const neighbor = visibleIds[firstIndex - 1];
+    insertAt = unselectedVisible.indexOf(neighbor);
+  } else {
+    if (lastIndex === visibleIds.length - 1) return null;
+    const neighbor = visibleIds[lastIndex + 1];
+    insertAt = unselectedVisible.indexOf(neighbor) + 1;
+  }
+
+  const nextVisible = [
+    ...unselectedVisible.slice(0, insertAt),
+    ...selectedVisible,
+    ...unselectedVisible.slice(insertAt),
+  ];
+
+  // Rebuild full order: walk previous allIds; when hitting a visible id, emit nextVisible in order once.
+  const visibleSet = new Set(visibleIds);
+  const nextVisibleQueue = [...nextVisible];
+  const result: string[] = [];
+  for (const id of allIds) {
+    if (!visibleSet.has(id)) {
+      result.push(id);
+      continue;
+    }
+    const next = nextVisibleQueue.shift();
+    if (next) result.push(next);
+  }
+  // Any leftover visible ids (should not happen) append.
+  result.push(...nextVisibleQueue);
+
+  if (result.length !== allIds.length) return null;
+  if (result.every((id, i) => id === allIds[i])) return null;
+  return result;
 }
 
 export function ariaSortFor(

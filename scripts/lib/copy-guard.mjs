@@ -21,17 +21,14 @@ export const BANNED_PHRASES = [
 ];
 
 /**
- * Phrases that claim a request reached Workfront. Nothing in this build makes a network call, so any
- * one of these in the bundle is false.
+ * Phrases that claim a request reached Workfront without an Issue ID.
  *
- * Only **affirmative** phrasing is banned, and the distinction is the entire point. The Request Queue
- * shows "Sent to Workfront: No" on every row and the confirmed screen says a request is "not sent to
- * Workfront yet" - that copy is the honest disclosure this guard exists to protect, so a naive
- * substring ban on "sent to Workfront" would fail the build for saying the true thing. Each entry
- * below is therefore anchored on the words that make it a claim: "has been", "was", ": Yes".
+ * Dual-write (decision 035) may show Yes only when a real Issue ID is stored. A bare
+ * "Sent to Workfront: Yes" in the bundle is still banned; the UI builds
+ * `Yes (Issue ${id})` instead so the literal claim never ships without an ID.
  *
- * Kept separate from BANNED_PHRASES so the failure message can explain the right thing. A negative
- * result needs its corpus named; a false send claim needs deleting.
+ * Only **affirmative** phrasing is banned. "Sent to Workfront: No" and "not been sent to
+ * Workfront" are honest disclosures this guard exists to protect.
  */
 export const BANNED_SEND_CLAIMS = [
   "has been sent to Workfront",
@@ -53,6 +50,12 @@ export const REQUIRED_SAFE_PHRASES = [
   "not been sent to Workfront",
   "it is not sent to Workfront yet",
 ];
+
+/**
+ * Affirmative send with Issue ID is allowed in the bundle (decision 035). Bare Yes without Issue is
+ * still in BANNED_SEND_CLAIMS.
+ */
+export const ALLOWED_SEND_WITH_ID_EXAMPLE = "Yes (Task ";
 
 /** Words that make a negative result auditable by naming what was actually searched. */
 export const SCOPE_WORDS = ["this device", "this browser", "Workfront", "saved on"];

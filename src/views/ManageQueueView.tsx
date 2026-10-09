@@ -114,9 +114,9 @@ export default function ManageQueueView() {
     <main id="main" className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <h1 className="aaa-page-heading">Manage the request queue</h1>
       <p className="aaa-page-sub">
-        A queue topic is what routes a request in Workfront, and its position under the queue and
-        its topic group is the Path shown in the Request Queue. Requesters never pick a topic - it is
-        derived from their team answer.
+        A queue topic is what routes a request in Workfront. The Path shown in the Request Queue is
+        the queue name and the topic group name (not the topic name). Requesters never pick a topic -
+        it is derived from their team answer.
       </p>
 
       <div className="aaa-notice">
@@ -224,7 +224,8 @@ export default function ManageQueueView() {
 
       <h2 className="aaa-page-subheading">Topic groups</h2>
       <p className="aaa-page-sub">
-        Optional. A group adds a segment between the queue and the topic in the Path.
+        Optional. A group supplies the second segment of the Path (after the queue name). Topics
+        with no group fall back to the topic name in that segment.
       </p>
 
       <ul className="aaa-question-admin-list" role="list">

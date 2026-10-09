@@ -15,7 +15,7 @@ until a Workfront admin confirms the targets below.
 | UI column | App source now | Later Workfront |
 | --- | --- | --- |
 | Subject | Issue name from `buildWorkfrontPayload` / `briefTitle` | Issue `name` |
-| Channels | Display tokens parsed from `A3IntakeDeliverables` | Same custom field (paragraph on the A3 form) |
+| Channels | Removed from the Request Queue table; still used in search via `A3IntakeDeliverables` tokens | Same custom field (paragraph on the A3 form) |
 | Status | `brief.reviewer.status` (local) | Native Issue `status` with a request-queue status group, **or** custom dropdown if native cannot match |
 | Priority | `brief.reviewer.priority` (local) | Native Issue `priority` (map P1/P2/P3 to High/Normal/Low — confirm labels) |
 | Entry Date | `submittedAt` or `createdAt` | Issue `entryDate` |

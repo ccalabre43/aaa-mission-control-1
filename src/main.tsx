@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { attachExcShellBearer } from "./lib/workfront/userBearer";
 
 // Open Sans is the brand guide's designated web substitute for Gotham, which is licensed
 // and cannot be shipped. Self-hosted via @fontsource so no request goes to a third party.
@@ -19,6 +20,9 @@ import "./index.css";
  * is stripped here rather than asking the deployer to keep two spellings in sync.
  */
 const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Path A: capture IMS token when hosted in Experience Cloud Shell. No-op for local Vite.
+void attachExcShellBearer();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

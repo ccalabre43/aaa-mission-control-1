@@ -85,6 +85,16 @@ try {
     rmSync(file);
   }
 
+  writeFileSync(
+    join(assets, "with-id.js"),
+    'const t=`Yes (Task ${id})`; const u="Open in Workfront";',
+  );
+  check(
+    "Yes with Task ID construction is allowed",
+    checkBundleCopy(assets).length === 0,
+  );
+  rmSync(join(assets, "with-id.js"));
+
   // A skipped check must never look like a passing one.
   check("missing directory is reported", checkBundleCopy(join(root, "nope")).length === 1);
   const emptyDir = join(root, "empty");

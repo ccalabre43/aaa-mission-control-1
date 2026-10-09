@@ -7,6 +7,7 @@
 
 "use strict";
 
+const { extractBearerToken } = require("../workfront-shared/client");
 const { runHealth } = require("./health");
 
 /**
@@ -23,6 +24,7 @@ function envFromParams(params) {
     "WORKFRONT_PROJECT_ID",
     "WORKFRONT_IMS_URL",
     "WORKFRONT_IMS_SCOPE",
+    "WORKFRONT_LIVE_SUBMIT",
   ];
   /** @type {Record<string, string | undefined>} */
   const env = { ...process.env };
@@ -53,7 +55,8 @@ async function main(params = {}) {
     };
   }
 
-  const result = await runHealth(envFromParams(params));
+  const bearerToken = extractBearerToken(params.__ow_headers);
+  const result = await runHealth(envFromParams(params), { bearerToken });
   return {
     statusCode: result.statusCode,
     headers: {

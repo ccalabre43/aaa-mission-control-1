@@ -35,7 +35,7 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/reviewer-ux-flow.jpg` | 2026-09-16 | The reviewer state machine. Sprint 2 | active |
 | `assets/brand/AAAL-Brand-Visual-Style-Guide.pdf` | 2026-09-16 | Brand system, MAR 2025. Proprietary, internal use only | active |
 | `docs/knowledge/brand-system.md` | 2026-09-16 | The brand guide as actually implemented, with every ratio computed. Records six places the guide's own ADA guidance fails when measured | active |
-| `docs/decisions/decision-log.md` | 2026-09-16 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
+| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
 
 ## Requirements and flows
 
@@ -75,6 +75,7 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/creative-request-guided-questions-interface.png` | 2026-09-16 | Step 3, one question of nine with a progress bar | active |
 | `assets/mocks/request-queue-reviewer-interface.png` | 2026-10-04 | Reviewer-style Request queue: Subject, Channels, Status, Priority, Entry Date, Requestor; page tabs for Request queue and Executive dashboard | active |
 | `assets/mocks/executive-dashboard-concept-v1.png` | 2026-10-06 | Executive dashboard 2×3 cards from A3 Creative Intake Concept v1 (Figma node 312:3061). Layout reference; hours figures in the proto are not live | active |
+| `assets/mocks/sent-to-workfront-modal.png` | 2026-10-07 | Success modal after Submit to Workfront Que (Figma AAA Life proto node 544:1645). Ships only when a real Issue ID returns | active |
 | `docs/knowledge/reviewer-queue-fields.md` | 2026-10-04; exec 2026-10-06 | Local reviewer Status/Priority/Impact/Effort/Risk and preferred Workfront field map; Executive tab Concept v1 layout (034) | active |
 
 No mock exists for Related activity, Generating, Review draft, Confirmed, or the Manage questions
@@ -106,7 +107,9 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | Path | Added | What it is | Status |
 | --- | --- | --- | --- |
 | `docs/deployment.md` | 2026-09-16 | How to build and host: `APP_BASE_PATH`, per-host history fallback, the verbatim security-header policy, the SheetJS CDN pin, and what hosting does **not** solve | active |
-| `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04 | S2S + App Builder proxy path. Health proxy ships in `workfront-proxy/`; live submit still off. Legacy OAuth2 retirement dates and PKCE dead-end still apply | active — health built, dual-write not |
+| `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04; dual-write 2026-10-07; Refresh upsert 2026-10-07 | S2S + App Builder proxy; Task create/list; Refresh upserts into local queue (035–037) | active — Task dual-write; S2S Add Task ACL pending |
+| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; upsert 2026-10-07; ACL gate 2026-10-09 | Local Ready-to-send; dual-write; Refresh upsert; Task create needs S2S Add Tasks ACL | active |
+| `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039) | active — create verified |
 | `workfront-proxy/README.md` | 2026-10-04 | How to set Runtime secrets, deploy the health action, and run the local stand-in | active |
 | `.env.example` | 2026-09-16; proxy URL 2026-10-04 | `APP_BASE_PATH`, public `WORKFRONT_PROXY_URL`, and the standing warning about `VITE_`-prefixed secrets | active |
 | `vercel.json` | 2026-09-16 | Vercel rewrite, headers, caching. Repo root because that is where Vercel reads it | active |

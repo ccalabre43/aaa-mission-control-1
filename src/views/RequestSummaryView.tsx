@@ -2,10 +2,11 @@
  * Full-page request summary (mock: assets/mocks/request-summary-page.png).
  *
  * Summary tab shows the reviewer layout; Workfront payload tab keeps the A3 payload and blockers.
- * Footer actions update local reviewer fields; Submit to Workfront Que still runs the local stub.
+ * Submit to Workfront Que dual-writes only when the proxy kill switch is on and the user confirms.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { WorkfrontSentDialog } from "../components/queue/WorkfrontSentDialog";
 import { loadBriefs, upsertBrief } from "../lib/intake/storage";
 import {
   REVIEWER_ASSESSMENT_LEVELS,
@@ -20,13 +21,31 @@ import {
 } from "../lib/intake/types";
 import { loadQueueConfig } from "../lib/workfront/queueConfig";
 import {
+  fetchWorkfrontHealth,
+  type WorkfrontProxyHealth,
+} from "../lib/workfront/proxyHealth";
+import {
   formatQueueDate,
   parseChannels,
   toQueueRow,
   type Viewer,
 } from "../lib/workfront/queueList";
-import { buildWorkfrontPayload, submitToWorkfront } from "../lib/workfront/submitToWorkfront";
+import {
+  buildWorkfrontPayload,
+  submitToWorkfront,
+  workfrontSentDisplay,
+} from "../lib/workfront/submitToWorkfront";
 import { routeExplanation, routeFor } from "../lib/workfront/routing";
+import {
+  getWorkfrontUserAuth,
+  hasWorkfrontUserBearer,
+} from "../lib/workfront/userBearer";
+
+interface SentDialogState {
+  issueId: string;
+  issueUrl?: string;
+  topicName: string;
+}
 
 type PageTab = "summary" | "payload";
 
@@ -42,12 +61,22 @@ function cyclePriority(current: ReviewerPriority): ReviewerPriority {
 
 export default function RequestSummaryView() {
   const { briefId = "" } = useParams<{ briefId: string }>();
+  const navigate = useNavigate();
   const [queueConfig] = useState(() => loadQueueConfig().config);
   const [brief, setBrief] = useState<IntakeBrief | null>(null);
   const [missing, setMissing] = useState(false);
   const [tab, setTab] = useState<PageTab>("summary");
   const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState("");
+  const [health, setHealth] = useState<WorkfrontProxyHealth | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [sentDialog, setSentDialog] = useState<SentDialogState | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchWorkfrontHealth(controller.signal).then(setHealth);
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const found = loadBriefs().briefs.find((item) => item.id === briefId) ?? null;
@@ -136,37 +165,110 @@ export default function RequestSummaryView() {
   }
 
   async function submitToWorkfrontQueue() {
-    if (!brief) return;
-    const result = await submitToWorkfront(brief, queueConfig);
-    if (!result.ok) {
-      setError(
-        `Cannot mark ready yet. Still needed: ${result.missingFields.join(", ")}.`,
+    if (!brief || submitting) return;
+
+    const alreadySent =
+      brief.workfront?.mode === "workfront" && brief.workfront.issueId;
+    if (alreadySent) {
+      setStatusMessage(
+        `Already linked to Workfront Task ${brief.workfront?.issueId}.`,
       );
-      setStatusMessage("");
       return;
     }
-    const submittedAt = new Date().toISOString();
-    const next: IntakeBrief = {
-      ...brief,
-      status: "submitted",
-      submittedAt: brief.submittedAt ?? submittedAt,
-      updatedAt: submittedAt,
-      workfront: { mode: "local", issueName: result.issueName, submittedAt },
-    };
-    const saved = upsertBrief(next);
-    if (!saved.ok) {
-      setError(saved.reason ?? "That request could not be saved to this browser.");
-      return;
+
+    const wantLive = Boolean(health?.connected && health.liveSubmit);
+    if (wantLive) {
+      const asSignedInUser = hasWorkfrontUserBearer();
+      const signedInEmail = getWorkfrontUserAuth().email;
+      const enteredByLines = asSignedInUser
+        ? [
+            "Entered By will be your signed-in Adobe identity" +
+              (signedInEmail ? ` (${signedInEmail})` : "") +
+              ", not the Server-to-Server integration account.",
+          ]
+        : [
+            "Entered By will be the Server-to-Server integration account, not your name.",
+            "Open Mission Control inside Experience Cloud Shell to submit as yourself.",
+            "Your name stays in A3IntakeRequestedBy and the description audit lines.",
+          ];
+      const confirmed = window.confirm(
+        [
+          "Create this request as a Workfront Task on mission-control-v1?",
+          "",
+          ...enteredByLines,
+          "",
+          "Attachments are names only until a document upload path exists.",
+        ].join("\n"),
+      );
+      if (!confirmed) {
+        setStatusMessage("Live send cancelled. Nothing was posted to Workfront.");
+        return;
+      }
     }
-    setBrief(next);
-    setError("");
-    const blockerNote =
-      result.blockers.length > 0
-        ? ` Still blocked for live send: ${result.blockers[0]}`
-        : "";
-    setStatusMessage(
-      `"${result.issueName}" is ready locally. It has not been sent to Workfront.${blockerNote}`,
-    );
+
+    setSubmitting(true);
+    try {
+      const result = await submitToWorkfront(brief, queueConfig, {
+        live: wantLive,
+        confirmLive: wantLive ? true : undefined,
+      });
+      if (!result.ok) {
+        setError(
+          `Cannot submit yet. Still needed: ${result.missingFields.join(", ")}.`,
+        );
+        setStatusMessage("");
+        return;
+      }
+      const submittedAt = new Date().toISOString();
+      const next: IntakeBrief = {
+        ...brief,
+        status: "submitted",
+        submittedAt: brief.submittedAt ?? submittedAt,
+        updatedAt: submittedAt,
+        workfront: {
+          mode: result.mode,
+          issueName: result.issueName,
+          submittedAt,
+          ...(result.issueId ? { issueId: result.issueId } : {}),
+          ...(result.issueUrl ? { issueUrl: result.issueUrl } : {}),
+        },
+      };
+      const saved = upsertBrief(next);
+      if (!saved.ok) {
+        setError(saved.reason ?? "That request could not be saved to this browser.");
+        return;
+      }
+      setBrief(next);
+      setError("");
+      if (result.mode === "workfront" && result.issueId) {
+        const routed = routeFor(queueConfig, next);
+        setSentDialog({
+          issueId: result.issueId,
+          issueUrl: result.issueUrl,
+          topicName: routed.topic?.name ?? "",
+        });
+        setStatusMessage(
+          `"${result.issueName}" created in Workfront as Task ${result.issueId}. Saved in this browser with that ID.`,
+        );
+      } else if (wantLive && result.liveError) {
+        setStatusMessage(
+          `"${result.issueName}" is ready locally. Live send failed: ${result.liveError}`,
+        );
+      } else if (!wantLive) {
+        const hint = health?.connected
+          ? " Proxy is connected but live submit is off (WORKFRONT_LIVE_SUBMIT)."
+          : " Workfront proxy is not connected.";
+        setStatusMessage(
+          `"${result.issueName}" is ready locally. It has not been sent to Workfront.${hint}`,
+        );
+      } else {
+        setStatusMessage(
+          `"${result.issueName}" is ready locally. It has not been sent to Workfront.`,
+        );
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (missing) {
@@ -207,6 +309,7 @@ export default function RequestSummaryView() {
   const complianceNeedsReview = reviewFlags.length > 0 ? "Yes" : "No";
   const submittedLabel = formatQueueDate(brief.submittedAt ?? brief.createdAt);
   const requestor = identityFullName(brief.identity) || "Unknown requestor";
+  const sentDisplay = workfrontSentDisplay(brief.workfront);
 
   const fieldsLeft: { label: string; value: string }[] = [
     { label: "Business context", value: displayOrDash(brief.a3.A3IntakeBackgroundPurpose) },
@@ -371,8 +474,11 @@ export default function RequestSummaryView() {
           className="aaa-summary-payload"
         >
           <p className="aaa-panel-reason">
-            This is exactly what would be posted to Workfront. Local reviewer Status, Priority, and
-            Impact / Effort / Risk are not included. It has not been posted.
+            This is the A3 / Workfront Task payload. Local reviewer Status, Priority, and Impact /
+            Effort / Risk are not included.
+            {sentDisplay.sent
+              ? ` Linked Workfront Task: ${brief.workfront?.issueId}.`
+              : " It has not been posted until Submit to Workfront Que succeeds with a Task ID."}
           </p>
           <dl className="aaa-panel-list aaa-summary-payload-meta">
             <div>
@@ -384,13 +490,27 @@ export default function RequestSummaryView() {
             </div>
             <div>
               <dt>Sent to Workfront</dt>
-              <dd>No</dd>
+              <dd>
+                {sentDisplay.label}
+                {brief.workfront?.issueUrl ? (
+                  <>
+                    {" "}
+                    <a
+                      href={brief.workfront.issueUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open in Workfront
+                    </a>
+                  </>
+                ) : null}
+              </dd>
             </div>
           </dl>
           <pre className="aaa-panel-payload" tabIndex={0} aria-label="The Workfront payload">
             {JSON.stringify(payload, null, 2)}
           </pre>
-          {row.blockers.length > 0 ? (
+          {!sentDisplay.sent && row.blockers.length > 0 ? (
             <section aria-labelledby="summary-blockers">
               <h2 id="summary-blockers" className="aaa-panel-section-heading">
                 Why it has not been sent
@@ -399,6 +519,12 @@ export default function RequestSummaryView() {
                 {row.blockers.map((blocker) => (
                   <li key={blocker}>{blocker}</li>
                 ))}
+                {!health?.liveSubmit ? (
+                  <li>
+                    Live submit kill switch is off. Set WORKFRONT_LIVE_SUBMIT=1 on the proxy
+                    to allow dual-write after confirmation.
+                  </li>
+                ) : null}
               </ul>
             </section>
           ) : null}
@@ -417,8 +543,13 @@ export default function RequestSummaryView() {
           type="button"
           className="aaa-summary-btn aaa-summary-btn-secondary"
           onClick={() => submitToWorkfrontQueue()}
+          disabled={submitting}
         >
-          Submit to Workfront Que
+          {submitting
+            ? "Submitting…"
+            : sentDisplay.sent
+              ? "Already in Workfront"
+              : "Submit to Workfront Que"}
         </button>
         <button
           type="button"
@@ -454,6 +585,19 @@ export default function RequestSummaryView() {
           Escalate
         </button>
       </div>
+
+      {sentDialog ? (
+        <WorkfrontSentDialog
+          issueId={sentDialog.issueId}
+          issueUrl={sentDialog.issueUrl}
+          topicName={sentDialog.topicName}
+          onClose={() => setSentDialog(null)}
+          onViewQueue={() => {
+            setSentDialog(null);
+            navigate("/deliverables");
+          }}
+        />
+      ) : null}
     </main>
   );
 }
