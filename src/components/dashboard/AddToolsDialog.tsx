@@ -1,22 +1,9 @@
 /**
- * The Add Tools dialog, per the reference mock: a draft-card form above a list of what is currently
- * on the dashboard.
+ * Add a tool dialog — Concept v1 node 369-4561.
  *
- * Five deliberate departures from the mock, each because copying it would ship a defect:
- *
- * 1. **The mock's top-right `Add` is gone.** It duplicates the footer's `Add Card`. Two controls doing
- *    one thing in one dialog is a defect to fix, not a layout to reproduce.
- * 2. **The mock's top-right `Save` is gone.** Changes commit as they are made, matching the question
- *    admin, so there is no unsaved-state trap and no way to lose work by closing.
- * 3. **The draft row's checkbox is gone.** There was nothing for it to select.
- * 4. **Sentence case retained** over the mock's Title Case, per guardrail 10: a mock is a layout
- *    reference, not a copy deck.
- * 5. **Cancel is a text button**, not the mock's filled gray one, which is not in the design system
- *    and read as disabled next to the filled blue primary.
- *
- * `DELETE` keeps the mock's red via the existing `aaa-btn-text-danger`, and keeps the two-step confirm
- * the per-question delete already established - red here is a destructive text control, not a primary
- * action, so it stays inside guardrail 4.
+ * The frame is add-only. Current dashboard / Delete / Reset stay below the form because they are
+ * the only in-app path to remove or restore cards. Add validation, Escape, and focus handling match
+ * the previous dialog.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -32,6 +19,7 @@ import {
   type DashboardCard,
 } from "../../lib/dashboard/cards";
 import { ToolIcon } from "./ToolIcon";
+import closeSrc from "../../assets/dashboard-icons/modal-close.svg";
 
 interface AddToolsDialogProps {
   cards: DashboardCard[];
@@ -49,6 +37,10 @@ const ICON_LABELS: Record<CardIcon, string> = {
   plus: "Plus",
   palette: "Palette",
   chat: "Chat",
+  frame: "Frame",
+  chart: "Chart",
+  briefcase: "Briefcase",
+  star: "Star",
 };
 
 export function AddToolsDialog({
@@ -63,7 +55,7 @@ export function AddToolsDialog({
   const listHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
-  const [icon, setIcon] = useState<CardIcon>("lines");
+  const [icon, setIcon] = useState<CardIcon>("palette");
   const [tint, setTint] = useState<CardTint>("aaa-tile-blue");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -82,10 +74,6 @@ export function AddToolsDialog({
   const deletable = cards.filter(isEditable);
   const checkedCount = deletable.filter((card) => checked.has(card.id)).length;
 
-  // 2.4.3 Focus Order: focus moves into the dialog on open, and Escape closes it. The listener is on
-  // the window rather than the scrim because a React keydown handler only sees events that bubble
-  // from something focused inside it, and focus can legitimately sit outside - clicking Add card
-  // disables that button, which drops focus to body.
   useEffect(() => {
     headingRef.current?.focus();
   }, []);
@@ -119,10 +107,7 @@ export function AddToolsDialog({
       tint,
     });
     onAdd(card);
-    setStatus(`Added "${card.label}". It shows as not built yet until it has somewhere to go.`);
-    // Cleared so a second card can be typed without closing and reopening. Clearing the title also
-    // disables Add card, which would drop focus to body, so focus goes back to the title field -
-    // which is where someone adding another card wants it anyway.
+    setStatus(`Added "${card.label}" to the dashboard.`);
     setLabel("");
     setDescription("");
     titleRef.current?.focus();
@@ -140,8 +125,6 @@ export function AddToolsDialog({
         ? `Removed "${names[0]}".`
         : `Removed ${names.length} cards.`,
     );
-    // Yes, remove unmounts itself, and the Delete trigger it returns to is disabled once nothing is
-    // checked - either way focus would land on body. The list heading puts it next to what changed.
     listHeadingRef.current?.focus();
   }
 
@@ -162,93 +145,88 @@ export function AddToolsDialog({
       }}
     >
       <div
-        className="aaa-modal"
+        className="aaa-modal aaa-modal-add-tool"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-tools-heading"
+        aria-describedby="add-tools-lead"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="aaa-modal-head">
-          <h2 id="add-tools-heading" className="aaa-modal-heading" tabIndex={-1}>
-            Add a new card to dashboard
-          </h2>
+        <div className="aaa-modal-head aaa-modal-head-add">
+          <div className="aaa-modal-head-copy">
+            <h2
+              id="add-tools-heading"
+              className="aaa-modal-heading"
+              tabIndex={-1}
+              ref={headingRef}
+            >
+              Add a tool
+            </h2>
+            <p id="add-tools-lead" className="aaa-modal-lead">
+              Adds a new card to your dashboard.
+            </p>
+          </div>
           <button
             type="button"
             className="aaa-modal-close"
             aria-label="Close"
             onClick={onClose}
           >
-            <span aria-hidden="true">&times;</span>
+            <img
+              src={closeSrc}
+              alt=""
+              width={24}
+              height={24}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
         <div className="aaa-modal-body">
-          {/* Live region first so an addition or removal is announced regardless of focus. */}
           <div className="sr-only" role="status" aria-live="polite">
             {status}
           </div>
 
-          <section className="aaa-card-draft" aria-labelledby="draft-heading">
-            <h3 id="draft-heading" className="aaa-modal-subheading">
-              New card
-            </h3>
-
-            <div className="aaa-draft-row">
-              <span
-                className={`aaa-tool-icon ${tint}`}
-                /* A live preview of the two pickers below, so the choice is visible before adding. */
-                aria-hidden="true"
-              >
-                <ToolIcon icon={icon} />
-              </span>
-
-              <div className="aaa-draft-fields">
-                <div className="aaa-field-group">
-                  <label className="aaa-label" htmlFor="card-title">
-                    Card title
-                  </label>
-                  <input
-                    id="card-title"
-                    ref={titleRef}
-                    className="aaa-input"
-                    value={label}
-                    maxLength={MAX_CARD_LABEL}
-                    aria-invalid={label.length > 0 && Boolean(labelProblem)}
-                    aria-describedby={labelProblem ? "card-title-problem" : undefined}
-                    onChange={(event) => setLabel(event.target.value)}
-                  />
-                  {label.length > 0 && labelProblem ? (
-                    <p id="card-title-problem" className="aaa-field-error">
-                      {labelProblem.message}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="aaa-field-group">
-                  <label className="aaa-label" htmlFor="card-description">
-                    Card description
-                  </label>
-                  <input
-                    id="card-description"
-                    className="aaa-input"
-                    value={description}
-                    maxLength={MAX_CARD_DESCRIPTION}
-                    aria-invalid={Boolean(descriptionProblem)}
-                    onChange={(event) => setDescription(event.target.value)}
-                  />
-                </div>
-              </div>
+          <section className="aaa-card-draft-figma" aria-label="New tool">
+            <div className="aaa-field-shell">
+              <label className="aaa-field-shell-label" htmlFor="card-title">
+                Tool name*
+              </label>
+              <input
+                id="card-title"
+                ref={titleRef}
+                className="aaa-field-shell-input"
+                value={label}
+                maxLength={MAX_CARD_LABEL}
+                aria-invalid={label.length > 0 && Boolean(labelProblem)}
+                aria-describedby={labelProblem ? "card-title-problem" : undefined}
+                onChange={(event) => setLabel(event.target.value)}
+              />
+              {label.length > 0 && labelProblem ? (
+                <p id="card-title-problem" className="aaa-field-error">
+                  {labelProblem.message}
+                </p>
+              ) : null}
             </div>
 
-            {/*
-              Radio groups rather than the mock's single dark square, which showed a "+" with no
-              indication of what it would open. A fieldset gives each group a name a screen reader
-              can announce, which a row of unlabeled swatches cannot.
-            */}
-            <fieldset className="aaa-picker">
-              <legend className="aaa-label">Icon</legend>
+            <div className="aaa-field-shell">
+              <label className="aaa-field-shell-label" htmlFor="card-description">
+                Description*
+              </label>
+              <input
+                id="card-description"
+                className="aaa-field-shell-input"
+                value={description}
+                maxLength={MAX_CARD_DESCRIPTION}
+                aria-invalid={Boolean(descriptionProblem)}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            </div>
+
+            <fieldset className="aaa-picker aaa-picker-icons">
+              <legend className="aaa-picker-legend">Icon</legend>
               {PICKABLE_ICONS.map((option) => (
-                <label key={option} className="aaa-picker-option">
+                <label key={option} className="aaa-picker-chip">
                   <input
                     type="radio"
                     name="card-icon"
@@ -256,18 +234,18 @@ export function AddToolsDialog({
                     checked={icon === option}
                     onChange={() => setIcon(option)}
                   />
-                  <span className="aaa-picker-swatch aaa-tile-ink" aria-hidden="true">
-                    <ToolIcon icon={option} />
+                  <span className="aaa-picker-icon-face aaa-tile-charcoal" aria-hidden="true">
+                    <ToolIcon icon={option} compact />
                   </span>
-                  <span>{ICON_LABELS[option]}</span>
+                  <span className="sr-only">{ICON_LABELS[option]}</span>
                 </label>
               ))}
             </fieldset>
 
-            <fieldset className="aaa-picker">
-              <legend className="aaa-label">Color</legend>
+            <fieldset className="aaa-picker aaa-picker-colors">
+              <legend className="aaa-picker-legend">Color</legend>
               {PICKABLE_TINTS.map((option) => (
-                <label key={option.tint} className="aaa-picker-option">
+                <label key={option.tint} className="aaa-picker-chip aaa-picker-chip-round">
                   <input
                     type="radio"
                     name="card-tint"
@@ -275,18 +253,14 @@ export function AddToolsDialog({
                     checked={tint === option.tint}
                     onChange={() => setTint(option.tint)}
                   />
-                  {/* The name is the adjacent text, never the swatch alone - color is not a label. */}
-                  <span
-                    className={`aaa-picker-swatch ${option.tint}`}
-                    aria-hidden="true"
-                  />
-                  <span>{option.label}</span>
+                  <span className={`aaa-picker-color-face ${option.tint}`} aria-hidden="true" />
+                  <span className="sr-only">{option.label}</span>
                 </label>
               ))}
             </fieldset>
           </section>
 
-          <section aria-labelledby="current-heading">
+          <section aria-labelledby="current-heading" className="aaa-modal-manage">
             <div className="aaa-modal-listhead">
               <h3
                 id="current-heading"
@@ -318,12 +292,6 @@ export function AddToolsDialog({
                   </button>
                 </span>
               ) : (
-                /*
-                  Left enabled with nothing checked, and answers instead of doing nothing. Red stays
-                  red here by request, and `.aaa-btn-text-danger` has no disabled styling - so a
-                  disabled version would look identical to a live one and read as a dead control.
-                  Saying "select a card first" is the accessible version of the same refusal.
-                */
                 <button
                   type="button"
                   className="aaa-btn-text-danger"
@@ -365,7 +333,6 @@ export function AddToolsDialog({
                         checked={checked.has(card.id)}
                         onChange={() => toggle(card.id)}
                       />
-                      {/* An unlabeled checkbox is unusable by screen reader, and the mock has four. */}
                       <span className="sr-only">Select {card.label}</span>
                     </label>
                   ) : (
@@ -376,52 +343,52 @@ export function AddToolsDialog({
             </ul>
 
             {status ? <p className="aaa-field-hint">{status}</p> : null}
+
+            {confirmingReset ? (
+              <span className="aaa-modal-confirm aaa-modal-reset-row">
+                <span className="aaa-modal-confirm-prompt">
+                  Replace the dashboard with the four default cards?
+                </span>
+                <button
+                  type="button"
+                  className="aaa-btn-text-danger"
+                  autoFocus
+                  onClick={handleReset}
+                >
+                  Yes, reset
+                </button>
+                <button
+                  type="button"
+                  className="aaa-btn-text"
+                  onClick={() => setConfirmingReset(false)}
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="aaa-btn-text aaa-modal-reset-inline"
+                onClick={() => setConfirmingReset(true)}
+              >
+                Reset to default cards
+              </button>
+            )}
           </section>
         </div>
 
-        <div className="aaa-modal-foot">
+        <div className="aaa-modal-foot aaa-modal-foot-end">
+          <button type="button" className="aaa-btn-text aaa-btn-text-blue" onClick={onClose}>
+            Cancel
+          </button>
           <button
             type="button"
             className="aaa-btn aaa-btn-primary"
             disabled={!label.trim()}
             onClick={handleAdd}
           >
-            Add card
+            Add to dashboard
           </button>
-          <button type="button" className="aaa-btn-text" onClick={onClose}>
-            Cancel
-          </button>
-
-          {confirmingReset ? (
-            <span className="aaa-modal-confirm">
-              <span className="aaa-modal-confirm-prompt">
-                Replace the dashboard with the four default cards?
-              </span>
-              <button
-                type="button"
-                className="aaa-btn-text-danger"
-                autoFocus
-                onClick={handleReset}
-              >
-                Yes, reset
-              </button>
-              <button
-                type="button"
-                className="aaa-btn-text"
-                onClick={() => setConfirmingReset(false)}
-              >
-                Cancel
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              className="aaa-btn-text aaa-modal-reset"
-              onClick={() => setConfirmingReset(true)}
-            >
-              Reset to default cards
-            </button>
-          )}
         </div>
       </div>
     </div>

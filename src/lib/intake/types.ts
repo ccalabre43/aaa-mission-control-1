@@ -35,11 +35,16 @@ export type ReviewerPriority = "P1" | "P2" | "P3";
 /** Local triage assessment on the summary page. Not an A3 / Workfront field. */
 export type ReviewerAssessmentLevel = "high" | "medium" | "low";
 
+/** Local job-size estimate on the summary page (Concept v1). Not an A3 / Workfront field. */
+export type ReviewerSize = "S" | "M" | "L";
+
 export interface BriefReviewer {
   status: ReviewerStatus;
   priority: ReviewerPriority;
   /** ISO when a reviewer first opened or changed status; null drives the NEW badge. */
   firstReviewedAt: string | null;
+  /** Shirt size S/M/L for triage. */
+  size: ReviewerSize;
   impact: ReviewerAssessmentLevel;
   effort: ReviewerAssessmentLevel;
   risk: ReviewerAssessmentLevel;
@@ -65,11 +70,18 @@ export const REVIEWER_ASSESSMENT_LEVELS: readonly {
   { value: "low", label: "Low" },
 ] as const;
 
+export const REVIEWER_SIZES: readonly { value: ReviewerSize; label: string }[] = [
+  { value: "S", label: "Small" },
+  { value: "M", label: "Medium" },
+  { value: "L", label: "Large" },
+] as const;
+
 export function defaultReviewer(): BriefReviewer {
   return {
     status: "needs_review",
     priority: "P2",
     firstReviewedAt: null,
+    size: "M",
     impact: "high",
     effort: "medium",
     risk: "low",
@@ -78,6 +90,10 @@ export function defaultReviewer(): BriefReviewer {
 
 export function assessmentLabel(level: ReviewerAssessmentLevel): string {
   return REVIEWER_ASSESSMENT_LEVELS.find((item) => item.value === level)?.label ?? level;
+}
+
+export function sizeLabel(size: ReviewerSize): string {
+  return REVIEWER_SIZES.find((item) => item.value === size)?.label ?? size;
 }
 
 export function reviewerStatusLabel(status: ReviewerStatus): string {

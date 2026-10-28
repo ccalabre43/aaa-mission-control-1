@@ -248,8 +248,8 @@ export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
 
 /**
  * Display value under the Sent to Workfront label.
- * Affirmative Yes is only returned with a real Task ID (copy-guard / decisions 035–036).
- * Storage key remains `issueId` for one release.
+ * Affirmative " (WF Aligned)" is only returned with a real Task ID (copy-guard / decisions 035–036).
+ * Storage key remains `issueId` for one release. Hover tooltips may still show the Task ID.
  */
 export function workfrontSentDisplay(
   workfront: IntakeBrief["workfront"],
@@ -261,7 +261,7 @@ export function workfrontSentDisplay(
   ) {
     return {
       sent: true,
-      label: `Yes (Task ${workfront.issueId.trim()})`,
+      label: " (WF Aligned)",
     };
   }
   return { sent: false, label: "No" };

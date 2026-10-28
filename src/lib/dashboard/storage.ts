@@ -72,6 +72,9 @@ const VALID_TINTS: readonly CardTint[] = [
   "aaa-tile-green",
   "aaa-tile-bronze",
   "aaa-tile-ink",
+  "aaa-tile-charcoal",
+  "aaa-tile-slate",
+  "aaa-tile-red",
 ];
 
 function tint(value: unknown): CardTint {
@@ -189,7 +192,8 @@ function syncShippedCardPresentation(cards: DashboardCard[]): {
       card.label === shipped.label &&
       card.description === shipped.description &&
       card.icon === shipped.icon &&
-      card.tint === shipped.tint
+      card.tint === shipped.tint &&
+      card.to === shipped.to
     ) {
       return card;
     }

@@ -258,6 +258,7 @@ function createBriefFromTask(task: WorkfrontRemoteIssue, now: string): IntakeBri
       status: mapWorkfrontStatus(task.status) ?? "needs_review",
       priority: mapWorkfrontPriority(task.priority) ?? "P3",
       firstReviewedAt: null,
+      size: "M",
       impact: "medium",
       effort: "medium",
       risk: "low",

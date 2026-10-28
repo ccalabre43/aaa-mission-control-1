@@ -5,19 +5,22 @@
  * and reorder them, and it keeps the shipped four recoverable through `defaultCards()` in the same
  * way `resetRegistry` recovers the default questions.
  *
- * A card added here carries no destination. That is deliberate rather than unfinished: the home grid
- * already has an honest state for a tile with nowhere to go, and it renders dashed, muted, and
- * labeled "Not built yet". The alternative was letting an admin create something that looks
- * clickable and does nothing, which is the one outcome the original `HomeView` comment singles out
- * as worse than saying it is not ready.
+ * A custom card added here carries no destination. It renders as a solid idle tile (same chrome as
+ * Deep Dive) until a route is wired. Matching Concept v1 node 369-4361.
  */
 
-/** Tile fills. The ink tint is reserved for `Add Tools`, which is a control rather than content. */
+/**
+ * Tile fills. `aaa-tile-ink` is reserved for Add Tools. Green/bronze remain for stored custom cards;
+ * the Concept v1 picker offers charcoal / blue / red / slate (decision 043 for red tile fill).
+ */
 export type CardTint =
   | "aaa-tile-blue"
   | "aaa-tile-green"
   | "aaa-tile-bronze"
-  | "aaa-tile-ink";
+  | "aaa-tile-ink"
+  | "aaa-tile-charcoal"
+  | "aaa-tile-slate"
+  | "aaa-tile-red";
 
 export type CardIcon =
   | "lines"
@@ -26,36 +29,36 @@ export type CardIcon =
   | "search"
   | "plus"
   | "palette"
-  | "chat";
+  | "chat"
+  | "frame"
+  | "chart"
+  | "briefcase"
+  | "star";
 
-/** Offered in the dialog's picker. `plus` is excluded: it reads as "add", not as a tool. */
+/** Concept v1 Add a tool picker (node 369-4561). */
 export const PICKABLE_ICONS: readonly CardIcon[] = [
-  "lines",
-  "document",
-  "window",
-  "search",
   "palette",
-  "chat",
+  "chart",
+  "briefcase",
+  "star",
 ];
 
 /**
- * Offered in the dialog's picker, with the label the admin actually sees.
- *
- * Bronze is included because it is an existing tile fill, not because red or bronze is being
- * promoted - guardrail 4 bars those as *primary* colors, and a tile fill behind a glyph is neither
- * primary nor an action. The ink tint is withheld so a custom card cannot impersonate `Add Tools`.
+ * Concept v1 color swatches. Ink is withheld so a custom card cannot impersonate Add Tools.
+ * Red is a tile fill behind a white glyph only (decision 043), not a primary CTA.
  */
 export const PICKABLE_TINTS: ReadonlyArray<{ tint: CardTint; label: string }> = [
+  { tint: "aaa-tile-charcoal", label: "Charcoal" },
   { tint: "aaa-tile-blue", label: "Blue" },
-  { tint: "aaa-tile-green", label: "Green" },
-  { tint: "aaa-tile-bronze", label: "Orange" },
+  { tint: "aaa-tile-red", label: "Red" },
+  { tint: "aaa-tile-slate", label: "Slate" },
 ];
 
 export interface DashboardCard {
   id: string;
   label: string;
   description: string;
-  /** An internal route. Absent means the card renders as "Not built yet". */
+  /** An internal route. Absent: solid idle tile (no navigation). */
   to?: string;
   tint: CardTint;
   icon: CardIcon;
@@ -76,9 +79,10 @@ export const MAX_CARD_LABEL = 40;
 export const MAX_CARD_DESCRIPTION = 80;
 
 /**
- * The four cards the app ships with (Figma home tool cards / assets/mocks/home-tool-cards-figma.png).
+ * The four cards the app ships with (Concept v1 node 369-4361).
  *
- * Deep Dive subtitle is "Reservations" per that mock (was "Request meeting").
+ * Deep Dive routes to the local MeetingScheduler stub (`/deep-dive`). Live SharePoint Excel is
+ * gated on Vendor Management (decision 044).
  */
 export function defaultCards(): DashboardCard[] {
   return [
@@ -93,16 +97,18 @@ export function defaultCards(): DashboardCard[] {
     },
     {
       id: "strategy",
-      label: "Comms Requests",
-      description: "Tell us what you need",
+      label: "Executive View",
+      description: "Team Activity",
+      to: "/deliverables?tab=executive",
       tint: "aaa-tile-blue",
-      icon: "chat",
+      icon: "frame",
       custom: false,
     },
     {
       id: "sales",
       label: "Deep Dive",
-      description: "Reservations",
+      description: "Schedule now",
+      to: "/deep-dive",
       tint: "aaa-tile-bronze",
       icon: "search",
       custom: false,

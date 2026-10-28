@@ -117,15 +117,19 @@ Detail in `assets/brand/README.md`.
 
 ## 2026-09-16 - 008 - ALAN number: permissive validation, captured only at upload
 
-**Status:** pending confirmation with Compliance
+**Status:** pending confirmation with Compliance (display/seed updated 2026-10-09)
 
-The template is `ALAN-0000-000-00`, but the style guide's own disclaimers carry
-`ALAN-29541-624-XX`, `ALAN-28515-N22-XX`, `ALAN-29262-124-XX`, and `ALAN-23882-324-XX` - five digits
-in the first segment, sometimes a letter in the second, and `XX` in the last.
+The field always seeds with `ALAN-00000-000-00` (five-three-two digits). That value is the
+canonical format; leaving it unchanged is treated as **no ALAN** on save so the placeholder is never
+submitted. Recent ALANs stay in the datalist only and do not overwrite the seed.
 
-Sprint 1 therefore accepts four or five digits in the first segment, letters or digits in the second,
-and two characters in the last. **An unusual shape warns, never blocks** (Postel's Law), so no
-legitimate number is rejected while the specification is open.
+The style guide's own disclaimers still carry `ALAN-29541-624-XX`, `ALAN-28515-N22-XX`,
+`ALAN-29262-124-XX`, and `ALAN-23882-324-XX` - five digits in the first segment, sometimes a letter
+in the second, and `XX` in the last. Compliance still owns the authoritative format.
+
+Non-empty values that are not `ALAN-#####-###-##` show a non-blocking **Wrong format** warning.
+**An unusual shape warns, never blocks** (Postel's Law), so no legitimate number is rejected while
+the specification is open.
 
 Per the user's decision the ALAN number is captured **only in the document upload area of the Context
 step**, and Sprint 1 implements the "none found" branch only - `NoopDetector` always reports no match,
@@ -1105,7 +1109,7 @@ Task create is allowed; project ownership alone is not enough.
 | Confirm Workfront Task status/priority enum labels so Refresh mapping is exact rather than best-effort | Workfront admin | 037 |
 | Vendor Management acknowledgement for the live Workfront S2S + Runtime path | Vendor Management | 023, 029 |
 | Confirm request-queue native Issue status group vs custom `A3IntakeReviewStatus`; confirm P1–P3 → priority enum | Workfront admin | 030 |
-| Workfront hours / Resource Planner for Executive dashboard (typed adapter first) | Workfront admin, Vendor Management | 030 |
+| Workfront hours / Resource Planner for Executive dashboard (typed adapter first); UI shows Concept v1 illustrative figures until then (040) | Workfront admin, Vendor Management | 030, 040 |
 | How attachments reach Workfront. Documents need a separate upload call and this app never persists file contents | Workfront admin | 023 |
 | Sign-off on red for a destructive delete link, and on the tracker's existing row delete that already used it | Brand team | 024 |
 | Sign-off on Deep Dive tile `#EA580C` (and prior steps from `#ECB350` / `#9C6A15`), and on whether `--aaa-bronze` should be renamed | Brand team | 025, 032, 033 |
@@ -1174,6 +1178,118 @@ Path A (Entered By = signed-in Adobe user via ExC Bearer) remains a follow-on; S
 is still the techacct user. Walkthrough:
 `docs/knowledge/workfront-add-tasks-acl.md`,
 `docs/knowledge/workfront-submit-walkthrough.md`.
+
+## 2026-10-09 - ALAN field seed and Wrong format warning
+
+**Status:** accepted; supersedes the 2026-10-09 display-only note under entry 008
+
+- New-request ALAN field always opens with `ALAN-00000-000-00` (not the most recent stored ALAN).
+- Canonical shape is five-three-two digits; other shapes warn **Wrong format** and never block Next.
+- Leaving the seed unchanged saves as no ALAN (`resolvedAlanNumber`).
+
+## 2026-10-13 - 040 - Executive busy/capacity/speed use Concept v1 illustrative figures
+
+**Status:** accepted (extends 034; does not approve live Workfront hours)
+
+The empty Executive cards (**How busy is the team**, **Team capacity**, **Speed to decision**)
+display labeled illustrative figures from A3 Creative Intake Concept v1 (Figma node `369-5336`,
+mock `assets/mocks/executive-dashboard-concept-v1.png`): 80% booked, 48 hrs open with week bars,
+2.1 days avg and 91% on-time. Captions and the tab footer name Concept v1 / Figma and deny
+organization-wide or Workfront Resource Planner coverage (guardrail 7).
+
+**Unchanged:** Requests through the queue (local briefs) and Jobs in motion (`aaa-project-tracker`).
+Needs leadership attention still uses local escalations / due-soon.
+
+Constants live in `src/lib/dashboard/executiveDemoFigures.ts`. Live hours/capacity remain a Vendor
+Management + Workfront admin open item.
+
+## 2026-10-13 - 041 - Summary Concept v1: Size + Accept — Send to Workfront
+
+**Status:** accepted; supersedes decision 035’s two-button Summary footer only
+
+Request Summary matches A3 Creative Intake Concept v1 (Figma node `369-5482`, mock
+`assets/mocks/request-summary-page.png`):
+
+- Local triage adds **Size** (`brief.reviewer.size`: S / M / L, default M on create and
+  repair-not-reject parse). Same as Impact / Effort / Risk: not an A3 field, not posted by
+  `buildWorkfrontPayload`.
+- Assessment row is four cards: Size (t-shirt glyph with letter) + Impact + Effort + Risk.
+  OCR “Refuse” on the export is **Effort**.
+- Primary footer is one **Accept — Send to Workfront** control: marks Approved — transfer, then
+  runs the existing dual-write path (Entered By confirm + `WORKFRONT_LIVE_SUBMIT` kill switch).
+  Cancelled or failed send keeps Accept; status copy stays honest about whether a Task ID exists.
+  If already linked, Accept-only with “Already in Workfront” messaging.
+- Unchanged: Override / Return / Defer / Escalate; Workfront payload tab (decision 031).
+
+Decision 035’s dual-write, kill switch, and “Yes only with Task ID” rules are unchanged. Only the
+Summary footer layout (Accept + Submit as two buttons) is superseded here.
+
+## 2026-10-13 - 042 - Summary brief card falls back to answers / contextText
+
+**Status:** accepted
+
+Concept v1 Summary two-column brief card is display-only. Values resolve from assembled
+`brief.a3` first, then guided `brief.answers` and `brief.contextText` when A3 is empty
+(partial drafts, skipped optional questions, or generate never ran). Helper:
+`src/lib/intake/summaryBriefFields.ts`.
+
+Audience has no intake question — show `—` (do not misuse `A3IntakeSupplementalDescription`).
+What support do you need? has no intake source — show **Not captured in intake**. Approvals
+stay compliance-flag derived. Workfront payload / `buildWorkfrontPayload` unchanged (A3 only).
+
+## 2026-10-27 - 043 - Add a tool red tile fill (custom cards only)
+
+**Status:** accepted
+
+Concept v1 Add a tool (Figma node `369-4561`) offers Charcoal / Blue / Red / Slate for the
+custom-card icon tile. Guardrail 4 reserves red for final submit and genuine errors and bars it
+as a *primary*. The picker’s red is **not** a CTA: it is only a large tile fill behind a white
+glyph on a custom dashboard card (`aaa-tile-red` = digital `#E31E2E`). White on that fill is
+**4.68:1** (verified with `contrast.py`), which clears WCAG 1.4.11’s 3:1 for non-text. Charcoal
+(`#424242`) is **10.05:1**; slate (`#45586B`) is **7.34:1**. Ink remains reserved for the
+manager Add Tools card. Current dashboard Delete / Reset stay in the dialog under the Figma form
+so those paths are not orphaned.
+
+## 2026-10-27 - 044 - Deep Dive Excel / Composio vendor gate
+
+**Status:** accepted (stub ships; live call blocked)
+
+**Guardrail 8:** Composio (hosted MCP + Microsoft OAuth for Excel/SharePoint Graph) is a new
+third-party vendor. Flagged for **Vendor Management** before any Mission Control production or
+shared-tenant live Excel call.
+
+| Layer | Now | After Vendor Management + privacy review |
+| --- | --- | --- |
+| Cursor + Composio MCP | Discovery only (workbook `site_id` / `item_id`, sheet schema) | Same — never in the Vite bundle |
+| Mission Control UI | `/deep-dive` + Deep Dive home tile | Unchanged surface |
+| `MeetingScheduler` | `LocalMeetingScheduler` (fixtures + `aaa-deep-dive-slots` localStorage) | `SharePointExcelScheduler` behind a **server proxy** (Workfront pattern) |
+| Credentials | None in client; never `VITE_*` | Server / Runtime secrets only |
+
+**Booking semantics (stub):** booking flips a local `open` slot to `booked` and stores requester
+name/email on-device. **Entered By / row ownership** on the SharePoint workbook is TBD when live
+schema is captured (`docs/knowledge/deep-dive-excel.md`). Dual-write to Excel is explicitly
+out of scope until Vendor Management and privacy review clear a network write of requester PII.
+
+**Coverage (guardrail 7):** the Deep Dive UI must disclose that availability came from this
+browser’s local stub, not the Brand Integrated Marketing workbook.
+
+## 2026-10-28 - 045 - Executive dashboard 2 layout (Figma 469-7289); demo portfolio tables
+
+**Status:** accepted (extends 034 / 040; does not approve live Workfront hours or completion feed)
+
+Layout reference for the Executive tab moves to A3 Creative Intake Concept v1 **Executive
+dashboard 2** (Figma node `469-7289`). Card order and titles follow that frame: Busy, Capacity,
+**Executive review this week**, Queue, **Speed to completion**, Jobs. Reporting week
+`October 19 – October 23, 2026`, speed **2.2 days avg**, and capacity week % labels are
+illustrative Concept v1 figures. **Selected status items** and **Completed work** tables ship
+with labeled demo rows (Mandarin spelling corrected); escalations from this browser replace
+Selected rows when present. Queue/jobs counts remain this-browser. Decisions 034 and 040 still
+govern that hours/capacity/turnaround stay illustrative until a Workfront Resource Planner
+adapter clears Vendor Management. No new Workfront fields invented for Client / Exec Review /
+Effort pts.
+
+Constants: `src/lib/dashboard/executiveDemoFigures.ts`. UI:
+`src/components/queue/ExecutiveDashboardSection.tsx`.
 
 ## Flagged for the user, not applied
 

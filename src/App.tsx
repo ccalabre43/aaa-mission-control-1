@@ -17,6 +17,7 @@ import RequestSummaryView from "./views/RequestSummaryView";
 import RequestFlowView from "./views/request/RequestFlowView";
 import ManageQuestionsView from "./views/ManageQuestionsView";
 import ManageQueueView from "./views/ManageQueueView";
+import DeepDiveView from "./views/DeepDiveView";
 import NotFoundView from "./views/NotFoundView";
 
 export interface RouteMeta {
@@ -56,9 +57,14 @@ export const ROUTES: RouteMeta[] = [
     title: "Manage Queue",
     documentTitle: "Manage Queue",
   },
+  {
+    path: "/deep-dive",
+    title: "Deep Dive",
+    documentTitle: "Deep Dive",
+  },
 ];
 
-function metaFor(pathname: string): RouteMeta {
+function metaFor(pathname: string, search: string): RouteMeta {
   // Longest match wins, so /request/step keeps the Creative Request title.
   const match = [...ROUTES]
     .sort((a, b) => b.path.length - a.path.length)
@@ -67,12 +73,31 @@ function metaFor(pathname: string): RouteMeta {
         route.path === pathname ||
         (route.path !== "/" && pathname.startsWith(`${route.path}/`)),
     );
-  return match ?? { path: pathname, title: "Not found", documentTitle: "Not found" };
+  const base = match ?? { path: pathname, title: "Not found", documentTitle: "Not found" };
+
+  // Deliverables tabs share one route; the Executive tab owns its own header title.
+  if (pathname === "/deliverables" || pathname === "/deliverables/") {
+    const params = new URLSearchParams(search);
+    if (params.get("tab") === "executive") {
+      return {
+        ...base,
+        title: "Executive dashboard",
+        documentTitle: "Executive dashboard",
+      };
+    }
+    return {
+      ...base,
+      title: "New creative requests",
+      documentTitle: "New creative requests",
+    };
+  }
+
+  return base;
 }
 
 export default function App() {
-  const { pathname } = useLocation();
-  const meta = metaFor(pathname);
+  const { pathname, search } = useLocation();
+  const meta = metaFor(pathname, search);
 
   // Kept in sync here rather than in each view, so a route cannot ship without a document title.
   // 2.4.2 Page Titled: a single-page app does not update this on its own.
@@ -97,6 +122,7 @@ export default function App() {
             />
             <Route path="/settings/questions" element={<ManageQuestionsView />} />
             <Route path="/settings/queue" element={<ManageQueueView />} />
+            <Route path="/deep-dive" element={<DeepDiveView />} />
             <Route path="*" element={<NotFoundView />} />
           </Routes>
         </div>

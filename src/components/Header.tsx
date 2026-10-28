@@ -6,13 +6,9 @@
  * by a rule; the mobile mock does not, so the logo appears from the `sm` breakpoint up.
  *
  * Copy reconciliation, per the standing copy-correction rule:
- * - The desktop mock reads "Misson Control", which is a typo and is corrected here.
- * - Neither mock's suffix ships. The desktop draws "Creative Dashboard" and the mobile abbreviates
- *   to "Creative Dash"; the title is just "Mission Control" at every breakpoint, so there is no
- *   longer a per-width variant to reconcile. Mocks are layout references, not copy decks.
- * - The eyebrow names the product, not the department. It read "Internal Creative & Content Agency",
- *   which named the team; "Creative Toolset" fits a dashboard that will hold several tools. The
- *   separator is a middle dot, not a bullet.
+ * - The older desktop mock reads "Misson Control", which is a typo and stays corrected.
+ * - Concept v1 node 369-4361: eyebrow "AAA Life · Strategic Intake Tool", title
+ *   "Mission Control". The logo already contains "Life Insurance Company".
  *
  * The wordmark is deliberately NOT retyped beside the logo: the logo already contains "Life
  * Insurance Company", and repeating it would read as a second, unauthorized lockup.
@@ -38,7 +34,7 @@ export function Header({ routeTitle }: HeaderProps) {
 
   return (
     <header className="aaa-header">
-      <div className="mx-auto flex max-w-[90rem] items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+      <div className="aaa-page-shell flex items-center gap-3 py-3 sm:gap-4">
         {isHome ? (
           <span className="hidden sm:block">{logoImage}</span>
         ) : (
@@ -57,7 +53,7 @@ export function Header({ routeTitle }: HeaderProps) {
 
         <div className="min-w-0">
           <p className="aaa-header-eyebrow">
-            AAA Life <span aria-hidden="true">&middot;</span> Creative Toolset
+            AAA Life <span aria-hidden="true">&middot;</span> Strategic Intake Tool
           </p>
           <p className="aaa-header-title">
             Mission Control

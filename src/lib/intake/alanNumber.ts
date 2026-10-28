@@ -3,25 +3,21 @@
  *
  * The ALAN number is the request's primary identifier and the matcher's strongest signal.
  *
- * Validation is deliberately permissive, and that is a decision rather than laziness. The template
- * given is `ALAN-0000-000-00`, but the style guide's own disclaimers carry `ALAN-29541-624-XX`,
- * `ALAN-28515-N22-XX`, `ALAN-29262-124-XX`, and `ALAN-23882-324-XX` - five digits in the first
- * segment, sometimes a letter in the second, and `XX` in the last, which is most likely a
- * placeholder in printed samples. Since the template and the real examples disagree, an unusual
- * shape WARNS and never BLOCKS, so no legitimate number is rejected while the specification is open
- * (Postel's Law).
+ * The field seeds with `ALAN-00000-000-00` (five-three-two digits). That seed is the canonical
+ * format for a non-blocking "Wrong format" warning; it is never saved as a real ALAN. Style-guide
+ * samples still carry letters or other segment lengths (`ALAN-28515-N22-XX`, etc.); those warn and
+ * never block (Postel's Law) while Compliance owns the authoritative format.
  *
- * Open item: the authoritative format is pending confirmation with Compliance. When it lands it
- * tightens here, in one place. See docs/decisions/decision-log.md entry 008.
+ * See docs/decisions/decision-log.md entry 008.
  */
 
-export const ALAN_TEMPLATE = "ALAN-0000-000-00";
+export const ALAN_TEMPLATE = "ALAN-00000-000-00";
 
-/** Accepts 4-5 digits, then letters or digits, then two characters. */
-const PERMISSIVE = /^ALAN-\d{4,5}-[A-Z0-9]{3}-[A-Z0-9]{2}$/i;
+/** Accepts 4-5 digits, then letters or digits, then one or two characters. */
+const PERMISSIVE = /^ALAN-\d{4,5}-[A-Z0-9]{3}-[A-Z0-9]{1,2}$/i;
 
-/** The narrow template as originally specified. Used only to decide whether to warn. */
-const TEMPLATE_SHAPE = /^ALAN-\d{4}-\d{3}-\d{2}$/i;
+/** Canonical displayed template: ALAN-#####-###-##. Used only to decide whether to warn. */
+const TEMPLATE_SHAPE = /^ALAN-\d{5}-\d{3}-\d{2}$/i;
 
 /** Loose enough to find candidates in prose or a document's text layer. */
 export const ALAN_SEARCH_PATTERN = /ALAN-\d{4,5}-[A-Z0-9]{2,4}-[A-Z0-9]{2}/gi;
@@ -36,8 +32,24 @@ export interface AlanValidation {
   normalized: string;
 }
 
+const WRONG_FORMAT = "Wrong format";
+
 export function normalizeAlan(value: string): string {
   return value.trim().toUpperCase();
+}
+
+/** True when the value is exactly the seed/placeholder template (not a real ALAN). */
+export function isAlanTemplate(value: string): boolean {
+  return normalizeAlan(value) === ALAN_TEMPLATE;
+}
+
+/**
+ * Value to persist or match on: empty and the seed template both mean "no ALAN".
+ */
+export function resolvedAlanNumber(value: string): string | null {
+  const normalized = normalizeAlan(value);
+  if (!normalized || isAlanTemplate(normalized)) return null;
+  return normalized;
 }
 
 export function validateAlan(value: string): AlanValidation {
@@ -52,14 +64,14 @@ export function validateAlan(value: string): AlanValidation {
     return {
       validity: "unusual",
       normalized,
-      warning: `This does not match the ${ALAN_TEMPLATE} template, but numbers in this shape do appear in AAA Life materials. It will be saved as entered.`,
+      warning: WRONG_FORMAT,
     };
   }
 
   return {
     validity: "unrecognized",
     normalized,
-    warning: `This does not look like an ALAN number (expected something like ${ALAN_TEMPLATE}). It will still be saved - double-check it before submitting.`,
+    warning: WRONG_FORMAT,
   };
 }
 

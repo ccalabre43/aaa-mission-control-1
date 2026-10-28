@@ -94,7 +94,10 @@
   --aaa-green-safe: #0d5c2e;
 
   /* Ink and surfaces */
+  --aaa-black: #090909; /* Concept v1 AAA Black — headings and card titles */
   --aaa-ink: #424242;
+  /* Concept v1 Add a tool slate swatch; white glyph 7.34:1 (1.4.11). */
+  --aaa-slate: #45586b;
   --aaa-muted: #5c5c5c; /* 6.69:1 white, 5.76:1 #EEEEEE, 5.52:1 #DAECF7 - passes 1.4.3 on all three */
   --aaa-surface: #ffffff;
   --aaa-surface-gray: #eeeeee;
@@ -121,6 +124,11 @@
   color: var(--aaa-ink);
   background: var(--aaa-surface);
   color-scheme: light;
+}
+
+html {
+  /* Keeps the content column still when tab height toggles the vertical scrollbar. */
+  scrollbar-gutter: stable;
 }
 
 html,
@@ -235,9 +243,24 @@ h3[tabindex="-1"]:focus-visible {
  * App header
  * ---------------------------------------------------------------- */
 
+/* Shared content column: site header + Request Queue / Executive dashboard. */
+.aaa-page-shell {
+  width: 100%;
+  max-width: 90rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .aaa-page-shell {
+    padding-inline: 1.5rem;
+  }
+}
+
 .aaa-header {
   background: var(--aaa-surface-gray);
-  border-bottom: 1px solid var(--aaa-navy);
+  /* Concept v1 node 369-4361: blue rule under the gray header bar. */
+  border-bottom: 1px solid var(--aaa-blue);
 }
 
 .aaa-header-logo {
@@ -269,7 +292,7 @@ h3[tabindex="-1"]:focus-visible {
 .aaa-header-title {
   font-size: 1.0625rem;
   font-weight: 700;
-  color: var(--aaa-ink); /* 8.66:1 on #EEEEEE */
+  color: var(--aaa-black); /* Concept v1 AAA Black on #EEEEEE */
   line-height: 1.3;
 }
 
@@ -640,7 +663,7 @@ select.aaa-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* At least 40×40 glyph inside; 48×48 tile matches tool-card icon squares. */
+  /* 48×48 tile; glyph ~34×34 (square shrink only — tile size unchanged). */
   width: 3rem;
   height: 3rem;
   min-width: 40px;
@@ -652,15 +675,16 @@ select.aaa-input {
 }
 
 .aaa-hero-badge svg {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   flex: none;
 }
 
 .aaa-hero-heading {
   font-size: 1.625rem;
   line-height: 1.25;
-  color: var(--aaa-ink);
+  font-weight: 700;
+  color: var(--aaa-black);
 }
 
 @media (min-width: 640px) {
@@ -670,21 +694,23 @@ select.aaa-input {
 }
 
 .aaa-hero-sub {
-  margin-top: 0.875rem;
-  max-width: 34rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--aaa-muted);
+  margin-top: 0;
+  max-width: 40rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--aaa-black);
 }
 
-/* Home tool cards: 2×2 per Figma home-tool-cards-figma.png (home-only class). */
+/* Home tool cards: one wrapping row per Concept v1 node 369-4361. */
 .aaa-tool-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 1.5rem;
   width: 100%;
-  max-width: 40rem;
-  margin-top: 2.5rem;
+  max-width: 68rem;
+  margin-top: 0;
   list-style: none;
   padding: 0;
 }
@@ -694,17 +720,28 @@ select.aaa-input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  height: 100%;
-  min-height: 9.5rem;
-  padding: 1.5rem 1.25rem;
+  gap: 1rem;
+  width: 15rem;
+  height: 10.5rem;
+  min-height: 10.5rem;
+  padding: 1.5rem;
   background: #ffffff;
   border: 1px solid var(--aaa-border);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   text-align: center;
   text-decoration: none;
   color: inherit;
   box-sizing: border-box;
+  /* Add Tools is a <button>; reset UA styles so it matches the link cards. */
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  margin: 0;
+}
+
+button.aaa-tool-card {
+  /* Same hit area and type color as the <a> cards. */
+  color: inherit;
 }
 
 .aaa-tool-card-ready {
@@ -712,16 +749,30 @@ select.aaa-input {
   border-color: var(--aaa-border);
 }
 
+/* Concept v1 node 369-4361 draws Marketing Request with a blue border at rest. */
+.aaa-tool-card-current {
+  border-width: 2px;
+  border-color: var(--aaa-blue);
+  padding: calc(1.5rem - 1px);
+}
+
 .aaa-tool-card-ready:hover,
 .aaa-tool-card-ready:focus-visible {
   border-color: var(--aaa-blue);
   border-width: 2px;
   /* Keep outer size stable when border grows. */
-  padding: calc(1.5rem - 1px) calc(1.25rem - 1px);
+  padding: calc(1.5rem - 1px);
   background: #f2f7fc;
 }
 
-/* Dashed, muted, and labeled - so an unbuilt tool does not look like a working one. */
+/* Shipped inactive card (Deep Dive): solid border, no "Not built yet". */
+.aaa-tool-card-idle {
+  border-style: solid;
+  background: #ffffff;
+  cursor: default;
+}
+
+/* Dashed, muted, and labeled - so an unbuilt custom tool does not look like a working one. */
 .aaa-tool-card-soon {
   border-style: dashed;
   background: #fbfbfb;
@@ -731,27 +782,21 @@ select.aaa-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Colored square holds a ≥40×40 glyph (ToolIcon default). */
-  width: 3rem;
-  height: 3rem;
+  /* Concept v1: 56×56 tile; Figma glyphs keep their exported root size. */
+  width: 3.5rem;
+  height: 3.5rem;
   min-width: 40px;
   min-height: 40px;
   border-radius: 0.625rem;
   color: #ffffff;
   flex: none;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
 }
 
-.aaa-tool-icon svg {
-  width: 40px;
-  height: 40px;
+.aaa-tool-icon svg,
+.aaa-tool-icon .aaa-tool-glyph {
   flex: none;
-}
-
-/* Palette glyph fills the colored square like assets/mocks/icon-palette.png. */
-.aaa-tool-icon svg[viewBox="0 0 64 64"] {
-  width: 44px;
-  height: 44px;
+  display: block;
 }
 
 /* White glyphs verified: blue 7.65:1, green 3.30:1, Deep Dive orange 3.56:1, ink 10.05:1. All clear
@@ -774,16 +819,31 @@ select.aaa-input {
   background: var(--aaa-ink);
 }
 
+/* Concept v1 Add a tool swatches — white glyph ratios verified with contrast.py. */
+.aaa-tile-charcoal {
+  background: var(--aaa-ink); /* 10.05:1 */
+}
+
+.aaa-tile-slate {
+  background: var(--aaa-slate); /* 7.34:1 */
+}
+
+.aaa-tile-red {
+  /* Digital red only; tile fill behind white glyph 4.68:1 (decision 043). Not a CTA. */
+  background: var(--aaa-red);
+}
+
 .aaa-tool-label {
   font-weight: 700;
-  font-size: 0.9375rem;
-  color: var(--aaa-ink);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--aaa-black);
 }
 
 .aaa-tool-desc {
-  font-size: 0.8125rem;
-  color: var(--aaa-muted);
-  line-height: 1.45;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--aaa-ink);
 }
 
 .aaa-tool-soon {
@@ -849,6 +909,27 @@ select.aaa-input {
   flex-direction: column;
   align-items: center;
   text-align: center;
+}
+
+/* Start step: blue badge sits left of the page heading. */
+.aaa-flow-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.875rem;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.aaa-flow-title-row .aaa-hero-badge {
+  margin-bottom: 0;
+  flex: none;
+}
+
+.aaa-flow-title-row .aaa-flow-heading {
+  margin: 0;
+  text-align: left;
 }
 
 .aaa-flow-panel {
@@ -1554,6 +1635,236 @@ select.aaa-input {
   margin-bottom: 0.5rem;
 }
 
+/* Deep Dive page title: home-tile glyph + heading on one row. */
+.aaa-deep-dive-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.aaa-deep-dive-title-row .aaa-page-heading,
+.aaa-deep-dive-heading {
+  margin-bottom: 0;
+}
+
+/* Custom Deep Dive date picker (Oct–Dec quarter, Wednesdays only). */
+.aaa-deep-dive-datepicker {
+  border: 1px solid var(--aaa-field-stroke);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: var(--aaa-surface);
+}
+
+.aaa-deep-dive-datepicker-months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.aaa-deep-dive-datepicker-month {
+  appearance: none;
+  border: 1px solid var(--aaa-field-stroke);
+  background: var(--aaa-surface);
+  color: var(--aaa-ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.aaa-deep-dive-datepicker-month:hover:not(:disabled) {
+  background: var(--aaa-wash);
+}
+
+.aaa-deep-dive-datepicker-month.is-active {
+  background: var(--aaa-blue);
+  border-color: var(--aaa-blue);
+  color: #ffffff;
+}
+
+.aaa-deep-dive-datepicker-month:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.aaa-deep-dive-datepicker-caption {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--aaa-muted);
+}
+
+.aaa-deep-dive-datepicker-weekdays,
+.aaa-deep-dive-datepicker-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.aaa-deep-dive-datepicker-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--aaa-muted);
+  padding: 0.25rem 0;
+}
+
+.aaa-deep-dive-datepicker-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.aaa-deep-dive-datepicker-cell {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aaa-deep-dive-datepicker-cell.is-empty {
+  visibility: hidden;
+}
+
+.aaa-deep-dive-datepicker-cell.is-other span {
+  color: var(--aaa-track);
+  font-size: 0.875rem;
+}
+
+.aaa-deep-dive-datepicker-cell.is-past span {
+  color: var(--aaa-track);
+  font-size: 0.875rem;
+  text-decoration: line-through;
+}
+
+.aaa-deep-dive-datepicker-day {
+  appearance: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--aaa-blue);
+  background: var(--aaa-wash);
+  color: var(--aaa-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aaa-deep-dive-datepicker-day:hover:not(:disabled) {
+  background: #c5e0f2;
+}
+
+.aaa-deep-dive-datepicker-cell.is-selected .aaa-deep-dive-datepicker-day,
+.aaa-deep-dive-datepicker-day[aria-pressed="true"] {
+  background: var(--aaa-blue);
+  color: #ffffff;
+  border-color: var(--aaa-blue);
+}
+
+.aaa-deep-dive-datepicker-day:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.aaa-deep-dive-month-dialog {
+  max-width: 28rem;
+}
+
+.aaa-deep-dive-month-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.aaa-deep-dive-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--aaa-field-stroke);
+  font: inherit;
+  background: var(--aaa-surface);
+  color: var(--aaa-ink);
+}
+
+button.aaa-deep-dive-month-row {
+  cursor: pointer;
+}
+
+button.aaa-deep-dive-month-row:hover {
+  background: var(--aaa-wash);
+}
+
+button.aaa-deep-dive-month-row.is-selected {
+  border-color: var(--aaa-blue);
+  background: var(--aaa-wash);
+}
+
+button.aaa-deep-dive-month-row:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.aaa-deep-dive-month-row.is-past {
+  color: var(--aaa-track);
+  background: var(--aaa-surface-gray);
+  border-color: var(--aaa-track);
+}
+
+.aaa-deep-dive-month-when {
+  font-weight: 600;
+}
+
+.aaa-deep-dive-month-status {
+  font-size: 0.875rem;
+  color: var(--aaa-muted);
+  flex: none;
+}
+
+.aaa-deep-dive-month-row.is-past .aaa-deep-dive-month-status {
+  color: var(--aaa-track);
+}
+
+/* Audience: label (same as field descriptors) beside radio choices. */
+.aaa-deep-dive-audience {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+}
+
+.aaa-deep-dive-audience-legend.aaa-label {
+  float: left;
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+
+.aaa-deep-dive-audience-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+}
+
+.aaa-deep-dive-audience-options .aaa-radio-row {
+  min-height: 2.75rem;
+}
+
 .aaa-page-sub {
   font-size: 0.9375rem;
   color: var(--aaa-muted);
@@ -1834,7 +2145,9 @@ select.select {
  * ---------------------------------------------------------------- */
 
 .aaa-queue {
-  margin-top: 1.5rem;
+  width: 100%;
+  /* Same offset as .aaa-exec so tab toggles do not jump the hero. */
+  margin-top: 0;
 }
 
 .aaa-queue-tracker {
@@ -2036,13 +2349,13 @@ select.select {
   max-width: 22rem;
 }
 
-/* Exactly 50px between Subject content and Status content (25px + 25px adjacent padding). */
+/* Exactly 30px between Subject content and Status content (15px + 15px adjacent padding). */
 .aaa-queue-table-reviewer .aaa-queue-name {
-  padding-right: 25px;
+  padding-right: 15px;
 }
 
 .aaa-queue-table-reviewer .aaa-queue-col-status {
-  padding-left: 25px;
+  padding-left: 15px;
 }
 
 /* A sort control has to be a real button so it is reachable and
@@ -2212,7 +2525,8 @@ select.select {
   padding: 0.625rem 0;
   margin-bottom: -1px;
   font-size: 0.9375rem;
-  font-weight: 600;
+  /* Fixed weight so active/inactive does not shift the tab row. */
+  font-weight: 700;
   color: var(--aaa-muted); /* 6.69:1 estimated on white */
   border-bottom: 3px solid transparent;
   cursor: pointer;
@@ -2225,12 +2539,21 @@ select.select {
 .aaa-page-tab.is-active {
   color: var(--aaa-blue); /* 7.65:1 estimated on white */
   border-bottom-color: var(--aaa-blue);
-  font-weight: 700;
 }
 
 .aaa-page-tab:focus-visible {
   outline: 2px solid var(--aaa-blue);
   outline-offset: 2px;
+}
+
+/* Both Deliverables tab panels share the same left edge; inactive is not displayed. */
+.aaa-page-tabpanel {
+  width: 100%;
+  text-align: left;
+}
+
+.aaa-page-tabpanel[hidden] {
+  display: none;
 }
 
 /* Reviewer queue hero + search */
@@ -2265,7 +2588,6 @@ select.select {
   align-items: center;
   gap: 0.625rem;
   width: 100%;
-  max-width: 40rem;
   margin-bottom: 1rem;
   padding: 0.625rem 0.875rem;
   border: 1px solid var(--aaa-border);
@@ -2441,13 +2763,30 @@ select.select {
   color: var(--aaa-muted);
 }
 
-/* Executive dashboard — Concept v1 2×3 cards. Chip text/fill ratios computed with contrast.py. */
+/* Executive dashboard — Concept v1 “Executive dashboard 2” (Figma 469-7289). */
 .aaa-exec {
+  width: 100%;
+  margin-top: 0;
   margin-bottom: 2rem;
 }
 
 .aaa-exec-hero {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.aaa-exec-page-title {
+  margin: 0 0 0.375rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-page-sub {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--aaa-muted);
 }
 
 .aaa-exec-eyebrow {
@@ -2456,11 +2795,28 @@ select.select {
   color: var(--aaa-muted);
 }
 
+.aaa-exec-portfolio-head {
+  margin: 0 0 1rem;
+}
+
+.aaa-exec-portfolio-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-portfolio-week {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--aaa-muted);
+}
+
 .aaa-exec-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 @media (max-width: 72rem) {
@@ -2531,6 +2887,12 @@ select.select {
   color: #7a1a22; /* 8.94:1 */
 }
 
+/* Busy chip — Concept v1 tan badge; ink on wash ~7.28:1 (same family as due-soon). */
+.aaa-exec-chip-busy {
+  background: #f5e6d3;
+  color: #6b3f14;
+}
+
 .aaa-exec-stat {
   display: flex;
   align-items: baseline;
@@ -2589,6 +2951,15 @@ select.select {
 
 .aaa-exec-bar-seg {
   min-width: 0.35rem;
+}
+
+.aaa-exec-seg-busy {
+  background: var(--aaa-bronze);
+}
+
+.aaa-exec-bar-remainder {
+  min-width: 0;
+  background: transparent;
 }
 
 .aaa-exec-seg-approved {
@@ -2666,7 +3037,7 @@ select.select {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
-  height: 5.5rem;
+  height: 6.25rem;
   margin-top: auto;
 }
 
@@ -2675,18 +3046,38 @@ select.select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   height: 100%;
-  justify-content: flex-end;
+  min-height: 0;
+}
+
+.aaa-exec-week-pct {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--aaa-ink);
+  line-height: 1;
+}
+
+.aaa-exec-week-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
 }
 
 .aaa-exec-week-col {
   display: block;
   width: 100%;
-  max-width: 2.5rem;
-  height: 1.25rem;
+  max-width: 58px; /* 48px + 10px */
+  min-height: 0.35rem;
   border-radius: 0.25rem 0.25rem 0 0;
   background: #d6e8f8;
+}
+
+.aaa-exec-week-col-emphasis {
+  background: var(--aaa-blue);
 }
 
 .aaa-exec-week-label {
@@ -2699,6 +3090,40 @@ select.select {
   margin: 0;
   font-size: 0.875rem;
   color: var(--aaa-muted);
+}
+
+.aaa-exec-callouts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: auto;
+}
+
+.aaa-exec-callout {
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.5rem;
+}
+
+.aaa-exec-callout-alert {
+  background: #fce8ea;
+  color: #7a1a22; /* 8.94:1 */
+}
+
+.aaa-exec-callout-due {
+  background: #f3e0d0;
+  color: #6b3b00; /* 7.28:1 */
+}
+
+.aaa-exec-callout-title {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.aaa-exec-callout-meta {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
 
 .aaa-exec-attention {
@@ -2739,6 +3164,78 @@ select.select {
 .aaa-exec-duesoon p {
   margin: 0;
   font-size: 0.8125rem;
+}
+
+.aaa-exec-table-block {
+  margin: 0 0 1.25rem;
+}
+
+.aaa-exec-table-card {
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.75rem;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.aaa-exec-table-title {
+  margin: 0;
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.aaa-exec-table-card-selected .aaa-exec-table-title {
+  background: var(--aaa-navy);
+}
+
+.aaa-exec-table-card-completed .aaa-exec-table-title {
+  background: #45586b; /* slate; white ~7.34:1 */
+}
+
+.aaa-exec-table-note {
+  margin: 0;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--aaa-muted);
+  background: var(--aaa-wash);
+  border-bottom: 1px solid var(--aaa-border);
+}
+
+.aaa-exec-table-wrap {
+  overflow-x: auto;
+}
+
+.aaa-exec-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.aaa-exec-data-table th,
+.aaa-exec-data-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--aaa-border);
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-data-table th {
+  font-weight: 700;
+  white-space: nowrap;
+  background: #f7f9fb;
+}
+
+.aaa-exec-table-desc {
+  max-width: 22rem;
+  line-height: 1.45;
+}
+
+.aaa-exec-table-actions {
+  margin: 0;
+  padding: 0.875rem 1.25rem 1.125rem;
 }
 
 .aaa-exec-coverage {
@@ -2880,23 +3377,43 @@ select.select {
 
 @media (min-width: 640px) {
   .aaa-summary-assessments {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
 .aaa-summary-assessment {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
   padding: 1rem 1.125rem;
   border: 1px solid var(--aaa-border);
   border-radius: 0.75rem;
   background: #ffffff;
 }
 
+.aaa-summary-assessment-size {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aaa-summary-size-shirt {
+  display: block;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: auto;
+}
+
+.aaa-summary-size-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
 .aaa-summary-assessment-label {
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--aaa-muted);
 }
 
@@ -3221,10 +3738,11 @@ select.select {
 .aaa-tool-cell {
   position: relative;
   display: flex;
+  flex: 0 0 auto;
 }
 
 .aaa-tool-cell > .aaa-tool-card {
-  flex: 1;
+  flex: none;
 }
 
 .aaa-tool-reorder {
@@ -3509,7 +4027,7 @@ select.select {
   outline-offset: 2px;
 }
 
-/* ---- Add Tools dialog ---- */
+/* ---- Add Tools dialog (Concept v1 node 369-4561) ---- */
 
 .aaa-modal-scrim {
   position: fixed;
@@ -3520,12 +4038,10 @@ select.select {
   justify-content: center;
   padding: 1.5rem 1rem;
   overflow-y: auto;
-  background: rgba(11, 35, 63, 0.45); /* the navy token, softened - matches the summary panel */
+  background: rgba(0, 0, 0, 0.5);
 }
 
-/* Capped and column-flexed so the body scrolls while the heading and the footer stay put. Without
-   this the footer's Add card sits below the fold on a laptop, and the primary action of a dialog
-   should not need to be hunted for. */
+/* Capped and column-flexed so the body scrolls while the heading and the footer stay put. */
 .aaa-modal {
   width: 100%;
   max-width: 34rem;
@@ -3533,9 +4049,13 @@ select.select {
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   border: 1px solid var(--aaa-border);
   text-align: left;
+}
+
+.aaa-modal-add-tool {
+  max-width: 38.125rem; /* 610px */
 }
 
 .aaa-modal-head {
@@ -3544,39 +4064,67 @@ select.select {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.125rem 1.25rem;
-  border-bottom: 1px solid var(--aaa-border);
+  padding: 1.5rem 1.5rem 0;
+}
+
+.aaa-modal-head-add {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.aaa-modal-head-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .aaa-modal-heading {
   font-weight: 700;
-  font-size: 1.0625rem;
-  color: var(--aaa-ink); /* 10.05:1 on white, computed */
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--aaa-black);
+}
+
+.aaa-modal-lead {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--aaa-black);
 }
 
 .aaa-modal-close {
   flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
   border-radius: 0.25rem;
-  border: 1px solid var(--aaa-border);
-  background: #ffffff;
+  background: transparent;
   color: var(--aaa-ink);
-  font-size: 1.125rem;
-  line-height: 1;
+  cursor: pointer;
 }
 
 .aaa-modal-close:hover {
-  background: var(--aaa-wash);
+  background: var(--aaa-surface-gray);
+}
+
+.aaa-modal-close:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .aaa-modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 1.25rem;
+  padding: 2.5rem 1.5rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2.5rem;
 }
 
 .aaa-modal-subheading {
@@ -3587,66 +4135,131 @@ select.select {
   color: var(--aaa-muted); /* 6.69:1 on white, computed */
 }
 
-.aaa-card-draft {
+.aaa-card-draft-figma {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 1.5rem;
+}
+
+.aaa-field-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   padding: 1rem;
-  background: var(--aaa-surface-gray);
+  border: 1px solid var(--aaa-border);
   border-radius: 0.5rem;
+  background: #ffffff;
 }
 
-.aaa-draft-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.875rem;
+.aaa-field-shell-label {
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--aaa-black);
+  font-weight: 400;
 }
 
-.aaa-draft-fields {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
+.aaa-field-shell-input {
+  width: 100%;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--aaa-black);
+  background: transparent;
+  min-height: 1.5rem;
+}
+
+.aaa-field-shell-input:focus {
+  outline: none;
+}
+
+.aaa-field-shell:focus-within {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .aaa-picker {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.875rem;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
 }
 
-.aaa-picker legend {
-  /* A flex container ignores a legend's normal placement, so it sits inline with the options. */
+.aaa-picker-legend {
   float: left;
   width: 100%;
-  margin-bottom: 0.375rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--aaa-black);
 }
 
-.aaa-picker-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.8125rem;
-  color: var(--aaa-ink); /* 8.66:1 on #EEEEEE, computed */
-}
-
-/* The swatch never carries the meaning on its own; the adjacent text names the choice. */
-.aaa-picker-swatch {
+.aaa-picker-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 0.25rem;
-  color: #ffffff;
+  padding: 4px;
+  margin: 0;
+  cursor: pointer;
+  border-radius: 0.75rem;
 }
 
-/* Picker swatches stay compact; card/page tiles use the 40px ToolIcon default. */
-.aaa-picker-swatch svg {
-  width: 14px;
-  height: 14px;
+.aaa-picker-chip-round {
+  border-radius: 999px;
+}
+
+.aaa-picker-chip input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.aaa-picker-icon-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.aaa-picker-color-face {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.aaa-picker-chip:has(input:checked) {
+  padding: 2px;
+  border: 2px solid var(--aaa-blue);
+}
+
+.aaa-picker-chip:has(input:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.aaa-modal-manage {
+  border-top: 1px solid var(--aaa-border);
+  padding-top: 1.5rem;
 }
 
 .aaa-modal-listhead {
@@ -3712,14 +4325,37 @@ select.select {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--aaa-border);
+  gap: 0;
+  padding: 0 1.5rem 1.5rem;
+  border-top: none;
 }
 
-/* Pushed to the far end: a destructive reset should not sit against the primary action. */
-.aaa-modal-reset {
-  margin-left: auto;
+.aaa-modal-foot-end {
+  justify-content: flex-end;
+}
+
+.aaa-btn-text-blue {
+  color: var(--aaa-blue);
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.aaa-btn-text-blue:hover {
+  color: var(--aaa-blue-hover);
+}
+
+.aaa-modal-foot .aaa-btn-primary {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  border-radius: 0.5rem;
+}
+
+.aaa-modal-reset-inline,
+.aaa-modal-reset-row {
+  margin-top: 0.75rem;
 }
 
 .aaa-modal-confirm {

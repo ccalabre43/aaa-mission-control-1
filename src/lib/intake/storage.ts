@@ -21,6 +21,7 @@ import {
   type RequesterIdentity,
   type ReviewerAssessmentLevel,
   type ReviewerPriority,
+  type ReviewerSize,
   type ReviewerStatus,
 } from "./types";
 import type { A3Values } from "./a3Schema";
@@ -232,6 +233,8 @@ const REVIEWER_ASSESSMENT_VALUES: readonly ReviewerAssessmentLevel[] = [
   "low",
 ];
 
+const REVIEWER_SIZE_VALUES: readonly ReviewerSize[] = ["S", "M", "L"];
+
 function normalizeAssessment(
   value: unknown,
   fallback: ReviewerAssessmentLevel,
@@ -239,6 +242,13 @@ function normalizeAssessment(
   const raw = text(value).trim().toLowerCase();
   return REVIEWER_ASSESSMENT_VALUES.includes(raw as ReviewerAssessmentLevel)
     ? (raw as ReviewerAssessmentLevel)
+    : fallback;
+}
+
+function normalizeSize(value: unknown, fallback: ReviewerSize): ReviewerSize {
+  const raw = text(value).trim().toUpperCase();
+  return REVIEWER_SIZE_VALUES.includes(raw as ReviewerSize)
+    ? (raw as ReviewerSize)
     : fallback;
 }
 
@@ -259,6 +269,7 @@ function normalizeReviewer(value: unknown): BriefReviewer {
     firstReviewedAt: text(raw.firstReviewedAt).trim()
       ? isoDateTime(raw.firstReviewedAt)
       : null,
+    size: normalizeSize(raw.size, defaults.size),
     impact: normalizeAssessment(raw.impact, defaults.impact),
     effort: normalizeAssessment(raw.effort, defaults.effort),
     risk: normalizeAssessment(raw.risk, defaults.risk),

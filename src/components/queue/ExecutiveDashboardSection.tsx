@@ -1,12 +1,22 @@
 /**
- * Executive dashboard tab: Figma Concept v1 2×3 cards.
+ * Executive dashboard tab: Figma Concept v1 “Executive dashboard 2” (node 469-7289).
  *
- * Queue counts and escalations use briefs saved in this browser. Hours, capacity, and speed-to-
- * decision stay placeholders until a Workfront assignment / Resource Planner adapter is approved
- * (guardrail 7). Does not invent utilization percentages from the prototype.
+ * Queue counts, jobs in motion, and escalations use this browser. Hours, capacity, speed,
+ * reporting week, and portfolio tables show labeled Concept v1 illustrative figures until a
+ * Workfront assignment / Resource Planner adapter is approved (guardrail 7).
  */
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import {
+  EXEC_DEMO_BUSY,
+  EXEC_DEMO_CAPACITY,
+  EXEC_DEMO_COMPLETED_WORK,
+  EXEC_DEMO_COVERAGE,
+  EXEC_DEMO_REPORTING_WEEK,
+  EXEC_DEMO_SELECTED_STATUS,
+  EXEC_DEMO_SPEED,
+  type ExecSelectedStatusRow,
+} from "../../lib/dashboard/executiveDemoFigures";
 import { loadBriefs } from "../../lib/intake/storage";
 import {
   REVIEWER_STATUSES,
@@ -29,6 +39,32 @@ const STATUS_BAR: Record<ReviewerStatus, string> = {
   escalated: "aaa-exec-seg-escalated",
   closed: "aaa-exec-seg-closed",
 };
+
+/** Figma display labels; storage values stay REVIEWER_STATUSES. */
+const QUEUE_STATUS_LABEL: Record<ReviewerStatus, string> = {
+  approved: "Accepted",
+  needs_review: "Awaiting review",
+  needs_clarification: "Returned for clarification",
+  deferred: "Deferred",
+  escalated: "Escalated",
+  closed: "Closed",
+};
+
+/** Figma jobs-in-motion labels mapped from tracker STATUS_OPTIONS. */
+const JOB_STATUS_LABEL: Record<(typeof STATUS_OPTIONS)[number], string> = {
+  "Not started": "Kickoff",
+  "In progress": "In production",
+  Blocked: "Blocked",
+  Complete: "Final review",
+};
+
+const QUEUE_LEGEND_ORDER: ReviewerStatus[] = [
+  "approved",
+  "needs_review",
+  "needs_clarification",
+  "deferred",
+  "escalated",
+];
 
 function daysUntil(isoDate: string | null): number | null {
   if (!isoDate) return null;
@@ -112,6 +148,20 @@ export function ExecutiveDashboardSection({
       return days != null && days >= 0 && days <= 7;
     });
 
+    const selectedFromLive: ExecSelectedStatusRow[] = escalations.slice(0, 5).map((row) => ({
+      project: row.name,
+      client: row.requesterDepartment || "—",
+      description:
+        row.blockers.length > 0
+          ? row.blockers.join("; ")
+          : "Escalated for leadership review.",
+      execReview: "Y" as const,
+      effort: "—",
+      owner: row.requesterName || "—",
+      targetEnd: "—",
+      briefId: row.briefId,
+    }));
+
     return {
       readyCount: ready.length,
       byStatus,
@@ -122,13 +172,16 @@ export function ExecutiveDashboardSection({
       trackerCount: trackerRows.length,
       escalations,
       dueSoon,
+      selectedRows:
+        selectedFromLive.length > 0 ? selectedFromLive : [...EXEC_DEMO_SELECTED_STATUS],
+      selectedFromLive: selectedFromLive.length > 0,
     };
   }, [trackerRows, dataEpoch]);
 
-  const statusParts = REVIEWER_STATUSES.map((item) => ({
-    key: item.value,
-    count: summary.byStatus[item.value],
-    className: STATUS_BAR[item.value],
+  const statusParts = QUEUE_LEGEND_ORDER.map((value) => ({
+    key: value,
+    count: summary.byStatus[value],
+    className: STATUS_BAR[value],
   }));
 
   const motionParts = [
@@ -148,69 +201,88 @@ export function ExecutiveDashboardSection({
       : []),
   ];
 
+  const decideChip =
+    summary.escalations.length === 1
+      ? "1 to decide"
+      : `${summary.escalations.length} to decide`;
+
+  const firstEscalation = summary.escalations[0];
+
   return (
     <section className="aaa-exec" aria-labelledby="exec-heading">
-      <header className="aaa-queue-hero aaa-exec-hero">
-        <div className="aaa-queue-hero-main">
-          <div className="aaa-queue-hero-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-10Z"
-                stroke="currentColor"
-                strokeWidth="1.75"
-              />
-            </svg>
-          </div>
-          <div>
-            <h2 id="exec-heading" className="aaa-queue-heading">
-              Executive dashboard
-            </h2>
-            <p className="aaa-queue-sub">
-              How the team is doing on requests that clear the reviewer queue.
-            </p>
-          </div>
-        </div>
+      <header className="aaa-exec-hero">
+        <h2 id="exec-heading" className="aaa-exec-page-title">
+          Executive dashboard
+        </h2>
+        <p className="aaa-exec-page-sub">
+          How the team is doing based on our intake information.
+        </p>
       </header>
 
-      <p className="aaa-exec-eyebrow">Queue figures update as you review · this week</p>
+      <div className="aaa-exec-portfolio-head">
+        <h3 className="aaa-exec-portfolio-title">Team Portfolio</h3>
+        <p className="aaa-exec-portfolio-week">
+          Reporting Week: {EXEC_DEMO_REPORTING_WEEK}
+        </p>
+      </div>
 
       <div className="aaa-exec-board">
         <article className="aaa-exec-panel">
           <div className="aaa-exec-panel-head">
             <h3 className="aaa-exec-panel-title">How busy is the team</h3>
-            <p className="aaa-exec-chip aaa-exec-chip-muted">Not connected</p>
+            <p className="aaa-exec-chip aaa-exec-chip-busy">{EXEC_DEMO_BUSY.chip}</p>
           </div>
           <p className="aaa-exec-stat">
-            <span className="aaa-exec-stat-value">—</span>
+            <span className="aaa-exec-stat-value">{EXEC_DEMO_BUSY.bookedPercent}</span>
             <span className="aaa-exec-stat-unit">% booked</span>
           </p>
-          <div className="aaa-exec-bar is-empty" aria-hidden="true">
-            <span className="aaa-exec-bar-empty" />
+          <div
+            className="aaa-exec-bar"
+            role="img"
+            aria-label={`${EXEC_DEMO_BUSY.bookedPercent} percent booked this week, illustrative Concept v1 figure`}
+          >
+            <span
+              className="aaa-exec-bar-seg aaa-exec-seg-busy"
+              style={{ flexGrow: EXEC_DEMO_BUSY.bookedPercent }}
+            />
+            <span
+              className="aaa-exec-bar-seg aaa-exec-bar-remainder"
+              style={{ flexGrow: 100 - EXEC_DEMO_BUSY.bookedPercent }}
+              aria-hidden="true"
+            />
           </div>
-          <p className="aaa-exec-caption">
-            Planned vs required hours need Workfront assignment fields (`work`, `workRequired`,
-            `percentComplete`) through the proxy. This card does not invent a booking percentage.
-          </p>
+          <p className="aaa-exec-caption">{EXEC_DEMO_BUSY.caption}</p>
         </article>
 
         <article className="aaa-exec-panel">
           <div className="aaa-exec-panel-head">
             <h3 className="aaa-exec-panel-title">Team capacity</h3>
-            <p className="aaa-exec-chip aaa-exec-chip-ok">Placeholder</p>
+            <p className="aaa-exec-chip aaa-exec-chip-ok">{EXEC_DEMO_CAPACITY.chip}</p>
           </div>
           <p className="aaa-exec-stat">
-            <span className="aaa-exec-stat-value">—</span>
+            <span className="aaa-exec-stat-value">{EXEC_DEMO_CAPACITY.hoursOpen}</span>
             <span className="aaa-exec-stat-unit">hrs open</span>
           </p>
-          <p className="aaa-exec-caption">
-            Forward capacity needs Resource Planner (or equivalent) access — a Vendor Management
-            and API decision. Week bars stay empty until that feed exists.
-          </p>
-          <div className="aaa-exec-weeks" aria-hidden="true">
-            {["This week", "Wk 2", "Wk 3", "Wk 4"].map((label) => (
-              <div key={label} className="aaa-exec-week">
-                <span className="aaa-exec-week-col" />
-                <span className="aaa-exec-week-label">{label}</span>
+          <p className="aaa-exec-caption">{EXEC_DEMO_CAPACITY.caption}</p>
+          <div
+            className="aaa-exec-weeks"
+            role="img"
+            aria-label="Illustrative forward capacity by week from Concept v1"
+          >
+            {EXEC_DEMO_CAPACITY.weeks.map((week) => (
+              <div key={week.label} className="aaa-exec-week">
+                <span className="aaa-exec-week-pct">{week.percentLabel}</span>
+                <span className="aaa-exec-week-track">
+                  <span
+                    className={
+                      week.emphasis
+                        ? "aaa-exec-week-col aaa-exec-week-col-emphasis"
+                        : "aaa-exec-week-col"
+                    }
+                    style={{ height: `${week.fillPercent}%` }}
+                  />
+                </span>
+                <span className="aaa-exec-week-label">{week.label}</span>
               </div>
             ))}
           </div>
@@ -218,9 +290,106 @@ export function ExecutiveDashboardSection({
 
         <article className="aaa-exec-panel">
           <div className="aaa-exec-panel-head">
+            <h3 className="aaa-exec-panel-title">Executive review this week</h3>
+            <p className="aaa-exec-chip aaa-exec-chip-alert">{decideChip}</p>
+          </div>
+          <p className="aaa-exec-stat">
+            <span className="aaa-exec-stat-value">{summary.escalations.length}</span>
+            <span className="aaa-exec-stat-unit">
+              {summary.escalations.length === 1 ? "escalation" : "escalations"}
+            </span>
+          </p>
+          <div className="aaa-exec-callouts">
+            {firstEscalation ? (
+              <div className="aaa-exec-callout aaa-exec-callout-alert">
+                <p className="aaa-exec-callout-title">
+                  <Link
+                    className="aaa-exec-attention-link"
+                    to={`/deliverables/requests/${firstEscalation.briefId}`}
+                  >
+                    {firstEscalation.name}
+                  </Link>
+                </p>
+                <p className="aaa-exec-callout-meta">
+                  {firstEscalation.requesterName} · awaiting a leadership decision
+                </p>
+              </div>
+            ) : (
+              <div className="aaa-exec-callout aaa-exec-callout-alert">
+                <p className="aaa-exec-callout-title">No escalations in this browser</p>
+                <p className="aaa-exec-callout-meta">
+                  Live escalated requests from the local queue appear here.
+                </p>
+              </div>
+            )}
+            <div className="aaa-exec-callout aaa-exec-callout-due">
+              <p className="aaa-exec-callout-title">
+                {summary.dueSoon.length === 1
+                  ? "1 job due within 7 days"
+                  : `${summary.dueSoon.length} jobs due within 7 days`}
+              </p>
+              <p className="aaa-exec-callout-meta">
+                {summary.dueSoon.length > 0
+                  ? "Local tracker dates in this browser — less than complete."
+                  : "No incomplete tracker jobs with a due date in the next 7 days in this browser."}
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article className="aaa-exec-panel">
+          <div className="aaa-exec-panel-head">
+            <h3 className="aaa-exec-panel-title">Requests through the queue</h3>
+            <p className="aaa-exec-chip aaa-exec-chip-info">
+              {summary.byStatus.needs_review === 1
+                ? "1 awaiting review"
+                : `${summary.byStatus.needs_review} awaiting review`}
+            </p>
+          </div>
+          <p className="aaa-exec-stat">
+            <span className="aaa-exec-stat-value">{summary.readyCount}</span>
+            <span className="aaa-exec-stat-unit">
+              {summary.readyCount === 1 ? "request" : "requests"}
+            </span>
+          </p>
+          <SegmentBar
+            parts={statusParts}
+            emptyLabel="No ready-to-send requests in this browser"
+          />
+          <ul className="aaa-exec-legend" role="list">
+            {QUEUE_LEGEND_ORDER.map((value) => (
+              <li key={value}>
+                <span>
+                  <span className={`aaa-exec-dot ${STATUS_BAR[value]}`} aria-hidden="true" />
+                  {QUEUE_STATUS_LABEL[value]}
+                </span>
+                <span>{summary.byStatus[value]}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="aaa-exec-panel">
+          <div className="aaa-exec-panel-head">
+            <h3 className="aaa-exec-panel-title">Speed to completion</h3>
+            <p className="aaa-exec-chip aaa-exec-chip-ok">{EXEC_DEMO_SPEED.chip}</p>
+          </div>
+          <p className="aaa-exec-stat">
+            <span className="aaa-exec-stat-value">{EXEC_DEMO_SPEED.daysAvg}</span>
+            <span className="aaa-exec-stat-unit">days avg</span>
+          </p>
+          <p className="aaa-exec-caption">{EXEC_DEMO_SPEED.caption}</p>
+          <p className="aaa-exec-caption aaa-exec-caption-split">
+            Delivered on time, last 30 days
+            <strong>{EXEC_DEMO_SPEED.onTimePercent}%</strong>
+          </p>
+        </article>
+
+        <article className="aaa-exec-panel">
+          <div className="aaa-exec-panel-head">
             <h3 className="aaa-exec-panel-title">Jobs in motion</h3>
             <p className="aaa-exec-chip aaa-exec-chip-muted">
-              {summary.completeJobs} complete
+              {summary.completeJobs} done this month
             </p>
           </div>
           <p className="aaa-exec-stat">
@@ -239,7 +408,7 @@ export function ExecutiveDashboardSection({
                     className={`aaa-exec-dot aaa-exec-seg-job-${status.toLowerCase().replace(/\s+/g, "-")}`}
                     aria-hidden="true"
                   />
-                  {status}
+                  {JOB_STATUS_LABEL[status]}
                 </span>
                 <span>{summary.byTrackerStatus[status]}</span>
               </li>
@@ -250,111 +419,109 @@ export function ExecutiveDashboardSection({
             projects.
           </p>
         </article>
-
-        <article className="aaa-exec-panel">
-          <div className="aaa-exec-panel-head">
-            <h3 className="aaa-exec-panel-title">Requests through the queue</h3>
-            <p className="aaa-exec-chip aaa-exec-chip-info">
-              {summary.byStatus.needs_review} awaiting review
-            </p>
-          </div>
-          <p className="aaa-exec-stat">
-            <span className="aaa-exec-stat-value">{summary.readyCount}</span>
-            <span className="aaa-exec-stat-unit">
-              {summary.readyCount === 1 ? "request" : "requests"}
-            </span>
-          </p>
-          <SegmentBar
-            parts={statusParts}
-            emptyLabel="No ready-to-send requests in this browser"
-          />
-          <ul className="aaa-exec-legend" role="list">
-            {REVIEWER_STATUSES.map((item) => (
-              <li key={item.value}>
-                <span>
-                  <span className={`aaa-exec-dot ${STATUS_BAR[item.value]}`} aria-hidden="true" />
-                  {item.label}
-                </span>
-                <span>{summary.byStatus[item.value]}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="aaa-exec-panel">
-          <div className="aaa-exec-panel-head">
-            <h3 className="aaa-exec-panel-title">Speed to decision</h3>
-            <p className="aaa-exec-chip aaa-exec-chip-ok">Placeholder</p>
-          </div>
-          <p className="aaa-exec-stat">
-            <span className="aaa-exec-stat-value">—</span>
-            <span className="aaa-exec-stat-unit">days avg</span>
-          </p>
-          <p className="aaa-exec-caption">
-            From request submitted to reviewer decision. Target is 3 days or less. This browser
-            does not store a decision timestamp that can support that average yet.
-          </p>
-          <p className="aaa-exec-caption aaa-exec-caption-split">
-            Delivered on time, last 30 days
-            <strong>—</strong>
-          </p>
-        </article>
-
-        <article className="aaa-exec-panel">
-          <div className="aaa-exec-panel-head">
-            <h3 className="aaa-exec-panel-title">Needs leadership attention</h3>
-            <p className="aaa-exec-chip aaa-exec-chip-alert">
-              {summary.escalations.length === 1
-                ? "1 to decide"
-                : `${summary.escalations.length} to decide`}
-            </p>
-          </div>
-          <p className="aaa-exec-stat">
-            <span className="aaa-exec-stat-value">{summary.escalations.length}</span>
-            <span className="aaa-exec-stat-unit">
-              {summary.escalations.length === 1 ? "escalation" : "escalations"}
-            </span>
-          </p>
-          {summary.escalations.length === 0 ? (
-            <p className="aaa-exec-empty">No escalated requests in this browser.</p>
-          ) : (
-            <ul className="aaa-exec-attention" role="list">
-              {summary.escalations.slice(0, 3).map((row) => (
-                <li key={row.briefId}>
-                  <Link
-                    className="aaa-exec-attention-link"
-                    to={`/deliverables/requests/${row.briefId}`}
-                  >
-                    {row.name}
-                  </Link>
-                  <span>
-                    {row.requesterName} · awaiting a leadership decision
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {summary.dueSoon.length > 0 ? (
-            <div className="aaa-exec-duesoon">
-              <p className="aaa-exec-duesoon-title">
-                {summary.dueSoon.length === 1
-                  ? "1 job due within 7 days"
-                  : `${summary.dueSoon.length} jobs due within 7 days`}
-              </p>
-              <p>Local tracker dates in this browser — less than complete.</p>
-            </div>
-          ) : (
-            <p className="aaa-exec-caption">
-              No incomplete tracker jobs with a due date in the next 7 days in this browser.
-            </p>
-          )}
-        </article>
       </div>
 
+      <section className="aaa-exec-table-block" aria-labelledby="exec-selected-heading">
+        <div className="aaa-exec-table-card aaa-exec-table-card-selected">
+          <h3 id="exec-selected-heading" className="aaa-exec-table-title">
+            Selected status items
+          </h3>
+          <p className="aaa-exec-table-note" role="note">
+            {summary.selectedFromLive
+              ? "Rows mapped from escalated requests saved in this browser."
+              : "Illustrative Concept v1 rows (Figma) — not Workfront. Live escalations replace these when present."}
+          </p>
+          <div className="aaa-exec-table-wrap">
+            <table className="aaa-exec-data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Project</th>
+                  <th scope="col">Client</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Exec Review</th>
+                  <th scope="col">Effort</th>
+                  <th scope="col">Owner</th>
+                  <th scope="col">Target End</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.selectedRows.map((row, index) => (
+                  <tr key={row.briefId ?? `${row.project}-${index}`}>
+                    <td>
+                      {row.briefId ? (
+                        <Link
+                          className="aaa-exec-attention-link"
+                          to={`/deliverables/requests/${row.briefId}`}
+                        >
+                          {row.project}
+                        </Link>
+                      ) : (
+                        row.project
+                      )}
+                    </td>
+                    <td>{row.client}</td>
+                    <td className="aaa-exec-table-desc">{row.description}</td>
+                    <td>{row.execReview}</td>
+                    <td>{row.effort}</td>
+                    <td>{row.owner}</td>
+                    <td>{row.targetEnd}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="aaa-exec-table-actions">
+            <Link to="/deliverables" className="aaa-btn aaa-btn-secondary">
+              View all
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      <section className="aaa-exec-table-block" aria-labelledby="exec-completed-heading">
+        <div className="aaa-exec-table-card aaa-exec-table-card-completed">
+          <h3 id="exec-completed-heading" className="aaa-exec-table-title">
+            Completed work
+          </h3>
+          <p className="aaa-exec-table-note" role="note">
+            Illustrative Concept v1 rows (Figma node 469-7289) — not a Workfront completion feed.
+          </p>
+          <div className="aaa-exec-table-wrap">
+            <table className="aaa-exec-data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Project</th>
+                  <th scope="col">Client</th>
+                  <th scope="col">Requested Date</th>
+                  <th scope="col">Completed Date</th>
+                  <th scope="col">Owner</th>
+                  <th scope="col">Outcome/Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXEC_DEMO_COMPLETED_WORK.map((row, index) => (
+                  <tr key={`${row.project}-${index}`}>
+                    <td>{row.project}</td>
+                    <td>{row.client}</td>
+                    <td>{row.requestedDate}</td>
+                    <td>{row.completedDate}</td>
+                    <td>{row.owner}</td>
+                    <td>{row.outcome}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="aaa-exec-table-actions">
+            <Link to="/deliverables" className="aaa-btn aaa-btn-secondary">
+              View all
+            </Link>
+          </p>
+        </div>
+      </section>
+
       <p className="aaa-exec-coverage" role="note">
-        Queue counts and escalations are from requests saved in this browser. Hours, capacity,
-        turnaround, and on-time delivery are placeholders until a Workfront assignment / Resource
-        Planner feed is connected — not organization-wide.
+        {EXEC_DEMO_COVERAGE}
       </p>
     </section>
   );

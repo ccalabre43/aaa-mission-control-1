@@ -2,6 +2,9 @@
   "plugins": {
     "app-builder": {
       "enabled": true
+    },
+    "figma": {
+      "enabled": true
     }
   }
 }

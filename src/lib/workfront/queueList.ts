@@ -70,7 +70,7 @@ export interface QueueRow {
   sentToWorkfront: boolean;
   workfrontIssueId: string | null;
   workfrontIssueUrl: string | null;
-  /** Value under Sent to Workfront — Yes only with Task ID. */
+  /** Value under Sent to Workfront — (WF Aligned) only with Task ID. */
   sentToWorkfrontLabel: string;
 }
 

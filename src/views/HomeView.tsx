@@ -1,11 +1,10 @@
 /**
- * Mission Control home. Hero/copy from assets/mocks/main-dashboard-interface.png;
- * tool cards from assets/mocks/home-tool-cards-figma.png (Figma node 369-4361):
- * Marketing Request / Comms Requests / Deep Dive / Add Tools in a 2×2 grid.
+ * Mission Control home, matched to A3 Creative Intake Concept v1 node 369-4361:
+ * Marketing Request / Executive View / Deep Dive / Add Tools in one wrapping row.
  *
- * - Desktop asks "What would you like to do today?" (canonical vs mobile wording).
- * - "Start Request" stays at every breakpoint as the primary CTA for intake.
- * - Tiles with nowhere to go render as unavailable ("Not built yet"), including custom cards.
+ * - Heading: "What would you like to do today?"
+ * - "Start Request" stays so intake remains reachable if the Marketing Request tile is removed.
+ * - Tiles with nowhere to go render as solid idle tiles (same chrome as pre-route Deep Dive).
  *
  * The tiles come from `localStorage`; `defaultCards()` holds the shipped four.
  */
@@ -25,7 +24,6 @@ import {
 import { cardsLoadMessage, loadCards, resetCards, saveCards } from "../lib/dashboard/storage";
 import { AddToolsDialog } from "../components/dashboard/AddToolsDialog";
 import { ToolCard } from "../components/dashboard/ToolCard";
-import { ToolIcon } from "../components/dashboard/ToolIcon";
 
 export default function HomeView() {
   const [cleared, setCleared] = useState(false);
@@ -114,16 +112,12 @@ export default function HomeView() {
 
   return (
     <main id="main" className="aaa-home">
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-12 text-center sm:px-6 sm:py-16">
-        <span className="aaa-hero-badge" aria-hidden="true">
-          <ToolIcon icon="lines" />
-        </span>
-
+      <div className="mx-auto flex w-full max-w-[68rem] flex-col items-center gap-6 px-4 pt-[110px] pb-12 text-center sm:px-6 sm:pt-[126px] sm:pb-16">
         <h1 className="aaa-hero-heading">What would you like to do today?</h1>
 
         <p className="aaa-hero-sub">
-          A few guided questions replace the email thread. The system drafts your creative
-          brief, flags related activity, and routes it for review.
+          Start a new creative request, check strategy resources, or manage with executive
+          view — all from one application.
         </p>
 
         <ul className="aaa-tool-grid" role="list">
@@ -152,6 +146,7 @@ export default function HomeView() {
               onDragEnterCard={() => setDropTargetId(card.id)}
               onDropOnCard={() => handleDrop(card.id)}
               onOpenManager={() => setDialogOpen(true)}
+              emphasized={card.id === "intake"}
             />
           ))}
         </ul>

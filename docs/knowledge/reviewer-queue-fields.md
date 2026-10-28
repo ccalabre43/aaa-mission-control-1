@@ -21,7 +21,12 @@ until a Workfront admin confirms the targets below.
 | Entry Date | `submittedAt` or `createdAt` | Issue `entryDate` |
 | Requestor | Identity name + initials (no email in the table) | `A3IntakeRequestedBy`; Entered By under S2S is the tech account |
 | NEW badge | Submitted/ready and `reviewer.firstReviewedAt` is null | Derived from entry date + status; no new field |
+| Size | `brief.reviewer.size` (local S/M/L; default M) | No A3 field; Summary triage only (Concept v1). Not posted to Workfront |
 | Impact / Effort / Risk | `brief.reviewer.impact` / `effort` / `risk` (local High/Medium/Low) | No A3 field yet; possible custom dropdowns later as a Workfront config request only |
+
+Summary’s two-column brief card (Concept v1 labels) is local display: `buildSummaryBriefFields`
+reads `brief.a3` then falls back to `answers` / `contextText` (decision 042). It does not change
+the Workfront payload.
 
 ## Preferred Workfront targets
 
@@ -58,10 +63,12 @@ Intake form. Do **not** add that name in client schema until the form actually h
 | Workload counts | Issue search by `status`, `priority`, `queueTopicID`, `assignedToID` on project `6abae2b600041e3ecb6a8da4dbe7b4a1` |
 | Hours / capacity | Assignment `work` / `workRequired` / `percentComplete`; Resource Planner later |
 
-Until then, the Executive tab uses the Concept v1 2×3 layout (`assets/mocks/executive-dashboard-concept-v1.png`).
+Until a Workfront feed is approved, the Executive tab follows Concept v1 **Executive dashboard 2**
+(Figma node `469-7289`; earlier 2×3 still in `assets/mocks/executive-dashboard-concept-v1.png`).
 Queue counts and escalations come from **this browser’s saved requests**; tracker “jobs in motion”
-from `aaa-project-tracker`. Hours, capacity, turnaround, and on-time % are labeled placeholders — not
-Workfront Resource Planner, and not organization-wide (guardrail 7). Decision 034.
+from `aaa-project-tracker`. Hours, capacity, turnaround, on-time %, reporting week, and the
+Selected status / Completed work tables show **labeled illustrative Concept v1 figures** (not
+Workfront Resource Planner, not organization-wide — guardrail 7). Decisions 034, 040, 045.
 
 ## Open items for Workfront admin
 

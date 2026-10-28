@@ -1,6 +1,6 @@
 /**
- * ALAN number entry: an editable combobox, pre-populated with the most recently used number and
- * offering previously used ones in a dropdown.
+ * ALAN number entry: an editable combobox seeded with the format template, offering previously
+ * used numbers in a dropdown.
  *
  * Built on a native `<input>` plus a `<datalist>` rather than a custom listbox. A hand-rolled
  * combobox has to reimplement arrow-key navigation, typeahead, escape handling, and mobile
@@ -8,9 +8,7 @@
  * stays editable, which is the requirement. It looks like the control users already know
  * (Jakob's Law).
  *
- * Validation warns and never blocks. The specified template and the real numbers in AAA Life
- * materials disagree, so rejecting an unusual value would reject legitimate input (Postel's Law).
- * See src/lib/intake/alanNumber.ts.
+ * Validation warns with "Wrong format" and never blocks. See src/lib/intake/alanNumber.ts.
  */
 import { useId } from "react";
 import { ALAN_TEMPLATE, validateAlan } from "../lib/intake/alanNumber";
@@ -53,7 +51,7 @@ export function AlanCombobox({
         placeholder={ALAN_TEMPLATE}
         autoComplete="off"
         spellCheck={false}
-        /* Not aria-invalid: an unusual value is a warning, not an error, and marking it invalid
+        /* Not aria-invalid: wrong format is a warning, not an error, and marking it invalid
            would tell assistive tech the field is blocking when it is not. */
         aria-describedby={showWarning ? messageId : undefined}
       />

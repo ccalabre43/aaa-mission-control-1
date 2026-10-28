@@ -85,13 +85,14 @@ export default function StartStep({
 
   return (
     <div className="aaa-flow-centered">
-      <span className="aaa-hero-badge" aria-hidden="true">
-        <ToolIcon icon="lines" />
-      </span>
-
-      <h1 className="aaa-flow-heading" tabIndex={-1} ref={headingRef}>
-        Start a creative request
-      </h1>
+      <div className="aaa-flow-title-row">
+        <span className="aaa-hero-badge" aria-hidden="true">
+          <ToolIcon icon="lines" />
+        </span>
+        <h1 className="aaa-flow-heading" tabIndex={-1} ref={headingRef}>
+          Start a creative request
+        </h1>
+      </div>
 
       <p className="aaa-flow-sub">
         A few guided questions replace the email thread. The system drafts your creative

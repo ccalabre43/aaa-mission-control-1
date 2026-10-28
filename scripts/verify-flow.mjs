@@ -443,8 +443,8 @@ async function walk(page, viewport, tag, collect) {
   await page.waitForSelector("#context-text");
   await page.fill("#context-text", CONTEXT_TEXT);
   await page.click('button:has-text("I have an ALAN number")');
-  await page.waitForSelector('input[list], input[placeholder="ALAN-0000-000-00"]');
-  await page.fill('input[placeholder="ALAN-0000-000-00"]', "ALAN-29541-624-00");
+  await page.waitForSelector('input[list], input[placeholder="ALAN-00000-000-00"]');
+  await page.fill('input[placeholder="ALAN-00000-000-00"]', "ALAN-29541-624-00");
   await shot("3-context");
   await collect(page, `${tag} context`);
   await page.click('button:has-text("Next")');

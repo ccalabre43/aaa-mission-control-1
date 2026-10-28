@@ -1,22 +1,28 @@
 /**
  * Full-page request summary (mock: assets/mocks/request-summary-page.png).
+ * Concept v1 Figma node 369-5482: Size + Impact + Effort + Risk; Accept — Send to Workfront.
  *
  * Summary tab shows the reviewer layout; Workfront payload tab keeps the A3 payload and blockers.
- * Submit to Workfront Que dual-writes only when the proxy kill switch is on and the user confirms.
+ * Accept — Send dual-writes only when the proxy kill switch is on and the user confirms.
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { WorkfrontSentDialog } from "../components/queue/WorkfrontSentDialog";
+import sizeTshirtIcon from "../assets/summary-size-tshirt.png";
 import { loadBriefs, upsertBrief } from "../lib/intake/storage";
+import { buildSummaryBriefFields } from "../lib/intake/summaryBriefFields";
 import {
   REVIEWER_ASSESSMENT_LEVELS,
   REVIEWER_PRIORITIES,
+  REVIEWER_SIZES,
   assessmentLabel,
   identityFullName,
   reviewerStatusLabel,
+  sizeLabel,
   type IntakeBrief,
   type ReviewerAssessmentLevel,
   type ReviewerPriority,
+  type ReviewerSize,
   type ReviewerStatus,
 } from "../lib/intake/types";
 import { loadQueueConfig } from "../lib/workfront/queueConfig";
@@ -48,11 +54,6 @@ interface SentDialogState {
 }
 
 type PageTab = "summary" | "payload";
-
-function displayOrDash(value: string | undefined | null): string {
-  const trimmed = (value ?? "").trim();
-  return trimmed || "—";
-}
 
 function cyclePriority(current: ReviewerPriority): ReviewerPriority {
   const index = REVIEWER_PRIORITIES.indexOf(current);
@@ -164,14 +165,53 @@ export default function RequestSummaryView() {
     patchReviewer({ status }, message);
   }
 
-  async function submitToWorkfrontQueue() {
+  /**
+   * Concept v1 primary: mark Approved — transfer, then run the existing dual-write path.
+   * Cancelled or failed send still keeps Accept; messaging stays honest about Workfront.
+   */
+  async function acceptAndSendToWorkfront() {
     if (!brief || submitting) return;
 
+    const approvedAt = new Date().toISOString();
+    const approved: IntakeBrief = {
+      ...brief,
+      updatedAt: approvedAt,
+      reviewer: {
+        ...brief.reviewer,
+        status: "approved",
+        firstReviewedAt: brief.reviewer.firstReviewedAt ?? approvedAt,
+      },
+    };
+    const saved = upsertBrief(approved);
+    if (!saved.ok) {
+      setError(saved.reason ?? "That request could not be saved to this browser.");
+      return;
+    }
+    setBrief(approved);
+    setError("");
+
     const alreadySent =
-      brief.workfront?.mode === "workfront" && brief.workfront.issueId;
+      approved.workfront?.mode === "workfront" && approved.workfront.issueId;
     if (alreadySent) {
       setStatusMessage(
-        `Already linked to Workfront Task ${brief.workfront?.issueId}.`,
+        `Marked Accepted (Approved — transfer). Already linked to Workfront Task ${approved.workfront?.issueId}.`,
+      );
+      return;
+    }
+
+    setStatusMessage("Marked Accepted (Approved — transfer).");
+    await submitToWorkfrontQueue(approved);
+  }
+
+  async function submitToWorkfrontQueue(sourceBrief?: IntakeBrief) {
+    const current = sourceBrief ?? brief;
+    if (!current || submitting) return;
+
+    const alreadySent =
+      current.workfront?.mode === "workfront" && current.workfront.issueId;
+    if (alreadySent) {
+      setStatusMessage(
+        `Already linked to Workfront Task ${current.workfront?.issueId}.`,
       );
       return;
     }
@@ -201,14 +241,18 @@ export default function RequestSummaryView() {
         ].join("\n"),
       );
       if (!confirmed) {
-        setStatusMessage("Live send cancelled. Nothing was posted to Workfront.");
+        setStatusMessage(
+          current.reviewer.status === "approved"
+            ? "Marked Accepted (Approved — transfer). Live send cancelled. Nothing was posted to Workfront."
+            : "Live send cancelled. Nothing was posted to Workfront.",
+        );
         return;
       }
     }
 
     setSubmitting(true);
     try {
-      const result = await submitToWorkfront(brief, queueConfig, {
+      const result = await submitToWorkfront(current, queueConfig, {
         live: wantLive,
         confirmLive: wantLive ? true : undefined,
       });
@@ -216,14 +260,18 @@ export default function RequestSummaryView() {
         setError(
           `Cannot submit yet. Still needed: ${result.missingFields.join(", ")}.`,
         );
-        setStatusMessage("");
+        setStatusMessage(
+          current.reviewer.status === "approved"
+            ? "Marked Accepted (Approved — transfer). Workfront send did not complete."
+            : "",
+        );
         return;
       }
       const submittedAt = new Date().toISOString();
       const next: IntakeBrief = {
-        ...brief,
+        ...current,
         status: "submitted",
-        submittedAt: brief.submittedAt ?? submittedAt,
+        submittedAt: current.submittedAt ?? submittedAt,
         updatedAt: submittedAt,
         workfront: {
           mode: result.mode,
@@ -248,22 +296,22 @@ export default function RequestSummaryView() {
           topicName: routed.topic?.name ?? "",
         });
         setStatusMessage(
-          `"${result.issueName}" created in Workfront as Task ${result.issueId}. Saved in this browser with that ID.`,
+          `Marked Accepted. "${result.issueName}" created in Workfront as Task ${result.issueId}. Saved in this browser with that ID.`,
         );
       } else if (wantLive && result.liveError) {
         setStatusMessage(
-          `"${result.issueName}" is ready locally. Live send failed: ${result.liveError}`,
+          `Marked Accepted. "${result.issueName}" is ready locally. Live send failed: ${result.liveError}`,
         );
       } else if (!wantLive) {
         const hint = health?.connected
           ? " Proxy is connected but live submit is off (WORKFRONT_LIVE_SUBMIT)."
           : " Workfront proxy is not connected.";
         setStatusMessage(
-          `"${result.issueName}" is ready locally. It has not been sent to Workfront.${hint}`,
+          `Marked Accepted. "${result.issueName}" is ready locally. It has not been sent to Workfront.${hint}`,
         );
       } else {
         setStatusMessage(
-          `"${result.issueName}" is ready locally. It has not been sent to Workfront.`,
+          `Marked Accepted. "${result.issueName}" is ready locally. It has not been sent to Workfront.`,
         );
       }
     } finally {
@@ -294,60 +342,13 @@ export default function RequestSummaryView() {
     );
   }
 
-  const channels = parseChannels(brief.a3.A3IntakeDeliverables);
-  const timingParts = [
-    brief.a3.A3IntakeTimingNotes?.trim(),
-    brief.a3.A3IntakeDesiredCompletionDate?.trim()
-      ? `Desired completion: ${brief.a3.A3IntakeDesiredCompletionDate.trim()}`
-      : "",
-  ].filter(Boolean);
-  const reviewFlags = brief.complianceFlags.filter((flag) => flag.severity === "review");
-  const approvals =
-    reviewFlags.length > 0
-      ? `Compliance review flagged: ${reviewFlags.map((flag) => flag.message).join("; ")}`
-      : "Not specified in intake";
-  const complianceNeedsReview = reviewFlags.length > 0 ? "Yes" : "No";
+  const { left: fieldsLeft, right: fieldsRight } = buildSummaryBriefFields(brief);
+  const channels = parseChannels(
+    brief.a3.A3IntakeDeliverables?.trim() || brief.answers["q-deliverables"],
+  );
   const submittedLabel = formatQueueDate(brief.submittedAt ?? brief.createdAt);
   const requestor = identityFullName(brief.identity) || "Unknown requestor";
   const sentDisplay = workfrontSentDisplay(brief.workfront);
-
-  const fieldsLeft: { label: string; value: string }[] = [
-    { label: "Business context", value: displayOrDash(brief.a3.A3IntakeBackgroundPurpose) },
-    { label: "Timing", value: timingParts.length ? timingParts.join(" ") : "—" },
-    { label: "Approvals", value: approvals },
-    {
-      label: "Channels / deliverable",
-      value: channels.length ? channels.join(", ") : displayOrDash(brief.a3.A3IntakeDeliverables),
-    },
-    {
-      label: "What can we build from?",
-      value: displayOrDash(brief.a3.A3IntakeAdditionalInformation),
-    },
-    {
-      label: "Any brand requirements?",
-      value: displayOrDash(brief.a3.A3IntakeGoalsExpectations),
-    },
-  ];
-
-  const fieldsRight: { label: string; value: string }[] = [
-    {
-      label: "Audience",
-      value: displayOrDash(brief.a3.A3IntakeSupplementalDescription),
-    },
-    {
-      label: "Success metric",
-      value: displayOrDash(brief.a3.A3IntakeSuccessMeasurement),
-    },
-    { label: "Compliance needs to review", value: complianceNeedsReview },
-    {
-      label: "What's the key message?",
-      value: displayOrDash(brief.a3.A3IntakeProjectSummary),
-    },
-    {
-      label: "What support do you need?",
-      value: "—",
-    },
-  ];
 
   return (
     <main id="main" className="aaa-summary-page mx-auto max-w-5xl px-4 py-6 sm:px-6 pb-28">
@@ -437,6 +438,36 @@ export default function RequestSummaryView() {
           </div>
 
           <div className="aaa-summary-assessments" role="group" aria-label="Assessment">
+            <label className="aaa-summary-assessment aaa-summary-assessment-size">
+              <img
+                className="aaa-summary-size-shirt"
+                src={sizeTshirtIcon}
+                alt=""
+                width={40}
+                height={42}
+                aria-hidden="true"
+              />
+              <span className="aaa-summary-size-text">
+                <span className="aaa-summary-assessment-label">Size</span>
+                <select
+                  value={brief.reviewer.size}
+                  onChange={(event) => {
+                    const next = event.target.value as ReviewerSize;
+                    patchReviewer(
+                      { size: next },
+                      `Size set to ${sizeLabel(next)}.`,
+                    );
+                  }}
+                  aria-label="Size"
+                >
+                  {REVIEWER_SIZES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </label>
             {(
               [
                 ["impact", "Impact"],
@@ -474,11 +505,11 @@ export default function RequestSummaryView() {
           className="aaa-summary-payload"
         >
           <p className="aaa-panel-reason">
-            This is the A3 / Workfront Task payload. Local reviewer Status, Priority, and Impact /
-            Effort / Risk are not included.
+            This is the A3 / Workfront Task payload. Local reviewer Status, Priority, Size, and
+            Impact / Effort / Risk are not included.
             {sentDisplay.sent
               ? ` Linked Workfront Task: ${brief.workfront?.issueId}.`
-              : " It has not been posted until Submit to Workfront Que succeeds with a Task ID."}
+              : " It has not been posted until Accept — Send to Workfront succeeds with a Task ID."}
           </p>
           <dl className="aaa-panel-list aaa-summary-payload-meta">
             <div>
@@ -535,21 +566,10 @@ export default function RequestSummaryView() {
         <button
           type="button"
           className="aaa-summary-btn aaa-summary-btn-primary"
-          onClick={() => setStatus("approved", "Marked Accepted (Approved — transfer).")}
-        >
-          Accept
-        </button>
-        <button
-          type="button"
-          className="aaa-summary-btn aaa-summary-btn-secondary"
-          onClick={() => submitToWorkfrontQueue()}
+          onClick={() => void acceptAndSendToWorkfront()}
           disabled={submitting}
         >
-          {submitting
-            ? "Submitting…"
-            : sentDisplay.sent
-              ? "Already in Workfront"
-              : "Submit to Workfront Que"}
+          {submitting ? "Sending…" : "Accept — Send to Workfront"}
         </button>
         <button
           type="button"

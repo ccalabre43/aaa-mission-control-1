@@ -23,9 +23,9 @@ export const BANNED_PHRASES = [
 /**
  * Phrases that claim a request reached Workfront without an Issue ID.
  *
- * Dual-write (decision 035) may show Yes only when a real Issue ID is stored. A bare
- * "Sent to Workfront: Yes" in the bundle is still banned; the UI builds
- * `Yes (Issue ${id})` instead so the literal claim never ships without an ID.
+ * Dual-write (decision 035) may show " (WF Aligned)" only when a real Task ID is stored. A bare
+ * "Sent to Workfront: Yes" in the bundle is still banned; the UI shows that label only after
+ * a real ID is stored (Task ID available on hover).
  *
  * Only **affirmative** phrasing is banned. "Sent to Workfront: No" and "not been sent to
  * Workfront" are honest disclosures this guard exists to protect.
@@ -52,10 +52,10 @@ export const REQUIRED_SAFE_PHRASES = [
 ];
 
 /**
- * Affirmative send with Issue ID is allowed in the bundle (decision 035). Bare Yes without Issue is
+ * Affirmative sync label after a real Task ID is stored (decision 035). Bare Yes without an ID is
  * still in BANNED_SEND_CLAIMS.
  */
-export const ALLOWED_SEND_WITH_ID_EXAMPLE = "Yes (Task ";
+export const ALLOWED_SEND_WITH_ID_EXAMPLE = " (WF Aligned)";
 
 /** Words that make a negative result auditable by naming what was actually searched. */
 export const SCOPE_WORDS = ["this device", "this browser", "Workfront", "saved on"];

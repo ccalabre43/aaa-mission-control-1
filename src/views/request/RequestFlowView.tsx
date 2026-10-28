@@ -41,7 +41,11 @@ import {
   type IntakeBrief,
   type RequesterIdentity,
 } from "../../lib/intake/types";
-import { collectKnownAlanNumbers, normalizeAlan } from "../../lib/intake/alanNumber";
+import {
+  ALAN_TEMPLATE,
+  collectKnownAlanNumbers,
+  resolvedAlanNumber,
+} from "../../lib/intake/alanNumber";
 import { defaultAlanDetector } from "../../lib/intake/alanDetector";
 import { buildCorpus } from "../../lib/related/corpus";
 import { defaultMatcher } from "../../lib/related/LocalMatcher";
@@ -89,7 +93,7 @@ export default function RequestFlowView() {
 
   /** Real File objects, kept in memory only. Contents are never persisted. */
   const [files, setFiles] = useState<File[]>([]);
-  const [alanInput, setAlanInput] = useState("");
+  const [alanInput, setAlanInput] = useState(ALAN_TEMPLATE);
   const [alanPrompted, setAlanPrompted] = useState(false);
   const [detectionNote, setDetectionNote] = useState<string | null>(null);
 
@@ -104,17 +108,11 @@ export default function RequestFlowView() {
 
   usePublishFlowStep(step);
 
+  // Recent numbers stay in the datalist only; the field always seeds with ALAN_TEMPLATE.
   const knownAlanNumbers = useMemo(() => {
     const { briefs } = loadBriefs();
     return collectKnownAlanNumbers(briefs, loadRecentAlan());
   }, []);
-
-  // Pre-populate with the most recently used number, per the requirement. Done once, and only
-  // when the field is untouched, so it cannot overwrite typing.
-  useEffect(() => {
-    const recent = knownAlanNumbers[0];
-    if (recent) setAlanInput(recent);
-  }, [knownAlanNumbers]);
 
   /**
    * Moving focus to the step heading on every transition. Without this, a keyboard or screen reader
@@ -221,11 +219,11 @@ export default function RequestFlowView() {
       brief.complianceFlags,
       scanForComplianceFlags({ contextText, answers }),
     );
-    const alan = normalizeAlan(alanInput);
+    const alan = resolvedAlanNumber(alanInput);
     patchBrief({
       contextText,
       complianceFlags: flags,
-      alanNumber: alan || null,
+      alanNumber: alan,
       alanAnswered: alanPrompted || Boolean(alan),
     });
     if (alan) saveRecentAlan(alan);

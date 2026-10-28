@@ -87,10 +87,10 @@ try {
 
   writeFileSync(
     join(assets, "with-id.js"),
-    'const t=`Yes (Task ${id})`; const u="Open in Workfront";',
+    'const t=" (WF Aligned)"; const u="Open in Workfront";',
   );
   check(
-    "Yes with Task ID construction is allowed",
+    "(WF Aligned) label after Task ID is allowed",
     checkBundleCopy(assets).length === 0,
   );
   rmSync(join(assets, "with-id.js"));

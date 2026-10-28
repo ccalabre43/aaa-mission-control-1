@@ -613,7 +613,14 @@ export function RequestQueueSection() {
                           <span className="aaa-queue-new">NEW</span>
                         ) : null}
                         {row.sentToWorkfront ? (
-                          <span className="aaa-queue-sent" title={row.sentToWorkfrontLabel}>
+                          <span
+                            className="aaa-queue-sent"
+                            title={
+                              row.workfrontIssueId
+                                ? `Workfront Task ${row.workfrontIssueId}`
+                                : row.sentToWorkfrontLabel
+                            }
+                          >
                             {row.sentToWorkfrontLabel}
                           </span>
                         ) : null}
@@ -851,9 +858,9 @@ export function RequestQueueSection() {
       <p className="aaa-queue-footnote">
         Reviewer Status and Priority are saved in this browser only. Ready to send stays local until
         Summary → Submit to Workfront Que succeeds with a real Task ID. Sent to Workfront: No is
-        the default; Yes appears only with that ID. Refresh loads Tasks on mission-control-v1 via
-        the proxy — not the whole organization. Select rows to reorder locally or delete the local
-        copy (Workfront Tasks are not deleted).
+        the default; (WF Aligned) appears only with that ID (hover the badge for the Task ID). Refresh
+        loads Tasks on mission-control-v1 via the proxy — not the whole organization. Select rows
+        to reorder locally or delete the local copy (Workfront Tasks are not deleted).
       </p>
 
       {refreshDialog ? (

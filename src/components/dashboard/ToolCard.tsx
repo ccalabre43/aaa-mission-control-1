@@ -47,6 +47,8 @@ interface ToolCardProps {
   onDragEnterCard: () => void;
   onDropOnCard: () => void;
   onOpenManager: () => void;
+  /** Resting blue border from Concept v1 node 369-4361 (Marketing Request). */
+  emphasized?: boolean;
 }
 
 export function ToolCard({
@@ -65,6 +67,7 @@ export function ToolCard({
   onDragEnterCard,
   onDropOnCard,
   onOpenManager,
+  emphasized = false,
 }: ToolCardProps) {
   const gripRef = useRef<HTMLButtonElement | null>(null);
   const editable = isEditable(card);
@@ -115,7 +118,9 @@ export function ToolCard({
     inner = (
       <button
         type="button"
-        className="aaa-tool-card aaa-tool-card-ready aaa-tool-card-manager"
+        className={`aaa-tool-card aaa-tool-card-ready aaa-tool-card-manager${
+          emphasized ? " aaa-tool-card-current" : ""
+        }`}
         onClick={onOpenManager}
       >
         {body}
@@ -125,7 +130,9 @@ export function ToolCard({
     inner = (
       <Link
         to={card.to}
-        className="aaa-tool-card aaa-tool-card-ready"
+        className={`aaa-tool-card aaa-tool-card-ready${
+          emphasized ? " aaa-tool-card-current" : ""
+        }`}
         /* The grip owns dragging. A draggable link would start a link-drag from the card body. */
         draggable={false}
       >
@@ -133,14 +140,8 @@ export function ToolCard({
       </Link>
     );
   } else {
-    /* Not a link and not a disabled button: a real element that explains its state, so keyboard
-       users can still read it and nobody chases a dead control. */
-    inner = (
-      <div className="aaa-tool-card aaa-tool-card-soon">
-        {body}
-        <span className="aaa-tool-soon">Not built yet</span>
-      </div>
-    );
+    /* No route yet (shipped Deep Dive or a custom Add a tool card): solid idle chrome, no label. */
+    inner = <div className="aaa-tool-card aaa-tool-card-idle">{body}</div>;
   }
 
   const cellClasses = ["aaa-tool-cell"];

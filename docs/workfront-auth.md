@@ -103,7 +103,7 @@ That choice is not the developer's to make quietly. It changes what a Workfront 
   rows without a match stay). Coverage names the project plus local briefs (never
   organization-wide). See decision 037.
 - Copy-guard still bans bare **"Sent to Workfront: Yes"**; the UI may show
-  `Yes (Task <id>)` only after a successful create.
+  **(WF Aligned)** only after a successful create (Task ID on hover).
 
 ## Also unresolved
 

@@ -1,98 +1,109 @@
 /**
- * The dashboard's tile glyphs, lifted out of `HomeView` so the card component, the Add Tools dialog's
- * icon picker, and the hero badge all draw the same shapes.
+ * The dashboard's tile glyphs, shared by home cards and the Add Tools dialog.
  *
- * Decorative by design: each sits beside a real text label, so announcing it would only repeat the
- * label to a screen reader. The picker in the dialog is the one place a glyph needs a name, and it
- * gets that from the radio's own label rather than from here.
+ * Decorative by design: each sits beside a real text label. The dialog picker names choices via
+ * adjacent text (or sr-only labels), never by the glyph alone.
+ *
+ * Concept v1 Figma exports keep their root width/height. Pass `compact` in the Add a tool picker
+ * to use the 20×20 variants from node 369-4561.
  */
 import type { CardIcon } from "../../lib/dashboard/cards";
+import paletteSrc from "../../assets/dashboard-icons/palette.svg";
+import frameSrc from "../../assets/dashboard-icons/frame-view.svg";
+import magnifySrc from "../../assets/dashboard-icons/magnify.svg";
+import addSrc from "../../assets/dashboard-icons/add.svg";
+import chartSrc from "../../assets/dashboard-icons/chart.svg";
+import briefcaseSrc from "../../assets/dashboard-icons/briefcase.svg";
+import starSrc from "../../assets/dashboard-icons/star.svg";
+import pickerPaletteSrc from "../../assets/dashboard-icons/picker-palette.svg";
+import pickerChartSrc from "../../assets/dashboard-icons/picker-chart.svg";
+import pickerBriefcaseSrc from "../../assets/dashboard-icons/picker-briefcase.svg";
+import pickerStarSrc from "../../assets/dashboard-icons/picker-star.svg";
 
-/** Default 40×40 so glyphs fill the colored tile squares in the Figma comps. */
+type Glyph = { src: string; width: number; height: number };
+
+const CARD_GLYPHS: Partial<Record<CardIcon, Glyph>> = {
+  palette: { src: paletteSrc, width: 40, height: 40 },
+  frame: { src: frameSrc, width: 42, height: 42 },
+  search: { src: magnifySrc, width: 35, height: 35 },
+  plus: { src: addSrc, width: 40, height: 40 },
+  chart: { src: chartSrc, width: 40, height: 40 },
+  briefcase: { src: briefcaseSrc, width: 40, height: 40 },
+  star: { src: starSrc, width: 20, height: 20 },
+};
+
+const PICKER_GLYPHS: Partial<Record<CardIcon, Glyph>> = {
+  palette: { src: pickerPaletteSrc, width: 20, height: 20 },
+  chart: { src: pickerChartSrc, width: 20, height: 20 },
+  briefcase: { src: pickerBriefcaseSrc, width: 20, height: 20 },
+  star: { src: pickerStarSrc, width: 20, height: 20 },
+};
+
 export function ToolIcon({
   icon,
-  size = 40,
+  size = 34,
+  compact = false,
 }: {
   icon: CardIcon;
   size?: number;
+  /** Use the 20px Figma picker assets from Add a tool. */
+  compact?: boolean;
 }) {
+  const figma = compact ? PICKER_GLYPHS[icon] ?? CARD_GLYPHS[icon] : CARD_GLYPHS[icon];
+  if (figma) {
+    return (
+      <img
+        src={figma.src}
+        alt=""
+        width={figma.width}
+        height={figma.height}
+        aria-hidden="true"
+        className="aaa-tool-glyph"
+      />
+    );
+  }
+
   const common = {
     width: size,
     height: size,
-    viewBox: "0 0 20 20",
+    viewBox: "0 0 24 24",
     "aria-hidden": true as const,
     focusable: "false" as const,
   };
-  if (icon === "plus") {
-    return (
-      <svg {...common} fill="none" stroke="currentColor" strokeWidth={2.2}>
-        <path d="M10 4.5v11M4.5 10h11" strokeLinecap="round" />
-      </svg>
-    );
-  }
+
   if (icon === "window") {
     return (
-      <svg {...common} fill="none" stroke="currentColor" strokeWidth={1.8}>
-        <rect x="3" y="4.5" width="14" height="11" rx="1.5" />
-        <path d="M6 12h8" strokeLinecap="round" />
+      <svg {...common} fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M7 15h10" strokeLinecap="round" />
       </svg>
     );
   }
-  if (icon === "search") {
-    // Centered lens + short 45° handle, matching the orange badge reference.
-    return (
-      <svg {...common} fill="none" stroke="currentColor" strokeWidth={2}>
-        <circle cx="9" cy="9" r="4.5" />
-        <path d="M12.25 12.25L15.75 15.75" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (icon === "palette") {
-    // Matches assets/mocks/icon-palette.png: full-bleed kidney + thumb hole, four wells.
-    const paletteSize = Math.max(size, 44);
-    return (
-      <svg
-        width={paletteSize}
-        height={paletteSize}
-        viewBox="0 0 64 64"
-        aria-hidden
-        focusable="false"
-        fill="none"
-      >
-        <path
-          d="M32 6C19.3 6 9 15.8 9 28.2c0 8.2 4.5 15.1 11.4 19.1.8 4.8 4.4 8.5 9.1 9.7.8.2 1.5-.4 1.5-1.2V49c0-.9.5-1.6 1.3-2 7.2-3.2 12.2-10.2 12.2-18.8C44.5 15.3 39.2 6 32 6Z"
-          stroke="currentColor"
-          strokeWidth={4.5}
-          strokeLinejoin="round"
-        />
-        <circle cx="43" cy="36" r="5.2" stroke="currentColor" strokeWidth={3.5} />
-        <circle cx="20.5" cy="24" r="3.5" fill="currentColor" />
-        <circle cx="31.5" cy="17.5" r="3.5" fill="currentColor" />
-        <circle cx="43" cy="21.5" r="3.5" fill="currentColor" />
-        <circle cx="46" cy="31" r="3.5" fill="currentColor" />
-      </svg>
-    );
-  }
+
   if (icon === "chat") {
     return (
-      <svg {...common} fill="none" stroke="currentColor" strokeWidth={1.8}>
-        <path
-          d="M4.25 5.25h11.5a1.25 1.25 0 0 1 1.25 1.25v6a1.25 1.25 0 0 1-1.25 1.25H9.1L6.25 16.1V13.75H4.25A1.25 1.25 0 0 1 3 12.5v-6a1.25 1.25 0 0 1 1.25-1.25Z"
-          strokeLinejoin="round"
-        />
-        <path d="M7.25 9.25h.01M10 9.25h.01M12.75 9.25h.01" strokeLinecap="round" strokeWidth={2.4} />
+      <svg
+        {...common}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+        <path d="M8 12h.01M12 12h.01M16 12h.01" strokeWidth={2.75} />
       </svg>
     );
   }
-  // "lines" and "document" differ only in line length, matching the mock's two glyphs.
+
   const paths =
     icon === "lines"
-      ? ["M5 7h10", "M5 10h10", "M5 13h6"]
-      : ["M5 7h10", "M5 10h7", "M5 13h9"];
+      ? ["M5 8h14", "M5 12h14", "M5 16h9"]
+      : ["M5 8h14", "M5 12h11", "M5 16h13"];
   return (
-    <svg {...common} fill="none" stroke="currentColor" strokeWidth={1.9}>
+    <svg {...common} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
       {paths.map((d) => (
-        <path key={d} d={d} strokeLinecap="round" />
+        <path key={d} d={d} />
       ))}
     </svg>
   );

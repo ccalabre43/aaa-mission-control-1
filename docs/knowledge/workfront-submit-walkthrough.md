@@ -33,7 +33,7 @@ Ready to send does **not** create a Workfront Task by itself.
 3. **Without** `WORKFRONT_LIVE_SUBMIT=1`: still local; honest “not sent” messaging
 4. **With** kill switch on: confirm dialog (integration account Entered By) → proxy
    `POST /issues` (creates a **Task**) on **mission-control-v1** → UI may show
-   **Sent to Workfront: Yes (Task …)** only when a real Task ID is stored
+   **Sent to Workfront: (WF Aligned)** only when a real Task ID is stored (hover for Task ID)
 
 ## Where Tasks land
 
