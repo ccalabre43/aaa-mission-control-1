@@ -133,4 +133,4 @@ export const EXEC_DEMO_COMPLETED_WORK: readonly ExecCompletedWorkRow[] = [
 ];
 
 export const EXEC_DEMO_COVERAGE =
-  "Requests through the queue and jobs in motion use this browser’s saved briefs and project-tracker rows. Hours booked, capacity, turnaround, on-time %, reporting week, Selected status items (when not filled from escalations), and Completed work are illustrative Concept v1 figures (Figma node 469-7289), not a Workfront Resource Planner feed and not organization-wide.";
+  "Requests through the queue and jobs in motion use this browser’s saved briefs and project-tracker rows. Hours booked, capacity, turnaround, on-time %, reporting week, Items flagged for review (when not filled from escalations), and Completed work are illustrative Concept v1 figures (Figma node 469-7289), not a Workfront Resource Planner feed and not organization-wide.";

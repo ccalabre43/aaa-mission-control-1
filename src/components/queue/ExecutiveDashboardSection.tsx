@@ -424,7 +424,7 @@ export function ExecutiveDashboardSection({
       <section className="aaa-exec-table-block" aria-labelledby="exec-selected-heading">
         <div className="aaa-exec-table-card aaa-exec-table-card-selected">
           <h3 id="exec-selected-heading" className="aaa-exec-table-title">
-            Selected status items
+            Items flagged for review
           </h3>
           <p className="aaa-exec-table-note" role="note">
             {summary.selectedFromLive
