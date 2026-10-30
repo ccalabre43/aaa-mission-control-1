@@ -684,7 +684,8 @@ select.aaa-input {
 }
 
 .aaa-hero-heading {
-  font-size: 1.625rem;
+  /* Concept v1 mobile 600:1084 uses ~32px; keep Open Sans (not Helvetica). */
+  font-size: 2rem;
   line-height: 1.25;
   font-weight: 700;
   color: var(--aaa-black);
@@ -704,7 +705,7 @@ select.aaa-input {
   color: var(--aaa-black);
 }
 
-/* Home tool cards: one wrapping row per Concept v1 node 369-4361. */
+/* Home tool cards: portrait wrap from sm (369-4361); mobile list under 640px (600:1084). */
 .aaa-tool-grid {
   display: flex;
   flex-wrap: wrap;
@@ -745,6 +746,14 @@ select.aaa-input {
 button.aaa-tool-card {
   /* Same hit area and type color as the <a> cards. */
   color: inherit;
+}
+
+.aaa-tool-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
 }
 
 .aaa-tool-card-ready {
@@ -800,6 +809,68 @@ button.aaa-tool-card {
 .aaa-tool-icon .aaa-tool-glyph {
   flex: none;
   display: block;
+}
+
+/* Concept v1 mobile 600:1084 — full-width horizontal list cards (icon left + copy). */
+@media (max-width: 639px) {
+  .aaa-tool-grid {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 1.25rem;
+    max-width: 20rem;
+    width: 100%;
+  }
+
+  .aaa-tool-cell {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .aaa-tool-cell > .aaa-tool-card {
+    width: 100%;
+  }
+
+  .aaa-tool-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    width: 100%;
+    height: 5.25rem;
+    min-height: 5.25rem;
+    padding: 0 1.25rem;
+    text-align: left;
+  }
+
+  .aaa-tool-card-current,
+  .aaa-tool-card-ready:hover,
+  .aaa-tool-card-ready:focus-visible {
+    /* 2px border: keep outer 84px height stable vs 1px rest. */
+    padding: 0 calc(1.25rem - 1px);
+  }
+
+  .aaa-tool-icon {
+    border-radius: 1rem;
+  }
+
+  .aaa-tool-copy {
+    align-items: flex-start;
+    flex: 1 1 auto;
+    text-align: left;
+  }
+
+  .aaa-tool-label,
+  .aaa-tool-desc {
+    text-align: left;
+    width: 100%;
+  }
+
+  .aaa-tool-desc {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
 }
 
 /* White glyphs verified: blue 7.65:1, green 3.30:1, Deep Dive orange 3.56:1, ink 10.05:1. All clear

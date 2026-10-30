@@ -1,19 +1,21 @@
 /**
  * One dashboard tile, plus the reorder affordance in its upper-right corner.
  *
+ * Layout: portrait tiles from `sm` up (Concept v1 369-4361); below 640px a horizontal list card
+ * matching Concept v1 mobile 600:1084 (icon left, title + description stacked).
+ *
  * Three routes to the same reorder, because dragging alone is not enough:
  *
  * 1. **Pointer drag.** The grip is the drag source, not the whole card. Making the card draggable
  *    would fight the browser's native link dragging on the tiles that are real links, and dragging a
  *    link is how you end up with a URL dropped into the address bar instead of a reordered grid.
  * 2. **Keyboard.** Arrow keys move the card while the grip has focus (WCAG 2.1.1). Left and right for
- *    the four-across desktop grid, up and down as well, since the grid is two-across under 900px and
- *    "up" is the honest direction there.
+ *    the desktop portrait grid; up and down matter most on the mobile list (and when the grid wraps
+ *    two-across).
  * 3. **Single pointer, no dragging.** The grip is a toggle that reveals Move left and Move right
- *    buttons. This is the WCAG 2.5.7 Dragging Movements alternative, which is AA in WCAG 2.2 and
- *    therefore the floor per guardrail 9 - a drag-only control excludes anyone who can click but
- *    cannot hold and drag. It also follows the Move up and Move down precedent already set in
- *    `ManageQuestionsView`.
+ *    buttons (earlier / later in order — the honest labels on a vertical list too). This is the
+ *    WCAG 2.5.7 Dragging Movements alternative, which is AA in WCAG 2.2 and therefore the floor per
+ *    guardrail 9.
  *
  * The manager card gets none of this. It is the control that manages the grid rather than content in
  * it, so it stays pinned last and is neither movable nor removable.
@@ -105,10 +107,12 @@ export function ToolCard({
       <span className={`aaa-tool-icon ${card.tint}`}>
         <ToolIcon icon={card.icon} />
       </span>
-      <span className="aaa-tool-label">{card.label}</span>
-      {card.description ? (
-        <span className="aaa-tool-desc">{card.description}</span>
-      ) : null}
+      <span className="aaa-tool-copy">
+        <span className="aaa-tool-label">{card.label}</span>
+        {card.description ? (
+          <span className="aaa-tool-desc">{card.description}</span>
+        ) : null}
+      </span>
     </>
   );
 

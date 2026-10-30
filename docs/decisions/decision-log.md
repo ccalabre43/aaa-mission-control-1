@@ -1291,6 +1291,17 @@ Effort pts.
 Constants: `src/lib/dashboard/executiveDemoFigures.ts`. UI:
 `src/components/queue/ExecutiveDashboardSection.tsx`.
 
+## 2026-10-30 - 050 - Home mobile list cards (Figma 600:1084)
+
+**Status:** accepted
+
+Mission Control home below 640px uses Concept v1 mobile **list cards** (horizontal icon + copy,
+~84px tall, full width of a 320px column) instead of the portrait 15×10.5rem tiles. From `sm` up,
+the portrait wrapping grid (369-4361) is unchanged. Shipped tile titles stay **Marketing Request** /
+**Deep Dive** / etc. The Figma search/mic pill is **not** shipped (no search backend — a decorative
+control would mislead). CSS lives on `.aaa-tool-grid` / `.aaa-tool-card` / `.aaa-tool-copy` in
+`src/index.css`; copy stack markup in `ToolCard.tsx`.
+
 ## 2026-10-30 - 048 - Vercel same-origin Workfront API (extends 029)
 
 **Status:** accepted (hosted stand-in; Adobe Runtime remains the App Builder long-term path)

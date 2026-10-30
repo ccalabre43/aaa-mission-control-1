@@ -35,7 +35,7 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/reviewer-ux-flow.jpg` | 2026-09-16 | The reviewer state machine. Sprint 2 | active |
 | `assets/brand/AAAL-Brand-Visual-Style-Guide.pdf` | 2026-09-16 | Brand system, MAR 2025. Proprietary, internal use only | active |
 | `docs/knowledge/brand-system.md` | 2026-09-16 | The brand guide as actually implemented, with every ratio computed. Records six places the guide's own ADA guidance fails when measured | active |
-| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07; Vercel WF 048 / mobile logo 049 2026-10-30 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
+| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07; Vercel WF 048 / mobile logo 049 / home list 050 2026-10-30 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
 
 ## Requirements and flows
 

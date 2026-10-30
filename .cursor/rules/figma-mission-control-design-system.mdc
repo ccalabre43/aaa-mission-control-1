@@ -78,6 +78,15 @@ No third-party image/font CDN at runtime (CSP + privacy). Vite fingerprints `/as
 - Prefer existing `aaa-*` classes over one-off absolute-position Figma dumps
 - Underline only links; links bold in blue or red
 
+### Home mobile list-card (Figma `600:1084`)
+
+| Breakpoint | Pattern |
+| --- | --- |
+| `max-width: 639px` | `.aaa-tool-grid` is a single column (`max-width: 20rem`). Cards are **row** layout: 56×56 icon (`border-radius: 1rem`) + `.aaa-tool-copy` (label + desc). Card height ~`5.25rem` / 84px. Emphasized intake keeps 2px `--aaa-blue` border. |
+| `min-width: 640px` (`sm+`) | Portrait tiles **15×10.5rem**, centered flex wrap (Concept v1 `369-4361`). |
+
+Do **not**: paste Figma Helvetica; leave temporary `figma.com/api/mcp/asset` URLs in code; ship the search/mic pill without a real search path; rename shipped tiles to Figma’s “New Request” / “Sales Tools” without a product decision.
+
 ## 7. Project structure
 
 ```

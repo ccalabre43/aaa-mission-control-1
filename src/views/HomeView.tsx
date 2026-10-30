@@ -1,7 +1,10 @@
 /**
- * Mission Control home, matched to A3 Creative Intake Concept v1 node 369-4361:
- * Marketing Request / Executive View / Deep Dive / Add Tools in one wrapping row.
+ * Mission Control home.
  *
+ * - Desktop (`sm+`): Concept v1 node 369-4361 — Marketing Request / Executive View / Deep Dive /
+ *   Add Tools as portrait tiles in one wrapping row.
+ * - Mobile (below 640px): Concept v1 node 600:1084 — same cards as a vertical list of horizontal
+ *   rows (icon left). Figma search/mic pill is not shipped (no search backend).
  * - Heading: "What would you like to do today?"
  * - "Start Request" stays so intake remains reachable if the Marketing Request tile is removed.
  * - Tiles with nowhere to go render as solid idle tiles (same chrome as pre-route Deep Dive).
@@ -112,10 +115,10 @@ export default function HomeView() {
 
   return (
     <main id="main" className="aaa-home">
-      <div className="mx-auto flex w-full max-w-[68rem] flex-col items-center gap-6 px-4 pt-[110px] pb-12 text-center sm:px-6 sm:pt-[126px] sm:pb-16">
+      <div className="mx-auto flex w-full max-w-[68rem] flex-col items-center gap-6 px-4 pt-10 pb-12 text-center sm:gap-6 sm:px-6 sm:pt-[126px] sm:pb-16">
         <h1 className="aaa-hero-heading">What would you like to do today?</h1>
 
-        <p className="aaa-hero-sub">
+        <p className="aaa-hero-sub hidden sm:block">
           Start a new creative request, check strategy resources, or manage with executive
           view — all from one application.
         </p>
