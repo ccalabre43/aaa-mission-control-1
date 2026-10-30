@@ -108,5 +108,3 @@ export class LocalMeetingScheduler implements MeetingScheduler {
     };
   }
 }
-
-export const meetingScheduler: MeetingScheduler = new LocalMeetingScheduler();

@@ -1291,6 +1291,33 @@ Effort pts.
 Constants: `src/lib/dashboard/executiveDemoFigures.ts`. UI:
 `src/components/queue/ExecutiveDashboardSection.tsx`.
 
+## 2026-10-29 - 047 - Deep Dive Composio preferred Microsoft identity (email only)
+
+**Status:** accepted (documentation / ops)
+
+Preferred Composio OAuth sign-in for Excel + SharePoint discovery is **`p92654@aaalife.com`**
+(email only — no passwords, PATs, or refresh tokens in repo). Preferred connection aliases:
+`p92654-excel` and `p92654-sharepoint`. Recorded in `docs/knowledge/deep-dive-excel.md`.
+Does not change Vendor Management gates (044 / 046) or invent Graph ids.
+
+## 2026-10-29 - 046 - Deep Dive SharePoint proxy + kill switch (extends 044)
+
+**Status:** accepted (architecture ships; live PII write still gated)
+
+Phase B of Deep Dive live Excel:
+
+| Layer | Shipped |
+| --- | --- |
+| `deep-dive-proxy/` | Local Graph stand-in: `GET /health`, `GET /slots`, `POST /book` on `:8788` |
+| Vite | `/api/deep-dive` → proxy (same-origin; CSP `connect-src 'self'`) |
+| Client | `SharePointExcelScheduler` prefers proxy when `connected`; else `LocalMeetingScheduler` |
+| Kill switch | `DEEP_DIVE_LIVE_WRITE=1` + `confirmLive: true` required to append a booked row |
+| Secrets | `.env.deep-dive.local` only — never `VITE_*`. Composio remains Cursor discovery only |
+
+**Unchanged from 044:** Vendor Management + privacy must clear before flipping the kill switch for
+requester name/email. Graph `site_id` / `item_id` stay pending until Composio Excel + SharePoint
+connections are **Active** and discovery updates `docs/knowledge/deep-dive-excel.md`.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

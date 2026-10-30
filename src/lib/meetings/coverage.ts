@@ -39,3 +39,23 @@ export function describeScheduleCoverage(coverage: ScheduleCoverage): string {
 export function describeEmptySlots(coverage: ScheduleCoverage): string {
   return `No open Deep Dive slots in the corpus that was searched. ${describeScheduleCoverage(coverage)}`;
 }
+
+/** Coverage when slots came from the Brand Integrated Marketing workbook via the proxy. */
+export function sharePointScheduleCoverage(
+  slots: MeetingSlot[],
+  worksheetLabel: string,
+  extraLimitations: string[] = [],
+): ScheduleCoverage {
+  const open = slots.filter((slot) => slot.status === "open").length;
+  return {
+    scope: "sharepoint-excel",
+    completeness: "partial",
+    corpusSize: slots.length,
+    sources: [{ label: worksheetLabel, count: slots.length }],
+    limitations: [
+      `Searched ${slots.length} slots (${open} open) in ${worksheetLabel} only — not organization-wide.`,
+      ...extraLimitations,
+    ],
+    searchedAt: new Date().toISOString(),
+  };
+}

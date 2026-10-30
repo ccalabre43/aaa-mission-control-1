@@ -1,9 +1,7 @@
 /**
- * Deep Dive scheduling UI. Excel on SharePoint remains the system of record; this screen uses
- * `LocalMeetingScheduler` until a live adapter is approved (decision 044).
- *
- * Coverage copy always names the local stub corpus (guardrail 7). Requester name/email stay on
- * this device (guardrail 5).
+ * Deep Dive scheduling UI. Excel on SharePoint remains the system of record.
+ * `SharePointExcelScheduler` prefers `/api/deep-dive` when the proxy is connected; otherwise
+ * falls back to the local stub. Live PII writes require DEEP_DIVE_LIVE_WRITE=1 (decisions 044, 046).
  */
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -174,9 +172,10 @@ export default function DeepDiveView() {
         <h1 className="aaa-page-heading aaa-deep-dive-heading">Deep Dive</h1>
       </div>
       <p className="aaa-page-sub">
-        Book a working session with Brand Integrated Marketing. Availability below is from the
-        local demo scheduler until SharePoint Excel is approved as a live connection. Sessions
-        are Wednesdays only in October–December 2026.
+        Book a working session with Brand Integrated Marketing. Availability comes from the Deep
+        Dive proxy when SharePoint is connected, otherwise this browser’s local demo scheduler.
+        Live writes to Excel stay off until Vendor Management clears them. Sessions are Wednesdays
+        only in October–December 2026.
       </p>
 
       <form className="aaa-form mt-8" onSubmit={handleSubmit} noValidate>
@@ -255,7 +254,8 @@ export default function DeepDiveView() {
             disabled={busy}
           />
           <p className="aaa-field-hint">
-            Stays on this device. Not sent to SharePoint until privacy review clears a live write.
+            Stays on this device unless the Deep Dive proxy kill switch is on and Vendor Management
+            has cleared a live SharePoint write (decision 046).
           </p>
         </div>
 

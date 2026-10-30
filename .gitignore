@@ -9,6 +9,7 @@ dist
 .env.*
 !.env.example
 !workfront-proxy/.env.example
+!deep-dive-proxy/.env.example
 
 # Screenshots and briefs produced by verification runs and exports. Generated output, and a brief
 # can contain a requester's name and email, which is PII. The directory itself is kept, because the

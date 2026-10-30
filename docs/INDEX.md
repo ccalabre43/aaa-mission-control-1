@@ -78,7 +78,8 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/sent-to-workfront-modal.png` | 2026-10-07 | Success modal after Submit to Workfront Que (Figma AAA Life proto node 544:1645). Ships only when a real Issue ID returns | active |
 | `assets/mocks/request-summary-page.png` | 2026-10-13 | Request Summary Concept v1 (Figma node 369-5482): Size + Impact + Effort + Risk; Accept — Send to Workfront | active |
 | `docs/knowledge/reviewer-queue-fields.md` | 2026-10-04; exec 2026-10-06; demo 2026-10-13; Size 2026-10-13; Summary display 2026-10-13; exec 2 2026-10-28 | Local reviewer Status/Priority/Size/Impact/Effort/Risk and preferred Workfront field map; Summary brief-card A3→answers fallback (042); Executive dashboard 2 / demo tables (034, 040, 045) | active |
-| `docs/knowledge/deep-dive-excel.md` | 2026-10-27 | BrandIntegratedMarketing SharePoint Excel as Deep Dive system of record; Graph ids pending Composio OAuth; provisional booking schema for `LocalMeetingScheduler` (044) | active — discovery; live ids pending auth |
+| `docs/knowledge/deep-dive-excel.md` | 2026-10-27; proxy 2026-10-29; preferred OAuth identity 2026-10-29 | BrandIntegratedMarketing SharePoint Excel SoR; preferred sign-in `p92654@aaalife.com` (047); Graph ids pending Composio Active; deep-dive-proxy + kill switch (044, 046) | active — discovery; live ids pending auth |
+| `deep-dive-proxy/README.md` | 2026-10-29 | Local Graph proxy for Deep Dive slots/book; `DEEP_DIVE_LIVE_WRITE` kill switch | active |
 
 No mock exists for Related activity, Generating, Review draft, Confirmed, or the Manage questions
 admin view. Those five surfaces are built from established patterns and are **flagged for review**
@@ -166,3 +167,5 @@ Tracked so their absence stays visible instead of being quietly designed around.
 | 2026-10-06 | Executive dashboard restyle to Concept v1 2×3 cards. Hours/capacity/speed stay placeholders. Decision 034 |
 | 2026-10-13 | Executive busy/capacity/speed cards show labeled Concept v1 illustrative figures; queue + jobs stay local. Decision 040 |
 | 2026-10-28 | Executive tab merges Figma Executive dashboard 2 (469-7289): Team Portfolio week, card reorder, callouts, Selected/Completed tables with demo rows. Decision 045 |
+| 2026-10-29 | Deep Dive SharePoint proxy + SharePointExcelScheduler; live write kill switch default off. Decision 046 |
+| 2026-10-29 | Deep Dive Composio preferred Microsoft identity `p92654@aaalife.com` (email only). Decision 047 |

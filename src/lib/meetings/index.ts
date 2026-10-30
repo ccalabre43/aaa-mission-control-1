@@ -15,8 +15,18 @@ export {
   describeEmptySlots,
   describeScheduleCoverage,
   localScheduleCoverage,
+  sharePointScheduleCoverage,
 } from "./coverage";
-export { LocalMeetingScheduler, meetingScheduler } from "./LocalMeetingScheduler";
+export { LocalMeetingScheduler } from "./LocalMeetingScheduler";
+export { SharePointExcelScheduler } from "./SharePointExcelScheduler";
+/** Prefers SharePoint proxy when connected; otherwise local stub (decision 044/046). */
+export { meetingScheduler } from "./scheduler";
+export {
+  fetchDeepDiveHealth,
+  fetchDeepDiveSlots,
+  postDeepDiveBook,
+  type DeepDiveProxyHealth,
+} from "./proxyClient";
 export {
   MEETING_SLOTS_BACKUP_KEY,
   MEETING_SLOTS_KEY,

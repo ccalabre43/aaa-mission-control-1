@@ -13,6 +13,8 @@
     "workfront:proxy": "node workfront-proxy/local-server.mjs",
     "workfront:health": "node workfront-proxy/local-server.mjs --once",
     "workfront:sample-create": "node scripts/workfront-sample-create.mjs",
+    "deep-dive:proxy": "node deep-dive-proxy/local-server.mjs",
+    "deep-dive:health": "node deep-dive-proxy/local-server.mjs --once",
     "aio": "aio",
     "aio:login": "aio auth login",
     "aio:ctx": "aio auth ctx",

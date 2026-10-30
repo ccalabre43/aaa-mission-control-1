@@ -73,6 +73,11 @@ const WORKFRONT_PROXY_TARGET = (
   process.env.WORKFRONT_PROXY_TARGET || "http://127.0.0.1:8787"
 ).replace(/\/+$/, "");
 
+/** Local Deep Dive Graph proxy (never a secret). */
+const DEEP_DIVE_PROXY_TARGET = (
+  process.env.DEEP_DIVE_PROXY_TARGET || "http://127.0.0.1:8788"
+).replace(/\/+$/, "");
+
 function connectSrcDirective(): string {
   const origins = new Set<string>(["'self'"]);
   if (WORKFRONT_PROXY_URL) {
@@ -122,6 +127,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/workfront/, ""),
       },
+      "/api/deep-dive": {
+        target: DEEP_DIVE_PROXY_TARGET,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deep-dive/, ""),
+      },
     },
   },
   preview: {
@@ -133,6 +143,11 @@ export default defineConfig({
         target: WORKFRONT_PROXY_TARGET,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/workfront/, ""),
+      },
+      "/api/deep-dive": {
+        target: DEEP_DIVE_PROXY_TARGET,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deep-dive/, ""),
       },
     },
   },

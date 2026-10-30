@@ -1,8 +1,8 @@
 # Deep Dive Excel (SharePoint system of record)
 
-**Status:** discovery in progress — Composio Excel/SharePoint connections must be **Active** before
-`site_id` / `item_id` can be resolved. Mission Control uses `LocalMeetingScheduler` until Vendor
-Management approves a live path (decision 044).
+**Status:** Phase A discovery depends on Composio Excel + SharePoint **Active** OAuth. Phase B
+proxy + `SharePointExcelScheduler` ship with **`DEEP_DIVE_LIVE_WRITE=0`** until Vendor Management
+clears PII writes (decisions 044, 046).
 
 ## Workbook link (sharing URL)
 
@@ -16,69 +16,72 @@ https://aaalife.sharepoint.com/:x:/s/BrandIntegratedMarketing/IQDf5u2BAWNdSqq6Un
 | Site path | `/sites/BrandIntegratedMarketing` (from `/s/BrandIntegratedMarketing/`) |
 | Share token | `IQDf5u2BAWNdSqq6UneM3YzIAUBLR7H9oMA1rOPSTrekCRc` (not a Graph `item_id`) |
 
-## Graph identifiers (blocked until OAuth Active)
+## Graph identifiers
 
 | Field | Value | Notes |
 | --- | --- | --- |
-| `site_id` | *pending Active excel + share_point* | Graph form `hostname,siteCollectionId,siteId` |
-| `drive_id` | *pending* | Default library unless file lives elsewhere |
-| `item_id` | *pending* | Excel drive item id — **not** the sharing token above |
+| `site_id` | *pending Active Composio excel + share_point* | Graph form `hostname,siteCollectionId,siteId` — paste into `.env.deep-dive.local` as `GRAPH_SITE_ID` |
+| `drive_id` | *pending* | `GRAPH_DRIVE_ID` if not default library |
+| `item_id` | *pending* | Excel drive item id — **not** the sharing token above (`GRAPH_ITEM_ID`) |
 | Workbook display name | *pending* | Confirm from Graph metadata |
+| Worksheet | provisional `Sheet1` | Override with `GRAPH_WORKSHEET_ID` after `EXCEL_LIST_SHAREPOINT_WORKSHEETS` |
 
-**Resolution plan (Composio session `ride`, after Active):**
+**Resolution plan (Composio session after Active):**
 
 1. `SHARE_POINT_SEARCH_QUERY` or `SHARE_POINT_GET_SITE_DRIVE_ITEM_BY_PATH` on BrandIntegratedMarketing
 2. Capture `site_id`, `drive_id`, `item_id`
 3. `EXCEL_LIST_SHAREPOINT_WORKSHEETS` → scheduling sheet
 4. `EXCEL_GET_WORKSHEET_USED_RANGE` / `EXCEL_GET_SHAREPOINT_RANGE` → replace provisional schema
+5. Optional non-PII write probe via `EXCEL_UPDATE_RANGE`, then revert
+
+## Runtime (Mission Control) — Phase B
+
+| Layer | Path |
+| --- | --- |
+| UI | `/deep-dive` → `SharePointExcelScheduler` |
+| Client | Same-origin `GET/POST /api/deep-dive/*` (no Graph secrets) |
+| Vite | Proxies to `http://127.0.0.1:8788` (`DEEP_DIVE_PROXY_TARGET`) |
+| Proxy | [`deep-dive-proxy/`](../../deep-dive-proxy/README.md) — Graph token / app credentials in `.env.deep-dive.local` |
+| Kill switch | `DEEP_DIVE_LIVE_WRITE=1` + `confirmLive: true` required for `POST /book` |
+
+Composio does **not** run in the Vite app. Never put Microsoft or Composio secrets in `VITE_*`.
 
 ## Composio (Cursor discovery only)
 
 - MCP URL in `.cursor/mcp.json`: `https://connect.composio.dev/mcp`
-- Toolkits: **excel** (ranges/tables), **share_point** (search/path)
-- Does **not** run in the Vite app. Runtime live Excel must use a server proxy (Workfront pattern).
-- Never put Microsoft or Composio secrets in `VITE_*` variables.
+- Toolkits: **excel**, **share_point**
+- **Preferred Microsoft sign-in (email only):** `p92654@aaalife.com` — use this identity on both Excel and SharePoint OAuth consent screens (tenant admin consent if Azure AD blocks). Do not store passwords, PATs, or refresh tokens in the repo.
+- Finish sign-in as **p92654@aaalife.com** (not a personal Microsoft account).
 
-### OAuth status (agent-initiated)
-
-Connections were initiated for discovery. Finish sign-in with **@aaalife.com** (tenant admin consent
-if Azure AD blocks). Links expire quickly; re-run `COMPOSIO_MANAGE_CONNECTIONS` if needed.
-
-| Toolkit | Account alias | Status at last check |
+| Toolkit | Preferred account alias | Notes |
 | --- | --- | --- |
-| excel | `aaalife-deep-dive` | initiated / initializing — not Active |
-| share_point | `aaalife-brand` | initiated / initializing — not Active |
+| excel | `p92654-excel` | Fresh OAuth; prior aliases may exist as `*-prior` / `aaalife-deep-dive` |
+| share_point | `p92654-sharepoint` | Fresh OAuth; prior aliases may exist as `*-prior` / `aaalife-brand` |
 
-## Provisional schema (fixtures until live capture)
+Status of Composio accounts is live in the Cursor MCP session (Active / initializing). Graph `site_id` / `item_id` stay pending until both preferred aliases are **Active**.
 
-Used by `LocalMeetingScheduler` (`src/lib/meetings/`) so `/deep-dive` can ship before the sheet is
-mapped. Replace this table when live worksheets/ranges are read.
+## Provisional schema (until live capture)
+
+Used by local stub + proxy column alias map (`deep-dive-proxy/lib/slots.mjs`).
 
 | Field (UI) | Fixture key | Likely Excel column (to confirm) | Notes |
 | --- | --- | --- | --- |
-| Date | (UI `day`) | Date | Custom picker; Oct–Dec 2026 quarter; **Wednesdays only** |
-| Slot start | `startsAt` | Date / Start | ISO in stub; sheet may split date+time |
-| Duration (minutes) | `durationMinutes` | Duration | 10 for 1:05–1:15; **15** for later bands |
-| Host / facilitator | `hostName` | Host | Display only in stub |
-| Topic / title | `title` | Topic | Optional on book |
+| Date | (UI `day`) | Date | Wednesdays only Oct–Dec 2026 |
+| Slot start | `startsAt` | Start / Time | ISO in stub |
+| Duration (minutes) | `durationMinutes` | Duration | 10 for 1:05–1:15; 15 thereafter |
+| Host / facilitator | `hostName` | Host | |
+| Topic / title | `title` | Topic | |
 | Status | `status` | Status | `open` \| `booked` |
-| Requester name | `requesterName` | Requested by / Entered By | PII — local stub only |
-| Requester email | `requesterEmail` | Email | PII — local stub only |
-| Notes | `notes` | Notes | Optional |
+| Requester name | `requesterName` | Requested by / Entered By | PII — network write gated |
+| Requester email | `requesterEmail` | Email | PII — network write gated |
+| Notes | `notes` | Notes | May include Audience |
 
-**Default open windows (local stub):** meetings on **Wednesdays** only in the initial quarter
-(**October–December 2026**). For a selected Wednesday: **1:05 – 1:15**, **1:15 – 1:30**,
-**1:30 – 1:45**, **1:45 – 2:00** (nothing after 2:00 PM). Past dates are muted in the picker and
-in **View this month's calendar**. Open time slot remains a dropdown (`Choose a time slot`).
+**Default open windows:** Wednesdays, **1:05 – 2:00 PM** bands (see `SLOT_WINDOWS`).
 
-**Booking write rule (stub):** append a `booked` row to `localStorage` key `aaa-deep-dive-slots`
-(backup `aaa-deep-dive-slots-backup`). Open slots are generated, not stored. Success modal links to
-the SharePoint workbook and states that the user is leaving Mission Control. Live Excel write and
-**Entered By** are TBD after schema capture.
+**Booking (local):** `aaa-deep-dive-slots` / backup key. **Booking (live):** proxy appends a row when kill switch is on.
 
-**Coverage disclosure (guardrail 7):** the Deep Dive UI states that availability comes from this
-browser’s local stub corpus, not organization-wide SharePoint, until the live adapter is on.
+**Coverage (guardrail 7):** UI/proxy always name local stub vs SharePoint workbook corpus; never claim organization-wide search.
 
 ## Vendor Management
 
-See decision **044**. No Mission Control → Graph/Excel/Composio call until approved.
+See decisions **044** and **046**. No production PII write to Excel until approved; kill switch stays `0` by default.
