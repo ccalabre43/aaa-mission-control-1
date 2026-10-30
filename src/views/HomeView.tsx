@@ -6,7 +6,7 @@
  * - Mobile (below 640px): Concept v1 node 600:1084 — same cards as a vertical list of horizontal
  *   rows (icon left). Figma search/mic pill is not shipped (no search backend).
  * - Heading: "What would you like to do today?"
- * - "Start Request" stays so intake remains reachable if the Marketing Request tile is removed.
+ * - "Start a new request" stays so intake remains reachable if the Marketing Request tile is removed.
  * - Tiles with nowhere to go render as solid idle tiles (same chrome as pre-route Deep Dive).
  *
  * The tiles come from `localStorage`; `defaultCards()` holds the shipped four.
@@ -159,24 +159,12 @@ export default function HomeView() {
           {reorderNote}
         </div>
 
-        {/* Load-bearing now that the grip only appears on rollover: this sentence is how someone
-            learns the grip exists at all. Do not trim it without restoring the always-on grip. */}
-        <p className="aaa-grid-hint">
-          Point at a card to show its grip. Drag the grip to move the card, or press it and use
-          the arrow keys or the Move buttons.
-        </p>
-
         {loadNote ? <p className="aaa-attention">{loadNote}</p> : null}
         {saveProblem ? <p className="aaa-attention">{saveProblem}</p> : null}
 
         <Link to="/request" className="aaa-btn aaa-btn-primary mt-10">
-          Start Request
+          Start a new request
         </Link>
-
-        <p className="aaa-home-note">
-          Everything you enter stays in this browser on this device. Nothing is sent
-          anywhere yet.
-        </p>
 
         <div className="aaa-home-footer">
           <Link to="/settings/questions" className="aaa-link-quiet">
