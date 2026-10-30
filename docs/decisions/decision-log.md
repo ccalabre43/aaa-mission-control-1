@@ -1291,6 +1291,34 @@ Effort pts.
 Constants: `src/lib/dashboard/executiveDemoFigures.ts`. UI:
 `src/components/queue/ExecutiveDashboardSection.tsx`.
 
+## 2026-10-30 - 048 - Vercel same-origin Workfront API (extends 029)
+
+**Status:** accepted (hosted stand-in; Adobe Runtime remains the App Builder long-term path)
+
+Mission Control on Vercel is a static SPA. Without a proxy, `/api/workfront/*` was rewritten to
+`index.html`, so Request Queue health and Refresh failed on `*.vercel.app` while localhost worked.
+
+| Layer | Choice |
+| --- | --- |
+| Routes | `api/workfront/health.js`, `api/workfront/issues.js` |
+| Shared | `lib/workfront-vercel.mjs` → existing `workfront-proxy` action modules |
+| SPA rewrite | `vercel.json` excludes `api/` (and `assets/`) from the `index.html` fallback |
+| Secrets | Vercel project env (`WORKFRONT_*`) — never `VITE_*` |
+| Client | Unchanged same-origin `/api/workfront` when `WORKFRONT_PROXY_URL` is empty |
+| CSP | Stays `connect-src 'self'` |
+
+Adobe Runtime (`aio app deploy` + public `WORKFRONT_PROXY_URL`) remains documented for ExC / App
+Builder. This pass unblocks the Vercel Request Queue without waiting on a Runtime URL.
+
+## 2026-10-30 - 049 - Mobile header shows AAA Life logo (Figma 600:1084)
+
+**Status:** accepted
+
+Concept v1 mobile Header (`600:1123` inside `600:1084`) includes the logo + divider + title lockup.
+The older assumption that mobile mocks omit the logo is superseded: remove `hidden sm:block` from
+the header logo and divider so the mark is not cut off / hidden below `sm`. Logo CSS keeps
+`object-fit: contain` (no crop).
+
 ## 2026-10-29 - 047 - Deep Dive Composio preferred Microsoft identity (email only)
 
 **Status:** accepted (documentation / ops)

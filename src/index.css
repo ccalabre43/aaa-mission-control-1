@@ -265,9 +265,12 @@ h3[tabindex="-1"]:focus-visible {
 
 .aaa-header-logo {
   /* The PNG bakes in clear space, so the artwork is 164/226 of the image height:
-     44px of image gives about 32px of visible mark, matching the mock. */
+     44px of image gives about 32px of visible mark, matching the mock.
+     object-contain — never crop or stretch (brand clear-space rule). */
   height: 2.75rem;
   width: auto;
+  max-width: 4.5rem;
+  object-fit: contain;
   display: block;
 }
 

@@ -1,13 +1,13 @@
 /**
  * The Mission Control header.
  *
- * Both mocks draw a two-line lockup: a small gray eyebrow above a bold title. The desktop mock
- * (assets/mocks/main-dashboard-interface.png) also shows the AAA Life logo at the left, separated
- * by a rule; the mobile mock does not, so the logo appears from the `sm` breakpoint up.
+ * Both mocks draw a two-line lockup: a small gray eyebrow above a bold title. Concept v1 mobile
+ * (node 600:1084, Header Mobile 600:1123) and desktop show the AAA Life logo at the left,
+ * separated by a rule — the logo stays visible at every breakpoint.
  *
  * Copy reconciliation, per the standing copy-correction rule:
  * - The older desktop mock reads "Misson Control", which is a typo and stays corrected.
- * - Concept v1 node 369-4361: eyebrow "AAA Life · Strategic Intake Tool", title
+ * - Concept v1 node 369-4361 / 600:1123: eyebrow "AAA Life · Strategic Intake Tool", title
  *   "Mission Control". The logo already contains "Life Insurance Company".
  *
  * The wordmark is deliberately NOT retyped beside the logo: the logo already contains "Life
@@ -36,20 +36,16 @@ export function Header({ routeTitle }: HeaderProps) {
     <header className="aaa-header">
       <div className="aaa-page-shell flex items-center gap-3 py-3 sm:gap-4">
         {isHome ? (
-          <span className="hidden sm:block">{logoImage}</span>
+          <span className="shrink-0">{logoImage}</span>
         ) : (
           /* Off the home route the logo doubles as the way back, which is the convention users
              already expect from every other site (Jakob's Law). */
-          <Link
-            to="/"
-            className="aaa-header-home hidden sm:block"
-            aria-label="Mission Control home"
-          >
+          <Link to="/" className="aaa-header-home shrink-0" aria-label="Mission Control home">
             {logoImage}
           </Link>
         )}
 
-        <span className="aaa-header-divider hidden sm:block" aria-hidden="true" />
+        <span className="aaa-header-divider shrink-0" aria-hidden="true" />
 
         <div className="min-w-0">
           <p className="aaa-header-eyebrow">

@@ -222,13 +222,43 @@ node scripts/verify-flow.mjs http://localhost:4173
 keyboard path, and enforces the auditable-negative rule. Contrast is computed, never asserted, per
 guardrail 9.
 
+### Workfront on Vercel (same-origin `/api/workfront`)
+
+The static SPA alone cannot talk to Workfront. On Vercel, serverless routes under `api/workfront/`
+reuse the `workfront-proxy` action modules (decision **048**):
+
+| Path | Role |
+| --- | --- |
+| `GET /api/workfront/health` | Connection badge on Request Queue |
+| `GET /api/workfront/issues` | Refresh from Workfront |
+| `POST /api/workfront/issues` | Live create when kill switch + `confirmLive` |
+
+Set these as **Vercel project environment variables** (Production and Preview). Never `VITE_*`.
+Never paste values into chat:
+
+- `WORKFRONT_CLIENT_ID`
+- `WORKFRONT_CLIENT_SECRET`
+- `WORKFRONT_HOST` = `https://aaalife.my.workfront.com`
+- `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1`
+- `WORKFRONT_LIVE_SUBMIT` = `1` only when dual-write create is approved
+
+Leave `WORKFRONT_PROXY_URL` unset for the Vercel build so the client stays on same-origin
+`/api/workfront` (CSP `connect-src 'self'`). Locally, Vite still proxies that path to
+`workfront-proxy` on `:8787`.
+
+After deploy: open `/deliverables`, confirm **Workfront: connected (mission-control-v1…)**, and
+that Refresh returns Tasks JSON (not HTML).
+
+Adobe Runtime (`aio app deploy` + `WORKFRONT_PROXY_URL`) remains the App Builder path; see
+[workfront-proxy/README.md](../workfront-proxy/README.md).
+
 ### Workfront S2S secret — rotate on first production publish
 
 Before the static app is published **or** `workfront-proxy` is deployed with `aio app deploy`:
 
 1. Adobe Developer Console → the Workfront OAuth Server-to-Server credential → **add a new client secret**.
-2. Put it in gitignored `.env.workfront.local` as `WORKFRONT_CLIENT_SECRET`. If Runtime is going live, set the **same new** value as the Runtime secret. Never `VITE_*`. Never paste it into chat.
+2. Put it in gitignored `.env.workfront.local` as `WORKFRONT_CLIENT_SECRET`. If Runtime or Vercel is going live, set the **same new** value as the hosted secret. Never `VITE_*`. Never paste it into chat.
 3. Delete the previous client secret in Console.
-4. Run `npm run workfront:health` and confirm `connected: true` against `mission-control-v1`.
+4. Run `npm run workfront:health` (local) and/or `curl -sS https://<host>/api/workfront/health` and confirm `connected: true` against `mission-control-v1`.
 
 A secret that has appeared in a chat transcript is already exposed; rotate it as soon as practical, then confirm the rotated value at go-live. See [docs/workfront-auth.md](workfront-auth.md).

@@ -2,7 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!assets/|api/).*)", "destination": "/index.html" }],
+  "functions": {
+    "api/workfront/*.js": {
+      "includeFiles": "{workfront-proxy/src/dx-excshell-1/actions/**,lib/workfront-vercel.mjs}"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

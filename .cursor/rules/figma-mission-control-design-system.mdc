@@ -1,0 +1,102 @@
+---
+description: Mission Control design system for Figma MCP design-to-code — tokens, components, stack, assets, icons, styling, structure
+alwaysApply: false
+globs: src/**/*.{tsx,ts,css},assets/mocks/**,assets/brand/**
+---
+
+# Mission Control × Figma design system
+
+Use this when implementing or adapting Figma (MCP `get_design_context`, Code Connect, screenshots).
+Figma-generated code is a **visual reference**, not paste-ready production code. Adapt to this stack.
+
+## 1. Token definitions
+
+| Source | Path |
+| --- | --- |
+| Runtime tokens | [`src/index.css`](src/index.css) — CSS custom properties on `:root` / theme |
+| Brand authority | [`docs/knowledge/brand-system.md`](docs/knowledge/brand-system.md) |
+| Style guide PDF | `assets/brand/` (internal; do not export guide text) |
+
+**Format:** plain CSS variables (`--aaa-blue`, `--aaa-ink`, …). No Style Dictionary / token JSON pipeline.
+
+**Digital palette only** (never print red `#ED1C2F`):
+
+- Primary blue: `--aaa-blue` `#05539F` (Figma sometimes shows `#00529C` — prefer implemented tokens)
+- Digital red (submit/errors only): `--aaa-red` `#E31E2E`
+- Ink / muted / border / surfaces: see brand-system.md
+- Red and bronze are never primary CTAs; red is final submit / genuine errors
+
+**Typography:** Open Sans only (`@fontsource/open-sans`). Never Gotham, Nunito, Oswald, Roboto, or Google Fonts CDN.
+
+**Contrast:** compute with `.cursor/skills/verify-live-ux/scripts/contrast.py`; never assert ratios from the PDF alone.
+
+## 2. Component library
+
+| Location | Role |
+| --- | --- |
+| `src/components/` | Shared UI (Header, queue, dashboard, dialogs, forms) |
+| `src/views/` | Route-level screens |
+| `src/components/dashboard/` | Home tool cards (`ToolCard`, `ToolIcon`, `AddToolsDialog`) |
+| `src/components/queue/` | Request Queue + Executive |
+
+No Storybook. Patterns: React function components, project `aaa-*` classes, DaisyUI only where already used.
+
+**Reuse before inventing:** Header lockup, `ToolCard`, form field classes (`.aaa-field`, `.aaa-btn-*`), dialogs.
+
+## 3. Frameworks and libraries
+
+- **UI:** React 19 + React Router 7
+- **Build:** Vite 6 (`npm run dev` / `npm run build` → `dist/`)
+- **CSS:** Tailwind CSS 4 (`@tailwindcss/vite`) + DaisyUI 5 + global `src/index.css`
+- **Fonts:** `@fontsource/open-sans` (self-hosted)
+- **Base path:** `APP_BASE_PATH` / `import.meta.env.BASE_URL` — never hard-code absolute asset roots
+
+## 4. Asset management
+
+| Kind | Where |
+| --- | --- |
+| In-app images (logo) | `src/assets/` imported by Vite |
+| Brand masters | `assets/brand/` |
+| UI mocks / Figma refs | `assets/mocks/` |
+| Exports / screenshots | `assets/exports/` (gitignored content; PII risk) |
+
+No third-party image/font CDN at runtime (CSP + privacy). Vite fingerprints `/assets/*` in production.
+
+**Logo:** use `aaa-life-logo-2color.png` as shipped. Never stretch, recolor, crop, rotate, or rebuild from parts. Prefer `object-fit: contain`.
+
+## 5. Icon system
+
+- Dashboard glyphs: [`src/components/dashboard/ToolIcon.tsx`](src/components/dashboard/ToolIcon.tsx) and related SVG/assets
+- No icon-font CDN; no emoji as primary UI affordances on branded surfaces
+- Figma MCP asset URLs are temporary — download into `src/assets/` or reuse an existing ToolIcon; never leave `figma.com/api/mcp/asset/...` in shipped code
+
+## 6. Styling approach
+
+- **Global brand CSS** in `src/index.css` (`.aaa-header`, `.aaa-queue-*`, `.aaa-exec-*`, forms)
+- **Tailwind utilities** for layout/spacing (`flex`, `gap-*`, breakpoints `sm:` / `lg:`)
+- **Responsive:** mobile-first; Concept v1 mobile home header is node `600:1084` / Header Mobile `600:1123` (logo + divider + title visible)
+- Prefer existing `aaa-*` classes over one-off absolute-position Figma dumps
+- Underline only links; links bold in blue or red
+
+## 7. Project structure
+
+```
+src/components/   UI building blocks
+src/views/        routes
+src/lib/          adapters (workfront, meetings, storage, intake)
+api/workfront/    Vercel serverless (hosted Workfront proxy)
+workfront-proxy/  local + Adobe Runtime actions
+deep-dive-proxy/  local Graph/Excel stand-in
+docs/             INDEX, decisions, brand, deployment
+.cursor/rules/    company + project guardrails
+```
+
+External systems enter as **typed adapters** with a local implementation first. Secrets never in `VITE_*`.
+
+## Figma MCP workflow reminders
+
+1. Load `figma-design-to-code` before `get_design_context`; request a screenshot.
+2. Map nodes to existing components/tokens before writing markup.
+3. Copy corrections: Mission (not Misson); queue (not que); **Workfront**, **Monday.com**, **AAA Life Insurance Company**.
+4. WCAG 2.2 AA is the floor; never convey state by color alone.
+5. Cross-team listings stay summary-only (no brief body / requester email on match cards).
