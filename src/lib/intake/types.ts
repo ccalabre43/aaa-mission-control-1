@@ -239,6 +239,12 @@ export interface IntakeBrief {
     submittedAt: string;
     issueId?: string;
     issueUrl?: string;
+    /** Documents uploaded to Task + project Tasks folder after live create. */
+    uploadedDocuments?: Array<{
+      name: string;
+      taskDocumentId?: string;
+      projectDocumentId?: string;
+    }>;
   } | null;
 }
 

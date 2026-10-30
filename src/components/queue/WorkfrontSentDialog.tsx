@@ -10,6 +10,10 @@ export interface WorkfrontSentDialogProps {
   issueUrl?: string;
   /** Queue topic name used for the route line (e.g. Corporate Communications). */
   topicName: string;
+  /** Documents attached to Task Documents and the project Tasks folder. */
+  uploadedDocuments?: Array<{ name: string; taskDocumentId?: string }>;
+  /** Non-fatal upload issue after Task create. */
+  documentError?: string;
   onClose: () => void;
   onViewQueue: () => void;
 }
@@ -18,6 +22,8 @@ export function WorkfrontSentDialog({
   issueId,
   issueUrl,
   topicName,
+  uploadedDocuments,
+  documentError,
   onClose,
   onViewQueue,
 }: WorkfrontSentDialogProps) {
@@ -30,6 +36,12 @@ export function WorkfrontSentDialog({
   const routeLine = topicName.trim()
     ? `Routed to ${topicName.trim()}.`
     : "Routed on mission-control-v1.";
+
+  const docCount = uploadedDocuments?.length ?? 0;
+  const docLine =
+    docCount > 0
+      ? `${docCount} document${docCount === 1 ? "" : "s"} attached to the Task Documents tab and the project Tasks folder.`
+      : null;
 
   return (
     <div
@@ -69,6 +81,21 @@ export function WorkfrontSentDialog({
           <p className="aaa-sent-dialog-copy">
             {routeLine} Task {issueId} is on mission-control-v1 for kickoff.
           </p>
+          {docLine ? <p className="aaa-sent-dialog-copy">{docLine}</p> : null}
+          {docCount > 0 ? (
+            <ul className="aaa-sent-dialog-docs">
+              {uploadedDocuments!.map((doc) => (
+                <li key={`${doc.name}-${doc.taskDocumentId ?? "name"}`}>
+                  {doc.name}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {documentError ? (
+            <p className="aaa-sent-dialog-copy aaa-sent-dialog-doc-error" role="status">
+              Document upload issue: {documentError}
+            </p>
+          ) : null}
           {issueUrl ? (
             <p className="aaa-sent-dialog-link">
               <a href={issueUrl} target="_blank" rel="noopener noreferrer">

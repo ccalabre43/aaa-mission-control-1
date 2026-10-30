@@ -5,10 +5,16 @@
  * Summary tab shows the reviewer layout; Workfront payload tab keeps the A3 payload and blockers.
  * Accept — Send dual-writes only when the proxy kill switch is on and the user confirms.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { WorkfrontSentDialog } from "../components/queue/WorkfrontSentDialog";
 import sizeTshirtIcon from "../assets/summary-size-tshirt.png";
+import {
+  hasAttachmentFile,
+  listAttachmentFiles,
+  storeAttachmentFile,
+  storeAttachmentFiles,
+} from "../lib/intake/attachmentFileStore";
 import { loadBriefs, upsertBrief } from "../lib/intake/storage";
 import { buildSummaryBriefFields } from "../lib/intake/summaryBriefFields";
 import {
@@ -19,6 +25,7 @@ import {
   identityFullName,
   reviewerStatusLabel,
   sizeLabel,
+  type AttachmentRef,
   type IntakeBrief,
   type ReviewerAssessmentLevel,
   type ReviewerPriority,
@@ -51,6 +58,8 @@ interface SentDialogState {
   issueId: string;
   issueUrl?: string;
   topicName: string;
+  uploadedDocuments?: Array<{ name: string; taskDocumentId?: string }>;
+  documentError?: string;
 }
 
 type PageTab = "summary" | "payload";
@@ -72,6 +81,9 @@ export default function RequestSummaryView() {
   const [health, setHealth] = useState<WorkfrontProxyHealth | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [sentDialog, setSentDialog] = useState<SentDialogState | null>(null);
+  const [attachmentEpoch, setAttachmentEpoch] = useState(0);
+  const reattachInputRef = useRef<HTMLInputElement | null>(null);
+  const reattachTargetId = useRef<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -231,13 +243,21 @@ export default function RequestSummaryView() {
             "Open Mission Control inside Experience Cloud Shell to submit as yourself.",
             "Your name stays in A3IntakeRequestedBy and the description audit lines.",
           ];
+      const filesReady = listAttachmentFiles(current.id).length;
+      const attachmentCount = current.attachments.length;
+      const attachmentLine =
+        attachmentCount === 0
+          ? "No supporting files are attached."
+          : filesReady === attachmentCount
+            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Task Documents tab and the project Tasks folder.`
+            : `${filesReady} of ${attachmentCount} file${attachmentCount === 1 ? "" : "s"} ready in this browser session. Re-attach missing files below before sending, or names-only will be recorded.`;
       const confirmed = window.confirm(
         [
           "Create this request as a Workfront Task on mission-control-v1?",
           "",
           ...enteredByLines,
           "",
-          "Attachments are names only until a document upload path exists.",
+          attachmentLine,
         ].join("\n"),
       );
       if (!confirmed) {
@@ -255,6 +275,7 @@ export default function RequestSummaryView() {
       const result = await submitToWorkfront(current, queueConfig, {
         live: wantLive,
         confirmLive: wantLive ? true : undefined,
+        attachmentFiles: listAttachmentFiles(current.id),
       });
       if (!result.ok) {
         setError(
@@ -279,6 +300,9 @@ export default function RequestSummaryView() {
           submittedAt,
           ...(result.issueId ? { issueId: result.issueId } : {}),
           ...(result.issueUrl ? { issueUrl: result.issueUrl } : {}),
+          ...(result.uploadedDocuments
+            ? { uploadedDocuments: result.uploadedDocuments }
+            : {}),
         },
       };
       const saved = upsertBrief(next);
@@ -294,9 +318,16 @@ export default function RequestSummaryView() {
           issueId: result.issueId,
           issueUrl: result.issueUrl,
           topicName: routed.topic?.name ?? "",
+          uploadedDocuments: result.uploadedDocuments,
+          documentError: result.documentError,
         });
+        const docNote = result.uploadedDocuments?.length
+          ? ` Uploaded ${result.uploadedDocuments.length} document${result.uploadedDocuments.length === 1 ? "" : "s"} to Task Documents and the project Tasks folder.`
+          : result.documentError
+            ? ` Document upload issue: ${result.documentError}`
+            : "";
         setStatusMessage(
-          `Marked Accepted. "${result.issueName}" created in Workfront as Task ${result.issueId}. Saved in this browser with that ID.`,
+          `Marked Accepted. "${result.issueName}" created in Workfront as Task ${result.issueId}. Saved in this browser with that ID.${docNote}`,
         );
       } else if (wantLive && result.liveError) {
         setStatusMessage(
@@ -436,6 +467,132 @@ export default function RequestSummaryView() {
               </dl>
             </div>
           </div>
+
+          <section
+              className="aaa-summary-card aaa-summary-attachments"
+              aria-labelledby="summary-attachments-heading"
+            >
+              <h2 id="summary-attachments-heading" className="aaa-panel-section-heading">
+                Supporting files for Workfront
+              </h2>
+              <p className="aaa-panel-reason">
+                Files stay in this browser session until submit. If you reloaded the page,
+                re-attach each file so Workfront receives the original document.
+              </p>
+              {brief.attachments.length === 0 ? (
+                <p className="aaa-field-hint">No files were attached during intake.</p>
+              ) : (
+                <ul role="list" className="aaa-attachment-list">
+                  {brief.attachments.map((attachment) => {
+                    const ready = hasAttachmentFile(brief.id, attachment.id);
+                    // Force re-read when epoch bumps after re-attach.
+                    void attachmentEpoch;
+                    return (
+                      <li key={attachment.id} className="aaa-attachment">
+                        <span
+                          className={
+                            ready
+                              ? "aaa-attachment-ready is-ready"
+                              : "aaa-attachment-ready"
+                          }
+                          aria-hidden="true"
+                          title={ready ? "Ready to upload" : "Missing binary in this session"}
+                        />
+                        <span className="aaa-attachment-name">{attachment.fileName}</span>
+                        <span className="aaa-attachment-size">
+                          {ready ? "Ready to upload" : "Re-attach required"}
+                        </span>
+                        {!ready ? (
+                          <button
+                            type="button"
+                            className="aaa-btn-text"
+                            onClick={() => {
+                              reattachTargetId.current = attachment.id;
+                              reattachInputRef.current?.click();
+                            }}
+                          >
+                            Attach file to upload
+                          </button>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <input
+                ref={reattachInputRef}
+                type="file"
+                multiple
+                className="sr-only"
+                aria-label="Re-attach supporting files for Workfront upload"
+                onChange={(event) => {
+                  const chosen = Array.from(event.target.files ?? []);
+                  if (!brief || chosen.length === 0) return;
+                  const targetId = reattachTargetId.current;
+                  if (targetId && chosen[0]) {
+                    storeAttachmentFile(brief.id, targetId, chosen[0]);
+                    reattachTargetId.current = null;
+                    const remaining = chosen.slice(1);
+                    if (remaining.length > 0) {
+                      const missing = brief.attachments.filter(
+                        (item) =>
+                          item.id !== targetId && !hasAttachmentFile(brief.id, item.id),
+                      );
+                      storeAttachmentFiles(
+                        brief.id,
+                        remaining.map((file, index) => ({
+                          attachmentId: missing[index]?.id ?? `extra-${crypto.randomUUID()}`,
+                          file,
+                        })),
+                      );
+                      if (remaining.length > missing.length) {
+                        const extras: AttachmentRef[] = remaining
+                          .slice(missing.length)
+                          .map((file) => ({
+                            id: crypto.randomUUID(),
+                            fileName: file.name,
+                            size: file.size,
+                            mimeType: file.type,
+                            addedAt: new Date().toISOString(),
+                          }));
+                        const withExtras: IntakeBrief = {
+                          ...brief,
+                          attachments: [...brief.attachments, ...extras],
+                          updatedAt: new Date().toISOString(),
+                        };
+                        storeAttachmentFiles(
+                          brief.id,
+                          extras.map((ref, index) => ({
+                            attachmentId: ref.id,
+                            file: remaining[missing.length + index],
+                          })),
+                        );
+                        persist(withExtras, `Attached ${chosen.length} file(s) for Workfront upload.`);
+                        setAttachmentEpoch((value) => value + 1);
+                        event.target.value = "";
+                        return;
+                      }
+                    }
+                  } else {
+                    const missing = brief.attachments.filter(
+                      (item) => !hasAttachmentFile(brief.id, item.id),
+                    );
+                    storeAttachmentFiles(
+                      brief.id,
+                      chosen.map((file, index) => ({
+                        attachmentId: missing[index]?.id ?? `extra-${crypto.randomUUID()}`,
+                        file,
+                      })),
+                    );
+                  }
+                  setAttachmentEpoch((value) => value + 1);
+                  setStatusMessage(
+                    `Attached ${chosen.length} file${chosen.length === 1 ? "" : "s"} for Workfront upload.`,
+                  );
+                  event.target.value = "";
+                }}
+              />
+          </section>
 
           <div className="aaa-summary-assessments" role="group" aria-label="Assessment">
             <label className="aaa-summary-assessment aaa-summary-assessment-size">
@@ -611,6 +768,8 @@ export default function RequestSummaryView() {
           issueId={sentDialog.issueId}
           issueUrl={sentDialog.issueUrl}
           topicName={sentDialog.topicName}
+          uploadedDocuments={sentDialog.uploadedDocuments}
+          documentError={sentDialog.documentError}
           onClose={() => setSentDialog(null)}
           onViewQueue={() => {
             setSentDialog(null);

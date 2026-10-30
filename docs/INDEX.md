@@ -35,7 +35,7 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/reviewer-ux-flow.jpg` | 2026-09-16 | The reviewer state machine. Sprint 2 | active |
 | `assets/brand/AAAL-Brand-Visual-Style-Guide.pdf` | 2026-09-16 | Brand system, MAR 2025. Proprietary, internal use only | active |
 | `docs/knowledge/brand-system.md` | 2026-09-16 | The brand guide as actually implemented, with every ratio computed. Records six places the guide's own ADA guidance fails when measured | active |
-| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07; Vercel WF 048 / mobile logo 049 / home list 050 2026-10-30 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
+| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07; Vercel WF 048 / mobile logo 049 / home list 050 / brief decipher + docs 051 2026-10-30 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
 
 ## Requirements and flows
 
@@ -111,7 +111,7 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | --- | --- | --- | --- |
 | `docs/deployment.md` | 2026-09-16; Vercel `/api/workfront` 2026-10-30 | How to build and host: `APP_BASE_PATH`, per-host history fallback, security headers, Vercel Workfront env, what hosting does **not** solve | active |
 | `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04; dual-write 2026-10-07; Refresh upsert 2026-10-07 | S2S + App Builder proxy; Task create/list; Refresh upserts into local queue (035–037) | active — Task dual-write; S2S Add Task ACL pending |
-| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; upsert 2026-10-07; ACL gate 2026-10-09 | Local Ready-to-send; dual-write; Refresh upsert; Task create needs S2S Add Tasks ACL | active |
+| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; upsert 2026-10-07; ACL gate 2026-10-09; docs upload + brief decipher 2026-10-30 | Local Ready-to-send; dual-write Task + document upload to Task Docs and project Tasks folder; Context brief decipher; Refresh upsert; S2S Add Tasks/Documents ACL | active |
 | `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039) | active — create verified |
 | `workfront-proxy/README.md` | 2026-10-04 | How to set Runtime secrets, deploy the health action, and run the local stand-in | active |
 | `.env.example` | 2026-09-16; proxy URL 2026-10-04 | `APP_BASE_PATH`, public `WORKFRONT_PROXY_URL`, and the standing warning about `VITE_`-prefixed secrets | active |

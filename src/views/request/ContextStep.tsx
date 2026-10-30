@@ -22,6 +22,8 @@ interface ContextStepProps {
   /** True once detection has run, which is what reveals the ALAN question. */
   alanPrompted: boolean;
   detectionNote: string | null;
+  /** Status from local brief deciphering (pre-fill coverage). */
+  decipherNote: string | null;
   knownAlanNumbers: string[];
   onAlanChange: (value: string) => void;
   onRevealAlan: () => void;
@@ -44,6 +46,7 @@ export default function ContextStep({
   alanValue,
   alanPrompted,
   detectionNote,
+  decipherNote,
   knownAlanNumbers,
   onAlanChange,
   onRevealAlan,
@@ -134,8 +137,8 @@ export default function ContextStep({
           }}
         />
         <p className="aaa-field-hint">
-          File names are recorded now; the files themselves are uploaded when this connects to
-          Workfront.
+          Supported briefs (.docx, .pdf with text, .txt, .md) are deciphered on this device to
+          pre-fill guided questions. Original files upload to Workfront when you submit.
         </p>
       </div>
 
@@ -156,6 +159,12 @@ export default function ContextStep({
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {decipherNote ? (
+        <p className="aaa-field-hint" role="status">
+          {decipherNote}
+        </p>
       ) : null}
 
       {/* The ALAN branch. */}

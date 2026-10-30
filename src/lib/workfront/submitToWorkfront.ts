@@ -16,7 +16,7 @@ import {
 } from "../intake/a3Schema";
 import { briefTitle, type IntakeBrief } from "../intake/types";
 import { describeCoverageForAudit } from "../related/coverage";
-import { createWorkfrontIssue } from "./proxyClient";
+import { createWorkfrontIssue, uploadWorkfrontDocument } from "./proxyClient";
 import { pathLabel, routeExplanation, routeFor } from "./routing";
 import { topicIsSubmittable, type QueueDef } from "./queueConfig";
 
@@ -53,6 +53,12 @@ export interface WorkfrontIssuePayload {
    */
 }
 
+export interface WorkfrontUploadedDocumentRecord {
+  name: string;
+  taskDocumentId?: string;
+  projectDocumentId?: string;
+}
+
 export interface WorkfrontSubmitResult {
   mode: "local" | "workfront";
   issueName: string;
@@ -71,6 +77,10 @@ export interface WorkfrontSubmitResult {
   blockers: string[];
   /** Set when a live attempt was made and the proxy or Workfront refused it. */
   liveError?: string;
+  /** Documents uploaded after a successful live Task create. */
+  uploadedDocuments?: WorkfrontUploadedDocumentRecord[];
+  /** Non-fatal: Task was created but one or more document uploads failed. */
+  documentError?: string;
 }
 
 const MAX_ISSUE_NAME = 140;
@@ -285,6 +295,11 @@ export interface WorkfrontSubmitOptions {
   live?: boolean;
   /** Must be true for a live create. UI shows Entered By disclosure first. */
   confirmLive?: boolean;
+  /**
+   * Session File binaries from `attachmentFileStore`. Uploaded after Task create via POST /documents.
+   * Names-only still ride on the payload when binaries are missing (reloaded session).
+   */
+  attachmentFiles?: File[];
 }
 
 /**
@@ -366,6 +381,27 @@ export async function submitToWorkfront(
     };
   }
 
+  const uploadedDocuments: WorkfrontUploadedDocumentRecord[] = [];
+  const documentErrors: string[] = [];
+  const files = options.attachmentFiles ?? [];
+  for (const file of files) {
+    const uploaded = await uploadWorkfrontDocument({
+      taskId: created.ID,
+      projectId: created.projectID || payload.projectID,
+      file,
+      confirmLive: true,
+    });
+    if (uploaded.ok) {
+      uploadedDocuments.push({
+        name: uploaded.fileName,
+        taskDocumentId: uploaded.taskDocumentId,
+        projectDocumentId: uploaded.projectDocumentId,
+      });
+    } else {
+      documentErrors.push(`${file.name}: ${uploaded.error}`);
+    }
+  }
+
   return {
     ok: true,
     mode: "workfront",
@@ -375,5 +411,9 @@ export async function submitToWorkfront(
     payload,
     readyToSend: true,
     blockers: [],
+    ...(uploadedDocuments.length > 0 ? { uploadedDocuments } : {}),
+    ...(documentErrors.length > 0
+      ? { documentError: documentErrors.join("; ") }
+      : {}),
   };
 }

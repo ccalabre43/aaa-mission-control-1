@@ -1,19 +1,12 @@
 /**
  * Detecting an ALAN number from an uploaded document.
  *
- * The designed behavior is: a document is uploaded, its ALAN number is recognized and used; if none
- * is found, the app asks whether the requester has one.
- *
- * This version implements only the second branch. `NoopDetector` always reports that nothing was
- * found, so the ask branch always runs - which means the Sprint 1 path IS the designed "none found"
- * path, exercised from day one rather than stubbed around. A later `PdfAlanDetector` implements this
- * same interface and the conditional UI it feeds already exists.
- *
- * Choosing ask-only also keeps `pdfjs-dist` and any OCR engine out of the bundle, so no Vendor
- * Management review is triggered now. Adding either later does trigger one, along with a
- * bundle-size conversation: an OCR engine is roughly 15MB of wasm, slower, and more prone to false
- * reads.
+ * `DocumentAlanDetector` reads filenames and locally extracted brief text (via briefDecipherer).
+ * No cloud OCR and no Vendor Management dependency. When nothing is found, the ask branch still
+ * runs so the requester can confirm or leave blank.
  */
+import { ALAN_SEARCH_PATTERN } from "./alanNumber";
+import { decipherBriefFiles } from "./briefDecipherer";
 import type { AttachmentRef } from "./types";
 
 export interface AlanCandidate {
@@ -42,10 +35,74 @@ export interface AlanNumberDetector {
   detect(files: File[], refs: AttachmentRef[]): Promise<AlanDetectionResult>;
 }
 
+function fromFileNames(files: File[]): AlanCandidate[] {
+  const out: AlanCandidate[] = [];
+  for (const file of files) {
+    const matches = file.name.match(ALAN_SEARCH_PATTERN);
+    if (!matches) continue;
+    for (const value of matches) {
+      out.push({
+        value: value.toUpperCase(),
+        sourceFileName: file.name,
+        method: "file-name",
+      });
+    }
+  }
+  return out;
+}
+
 /**
- * Reports nothing found, always. Not a placeholder that throws or returns fake data: it is the
- * honest answer for a build that does no document parsing.
+ * Local document ALAN detection: filename patterns plus brief decipherer text extraction.
  */
+export class DocumentAlanDetector implements AlanNumberDetector {
+  readonly id = "document";
+
+  async detect(
+    files: File[],
+    refs: AttachmentRef[],
+  ): Promise<AlanDetectionResult> {
+    if (files.length === 0 && refs.length === 0) {
+      return { candidates: [], searched: false };
+    }
+
+    const fromNames = fromFileNames(files);
+    let fromDocs: AlanCandidate[] = [];
+    let note: string | undefined;
+
+    try {
+      const deciphered = await decipherBriefFiles(files, []);
+      fromDocs = deciphered.alanCandidates;
+      if (deciphered.filesRead === 0 && refs.length > 0) {
+        note =
+          "Attachments are recorded, but no supported brief text was available for ALAN detection. Confirm the number below.";
+      }
+    } catch {
+      note =
+        "Could not read attachment text for an ALAN number. Confirm it below if you have one.";
+    }
+
+    const seen = new Set<string>();
+    const candidates = [...fromNames, ...fromDocs].filter((item) => {
+      if (seen.has(item.value)) return false;
+      seen.add(item.value);
+      return true;
+    });
+
+    return {
+      candidates,
+      searched: true,
+      note:
+        candidates.length === 0
+          ? note ??
+            (refs.length > 0
+              ? "No ALAN number was found in the uploaded files. Confirm it below if you have one."
+              : undefined)
+          : undefined,
+    };
+  }
+}
+
+/** Kept for tests and call sites that need the honest no-parse path. */
 export class NoopDetector implements AlanNumberDetector {
   readonly id = "noop";
 
@@ -64,4 +121,4 @@ export class NoopDetector implements AlanNumberDetector {
   }
 }
 
-export const defaultAlanDetector: AlanNumberDetector = new NoopDetector();
+export const defaultAlanDetector: AlanNumberDetector = new DocumentAlanDetector();

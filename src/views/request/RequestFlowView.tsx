@@ -47,6 +47,14 @@ import {
   resolvedAlanNumber,
 } from "../../lib/intake/alanNumber";
 import { defaultAlanDetector } from "../../lib/intake/alanDetector";
+import {
+  removeAttachmentFile,
+  storeAttachmentFiles,
+} from "../../lib/intake/attachmentFileStore";
+import {
+  decipherBriefFiles,
+  type PrefillSource,
+} from "../../lib/intake/briefDecipherer";
 import { buildCorpus } from "../../lib/related/corpus";
 import { defaultMatcher } from "../../lib/related/LocalMatcher";
 import type {
@@ -96,6 +104,10 @@ export default function RequestFlowView() {
   const [alanInput, setAlanInput] = useState(ALAN_TEMPLATE);
   const [alanPrompted, setAlanPrompted] = useState(false);
   const [detectionNote, setDetectionNote] = useState<string | null>(null);
+  const [decipherNote, setDecipherNote] = useState<string | null>(null);
+  const [prefillSources, setPrefillSources] = useState<Record<string, PrefillSource>>(
+    {},
+  );
 
   const [matchOutcome, setMatchOutcome] = useState<MatchOutcome | null>(null);
   const [matching, setMatching] = useState(false);
@@ -232,10 +244,8 @@ export default function RequestFlowView() {
   }
 
   /**
-   * Adds attachments and runs ALAN detection.
-   *
-   * `NoopDetector` always reports nothing found, so the "Do you have an ALAN number?" branch always
-   * runs. That is the designed no-match path, exercised for real rather than stubbed around.
+   * Adds attachments, stores File binaries for later Workfront upload, deciphers briefs into
+   * empty guided answers, and runs ALAN detection against filenames and extracted text.
    */
   async function handleFiles(incoming: File[]) {
     const refs: AttachmentRef[] = incoming.map((file) => ({
@@ -249,6 +259,50 @@ export default function RequestFlowView() {
     const nextRefs = [...brief.attachments, ...refs];
     setFiles(nextFiles);
     patchBrief({ attachments: nextRefs });
+    storeAttachmentFiles(
+      brief.id,
+      refs.map((ref, index) => ({ attachmentId: ref.id, file: incoming[index] })),
+    );
+
+    try {
+      const deciphered = await decipherBriefFiles(incoming, questions);
+      setDecipherNote(deciphered.note);
+      if (deciphered.questionsFilled > 0 || deciphered.contextText) {
+        setAnswers((current) => {
+          const next = { ...current };
+          for (const [questionId, value] of Object.entries(deciphered.answers)) {
+            if (!next[questionId]?.trim()) next[questionId] = value;
+          }
+          return next;
+        });
+        setPrefillSources((current) => {
+          const next = { ...current };
+          for (const [questionId, source] of Object.entries(deciphered.sources)) {
+            if (!next[questionId]) next[questionId] = source;
+          }
+          return next;
+        });
+        if (deciphered.contextText) {
+          setBrief((current) => {
+            if (current.contextText.trim()) return current;
+            const next = {
+              ...current,
+              contextText: deciphered.contextText,
+              updatedAt: new Date().toISOString(),
+            };
+            upsertBrief(next);
+            return next;
+          });
+        }
+        setAnnouncement(deciphered.note);
+      }
+    } catch (error) {
+      setDecipherNote(
+        error instanceof Error
+          ? `Could not decipher uploaded briefs: ${error.message}`
+          : "Could not decipher uploaded briefs.",
+      );
+    }
 
     const detection = await defaultAlanDetector.detect(nextFiles, nextRefs);
     if (detection.candidates.length > 0) {
@@ -270,6 +324,7 @@ export default function RequestFlowView() {
     patchBrief({
       attachments: brief.attachments.filter((attachment) => attachment.id !== id),
     });
+    removeAttachmentFile(brief.id, id);
     if (ref) setFiles((current) => current.filter((file) => file.name !== ref.fileName));
   }
 
@@ -410,6 +465,8 @@ export default function RequestFlowView() {
     setMatchOutcome(null);
     setAlanPrompted(false);
     setDetectionNote(null);
+    setDecipherNote(null);
+    setPrefillSources({});
     setQuestionIndex(0);
     setError("");
     setStep("start");
@@ -444,6 +501,7 @@ export default function RequestFlowView() {
           alanValue={alanInput}
           alanPrompted={alanPrompted}
           detectionNote={detectionNote}
+          decipherNote={decipherNote}
           knownAlanNumbers={knownAlanNumbers}
           onAlanChange={setAlanInput}
           onRevealAlan={() => setAlanPrompted(true)}
@@ -466,6 +524,7 @@ export default function RequestFlowView() {
           onNext={handleQuestionNext}
           matchOutcome={matchOutcome}
           matching={matching}
+          prefillSource={prefillSources[questions[questionIndex].id] ?? null}
         />
       ) : null}
 

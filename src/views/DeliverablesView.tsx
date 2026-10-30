@@ -8,9 +8,6 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RequestQueueSection } from "../components/queue/RequestQueueSection";
 import { ExecutiveDashboardSection } from "../components/queue/ExecutiveDashboardSection";
-import { SavedVersionsSection } from "../components/queue/SavedVersionsSection";
-import { countSampleBriefs } from "../lib/dev/sampleQueue";
-import { loadBriefs } from "../lib/intake/storage";
 import { loadRows } from "../lib/storage";
 import type { TrackerRow } from "../lib/types";
 
@@ -25,11 +22,7 @@ function tabFromSearch(params: URLSearchParams): PageTab {
 export default function DeliverablesView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const pageTab = tabFromSearch(searchParams);
-  const [rows, setRows] = useState<TrackerRow[]>(initialLoad.rows);
-  const [dataEpoch, setDataEpoch] = useState(0);
-  const [sampleCount, setSampleCount] = useState(() =>
-    countSampleBriefs(loadBriefs().briefs),
-  );
+  const [rows] = useState<TrackerRow[]>(initialLoad.rows);
 
   function selectTab(tab: PageTab) {
     if (tab === "executive") {
@@ -37,13 +30,6 @@ export default function DeliverablesView() {
     } else {
       setSearchParams({}, { replace: true });
     }
-  }
-
-  function onSnapshotChanged() {
-    const reloaded = loadRows();
-    setRows(reloaded.rows);
-    setSampleCount(countSampleBriefs(loadBriefs().briefs));
-    setDataEpoch((epoch) => epoch + 1);
   }
 
   const pageHeading =
@@ -93,7 +79,7 @@ export default function DeliverablesView() {
         hidden={pageTab !== "queue"}
         className="aaa-page-tabpanel"
       >
-        <RequestQueueSection key={`requests-${dataEpoch}`} />
+        <RequestQueueSection />
       </div>
 
       <div
@@ -103,16 +89,7 @@ export default function DeliverablesView() {
         hidden={pageTab !== "executive"}
         className="aaa-page-tabpanel"
       >
-        <ExecutiveDashboardSection
-          key={`exec-${dataEpoch}`}
-          trackerRows={rows}
-          dataEpoch={dataEpoch}
-        />
-
-        <SavedVersionsSection
-          sampleCount={sampleCount}
-          onDataChanged={onSnapshotChanged}
-        />
+        <ExecutiveDashboardSection trackerRows={rows} dataEpoch={0} />
       </div>
     </main>
   );

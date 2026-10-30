@@ -47,42 +47,68 @@ function isLocalTlsIssuerError(error) {
 }
 
 /**
- * @param {{ method?: string, url: string, headers?: Record<string, string>, body?: string }} req
+ * @param {{ method?: string, url: string, headers?: Record<string, string>, body?: string | Buffer }} req
  */
 function curlRequest(req) {
+  const fs = require("node:fs");
+  const os = require("node:os");
+  const path = require("node:path");
   const args = ["-sS", "--compressed", "-X", req.method || "GET", "-w", "\n%{http_code}"];
   for (const [key, value] of Object.entries(req.headers || {})) {
     args.push("-H", `${key}: ${value}`);
   }
-  if (req.body != null) {
-    args.push("--data-binary", req.body);
+  /** @type {string | null} */
+  let tempPath = null;
+  try {
+    if (req.body != null) {
+      if (Buffer.isBuffer(req.body)) {
+        tempPath = path.join(
+          os.tmpdir(),
+          `wf-upload-${process.pid}-${Date.now()}.bin`,
+        );
+        fs.writeFileSync(tempPath, req.body);
+        args.push("--data-binary", `@${tempPath}`);
+      } else {
+        args.push("--data-binary", req.body);
+      }
+    }
+    args.push(req.url);
+    const result = spawnSync("curl", args, {
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+    });
+    if (result.error) {
+      throw new Error(`curl fallback failed to start: ${result.error.message}`);
+    }
+    if (result.status !== 0) {
+      throw new Error(
+        `curl fallback failed: ${(result.stderr || "").trim() || `exit ${result.status}`}`,
+      );
+    }
+    const combined = result.stdout || "";
+    const nl = combined.lastIndexOf("\n");
+    if (nl < 0) {
+      throw new Error("curl fallback returned an empty response.");
+    }
+    const text = combined.slice(0, nl);
+    const status = Number(combined.slice(nl + 1));
+    if (!Number.isFinite(status)) {
+      throw new Error("curl fallback could not parse HTTP status.");
+    }
+    return { status, text };
+  } finally {
+    if (tempPath) {
+      try {
+        fs.unlinkSync(tempPath);
+      } catch {
+        // ignore temp cleanup failures
+      }
+    }
   }
-  args.push(req.url);
-  const result = spawnSync("curl", args, {
-    encoding: "utf8",
-    maxBuffer: 4 * 1024 * 1024,
-  });
-  if (result.error) {
-    throw new Error(`curl fallback failed to start: ${result.error.message}`);
-  }
-  if (result.status !== 0) {
-    throw new Error(`curl fallback failed: ${(result.stderr || "").trim() || `exit ${result.status}`}`);
-  }
-  const combined = result.stdout || "";
-  const nl = combined.lastIndexOf("\n");
-  if (nl < 0) {
-    throw new Error("curl fallback returned an empty response.");
-  }
-  const text = combined.slice(0, nl);
-  const status = Number(combined.slice(nl + 1));
-  if (!Number.isFinite(status)) {
-    throw new Error("curl fallback could not parse HTTP status.");
-  }
-  return { status, text };
 }
 
 /**
- * @param {{ method?: string, url: string, headers?: Record<string, string>, body?: string }} req
+ * @param {{ method?: string, url: string, headers?: Record<string, string>, body?: string | Buffer }} req
  */
 async function httpRequest(req) {
   try {
@@ -235,6 +261,154 @@ function toParameterValues(customForm) {
   return out;
 }
 
+/**
+ * Build multipart/form-data body with field name `uploadedFile` for Workfront /upload.
+ *
+ * @param {string} fileName
+ * @param {string} mimeType
+ * @param {Buffer} buffer
+ */
+function buildUploadedFileMultipart(fileName, mimeType, buffer) {
+  const boundary = `----MissionControlBoundary${Date.now().toString(16)}`;
+  const safeName = String(fileName || "upload.bin").replace(/"/g, "");
+  const type = mimeType && String(mimeType).trim() ? String(mimeType) : "application/octet-stream";
+  const header =
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="uploadedFile"; filename="${safeName}"\r\n` +
+    `Content-Type: ${type}\r\n\r\n`;
+  const footer = `\r\n--${boundary}--\r\n`;
+  const body = Buffer.concat([
+    Buffer.from(header, "utf8"),
+    buffer,
+    Buffer.from(footer, "utf8"),
+  ]);
+  return {
+    contentType: `multipart/form-data; boundary=${boundary}`,
+    body,
+  };
+}
+
+/**
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @param {string} fileName
+ * @param {string} mimeType
+ * @param {Buffer} buffer
+ */
+async function uploadMultipartToWorkfront(config, token, fileName, mimeType, buffer) {
+  const multipart = buildUploadedFileMultipart(fileName, mimeType, buffer);
+  const url = `${config.host}/attask/api/${API_VERSION}/upload`;
+  const response = await httpRequest({
+    method: "POST",
+    url,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": multipart.contentType,
+    },
+    body: multipart.body,
+  });
+  let data;
+  try {
+    data = response.text ? JSON.parse(response.text) : {};
+  } catch {
+    throw new Error(`Workfront upload returned non-JSON (HTTP ${response.status}).`);
+  }
+  if (response.status < 200 || response.status >= 300) {
+    const detail =
+      data?.error?.message || data?.error || data?.message || `HTTP ${response.status}`;
+    throw new Error(`Workfront upload failed: ${detail}`);
+  }
+  const handle =
+    data?.data?.handle ||
+    data?.handle ||
+    (data?.data && typeof data.data === "object" ? data.data.handle : null);
+  if (!handle || typeof handle !== "string") {
+    throw new Error("Workfront upload returned no handle.");
+  }
+  return { handle: String(handle) };
+}
+
+/**
+ * Find or create the project document folder named `folderName` (default Tasks).
+ *
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @param {string} projectId
+ * @param {string} [folderName]
+ */
+async function ensureProjectFolder(config, token, projectId, folderName = "Tasks") {
+  const query = [
+    `projectID=${encodeURIComponent(projectId)}`,
+    `name=${encodeURIComponent(folderName)}`,
+    "fields=ID,name,projectID",
+    "$$LIMIT=20",
+  ].join("&");
+  const search = await workfrontApi(config, token, `DOCFDR/search?${query}`);
+  const rows = Array.isArray(search.data)
+    ? search.data
+    : Array.isArray(search)
+      ? search
+      : [];
+  const existing = rows.find(
+    (row) =>
+      row &&
+      typeof row === "object" &&
+      String(row.name || "").toLowerCase() === folderName.toLowerCase(),
+  );
+  if (existing && (existing.ID || existing.id)) {
+    return String(existing.ID || existing.id);
+  }
+
+  const created = await workfrontApi(config, token, "DOCFDR", {
+    method: "POST",
+    body: {
+      name: folderName,
+      projectID: projectId,
+    },
+  });
+  const folder = created.data || created;
+  const id = String(folder.ID || folder.id || "");
+  if (!id) {
+    throw new Error(`Could not create Workfront document folder "${folderName}".`);
+  }
+  return id;
+}
+
+/**
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @param {{ name: string, handle: string, docObjCode: string, objID: string, folderID?: string }} input
+ */
+async function attachWorkfrontDocument(config, token, input) {
+  /** @type {Record<string, unknown>} */
+  const updates = {
+    name: input.name,
+    handle: input.handle,
+    docObjCode: input.docObjCode,
+    objID: input.objID,
+    currentVersion: {
+      version: "1.0",
+      fileName: input.name,
+    },
+  };
+  if (input.folderID) {
+    updates.folderID = input.folderID;
+  }
+  const data = await workfrontApi(
+    config,
+    token,
+    `document?updates=${encodeURIComponent(JSON.stringify(updates))}`,
+    { method: "POST" },
+  );
+  const doc = data.data || data;
+  const id = String(doc.ID || doc.id || "");
+  if (!id) {
+    throw new Error(`Workfront document create returned no ID for ${input.name}.`);
+  }
+  return { ID: id, name: String(doc.name || input.name) };
+}
+
 module.exports = {
   API_VERSION,
   DEFAULT_HOST,
@@ -246,4 +420,7 @@ module.exports = {
   authLabel,
   workfrontApi,
   toParameterValues,
+  uploadMultipartToWorkfront,
+  ensureProjectFolder,
+  attachWorkfrontDocument,
 };

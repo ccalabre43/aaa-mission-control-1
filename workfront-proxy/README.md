@@ -1,7 +1,8 @@
-# Workfront proxy (health + Issues)
+# Workfront proxy (health + Tasks + documents)
 
 Adobe App Builder Runtime actions that hold the Workfront OAuth Server-to-Server secret and expose
-health, Issue create, and Issue list for Mission Control. The Vite app never sees `client_secret`.
+health, Task create/list, and document upload for Mission Control. The Vite app never sees
+`client_secret`.
 
 ## Runtime setup (Developer Console)
 
@@ -48,7 +49,8 @@ npm run workfront:health
 npm run workfront:sample-create
 ```
 
-Local routes: `GET /health`, `GET /issues` (lists Tasks), `POST /issues` (creates a Task;
+Local routes: `GET /health`, `GET /issues` (lists Tasks), `POST /issues` (creates a Task),
+`POST /documents` (uploads to Task Documents + project Documents → Tasks folder;
 requires kill switch + `confirmLive: true`).
 
 If sample-create fails with *insufficient access to add this Task*, raise the S2S tech account

@@ -1256,6 +1256,23 @@ button.aaa-tool-card {
   color: var(--aaa-ink);
 }
 
+.aaa-attachment-ready {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #9ca3af;
+  flex-shrink: 0;
+}
+
+.aaa-attachment-ready.is-ready {
+  background: #0f7a3f;
+}
+
+.aaa-summary-attachments {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
 .aaa-attachment-size {
   color: var(--aaa-muted);
   font-size: 0.8125rem;
@@ -3967,6 +3984,30 @@ select.select {
   font-size: 0.9375rem;
   line-height: 1.5;
   color: var(--aaa-muted); /* 6.69:1 on white */
+}
+
+.aaa-sent-dialog-docs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 22rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--aaa-ink); /* 10.05:1 on white */
+}
+
+.aaa-sent-dialog-docs li {
+  margin: 0;
+  word-break: break-word;
+}
+
+.aaa-sent-dialog-doc-error {
+  color: var(--aaa-red); /* digital red; reserved for genuine errors */
 }
 
 /* Refresh dialog: centered success + Task inventory (mock workfront-refresh-modal) */

@@ -130,3 +130,95 @@ export async function createWorkfrontIssue(
     };
   }
 }
+
+export interface WorkfrontUploadedDocument {
+  ok: true;
+  fileName: string;
+  taskDocumentId?: string;
+  projectDocumentId?: string;
+  folderID?: string;
+}
+
+/** Cap matches the proxy (3 MB raw) so the UI fails early instead of after a large POST. */
+export const WORKFRONT_DOC_MAX_BYTES = 3 * 1024 * 1024;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Could not read file as data URL."));
+        return;
+      }
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("File read failed."));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Uploads one file to a Workfront Task and mirrors it into project Documents > Tasks.
+ * Secrets stay on the proxy; the browser only sends base64 over the same-origin/local proxy.
+ */
+export async function uploadWorkfrontDocument(input: {
+  taskId: string;
+  projectId: string;
+  file: File;
+  confirmLive: true;
+}): Promise<WorkfrontUploadedDocument | { ok: false; error: string }> {
+  const endpoint = `${proxyBaseUrl()}/documents`;
+  if (input.file.size > WORKFRONT_DOC_MAX_BYTES) {
+    return {
+      ok: false,
+      error: `"${input.file.name}" exceeds the ${WORKFRONT_DOC_MAX_BYTES} byte upload limit.`,
+    };
+  }
+  try {
+    const base64Data = await fileToBase64(input.file);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        taskId: input.taskId,
+        projectId: input.projectId,
+        fileName: input.file.name,
+        mimeType: input.file.type || "application/octet-stream",
+        base64Data,
+        confirmLive: input.confirmLive,
+      }),
+    });
+    const data = (await response.json()) as Record<string, unknown>;
+    if (data.ok === true) {
+      return {
+        ok: true,
+        fileName:
+          typeof data.fileName === "string" ? data.fileName : input.file.name,
+        taskDocumentId:
+          typeof data.taskDocumentId === "string" ? data.taskDocumentId : undefined,
+        projectDocumentId:
+          typeof data.projectDocumentId === "string"
+            ? data.projectDocumentId
+            : undefined,
+        folderID: typeof data.folderID === "string" ? data.folderID : undefined,
+      };
+    }
+    return {
+      ok: false,
+      error:
+        typeof data.error === "string"
+          ? data.error
+          : `Document upload failed (HTTP ${response.status}).`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Document upload failed.",
+    };
+  }
+}

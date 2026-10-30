@@ -1357,6 +1357,22 @@ Phase B of Deep Dive live Excel:
 requester name/email. Graph `site_id` / `item_id` stay pending until Composio Excel + SharePoint
 connections are **Active** and discovery updates `docs/knowledge/deep-dive-excel.md`.
 
+## 2026-10-30 - 051 - Client brief decipher + Workfront document upload
+
+**Status:** accepted (architecture ships; live upload still gated by `WORKFRONT_LIVE_SUBMIT`)
+
+| Layer | Shipped |
+| --- | --- |
+| `briefDecipherer.ts` | Browser-only `.docx` / text-layer `.pdf` / `.txt` / `.md` / basic `.rtf` parse; maps headings to guided questions; no third-party PDF/LLM npm |
+| `DocumentAlanDetector` | Replaces noop; filename + extracted text for `ALAN-\d{5}-\d{3}-\d{2}` |
+| Prefill UX | Context status + QuestionsStep source audit badges; never overwrite typed answers |
+| `attachmentFileStore` | In-memory `File` map by brief id; Summary readiness / re-attach |
+| Proxy | `POST /documents` (local + `/api/workfront/documents`): `/upload` → DOCU on Task + project Documents → **Tasks** folder (3 MB raw cap) |
+| Submit | After live Task create, upload session files; sent dialog lists names; Task still succeeds if a doc upload fails |
+
+PII and binaries stay on-device until an explicit live send through the proxy. Guardrail 7 (auditable
+signal) and Guardrail 8 (no unapproved vendor) apply.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

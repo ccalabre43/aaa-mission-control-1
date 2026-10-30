@@ -22,6 +22,9 @@ const {
   runCreateIssue,
   runListIssues,
 } = require("./src/dx-excshell-1/actions/workfront-issues/issues.js");
+const {
+  runUploadDocument,
+} = require("./src/dx-excshell-1/actions/workfront-documents/documents.js");
 
 const PORT = Number(process.env.WORKFRONT_PROXY_PORT || 8787);
 const ENV_FILE = join(__dirname, "..", ".env.workfront.local");
@@ -117,6 +120,21 @@ async function handleCreateIssue(req, res) {
   }
 }
 
+async function handleUploadDocument(req, res) {
+  try {
+    const body = await readBody(req);
+    const result = await runUploadDocument(env, body, {
+      bearerToken: bearerFromReq(req),
+    });
+    sendJson(res, result.statusCode, result.body);
+  } catch (error) {
+    sendJson(res, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Invalid document upload.",
+    });
+  }
+}
+
 async function once() {
   const result = await runHealth(env);
   process.stdout.write(`${JSON.stringify(result.body, null, 2)}\n`);
@@ -169,9 +187,19 @@ if (process.argv.includes("--once")) {
       });
       return;
     }
+    if (req.method === "POST" && url.pathname === "/documents") {
+      handleUploadDocument(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
     sendJson(res, 404, {
       ok: false,
-      error: "Not found. Use GET /health, GET /issues, or POST /issues.",
+      error:
+        "Not found. Use GET /health, GET /issues, POST /issues, or POST /documents.",
     });
   });
 

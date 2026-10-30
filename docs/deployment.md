@@ -232,6 +232,7 @@ reuse the `workfront-proxy` action modules (decision **048**):
 | `GET /api/workfront/health` | Connection badge on Request Queue |
 | `GET /api/workfront/issues` | Refresh from Workfront |
 | `POST /api/workfront/issues` | Live create when kill switch + `confirmLive` |
+| `POST /api/workfront/documents` | After Task create: upload to Task Documents + project Documents → Tasks folder (3 MB raw cap; kill switch + `confirmLive`) |
 
 Set these as **Vercel project environment variables** (Production and Preview). Never `VITE_*`.
 Never paste values into chat:

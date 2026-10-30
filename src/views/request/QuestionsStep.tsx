@@ -16,6 +16,7 @@ import type { RefObject } from "react";
 import { ChoiceGroup } from "../../components/ChoiceGroup";
 import { RelatedWorkPanel } from "../../components/RelatedWorkPanel";
 import { parseOptionValues } from "../../lib/intake/a3Schema";
+import type { PrefillSource } from "../../lib/intake/briefDecipherer";
 import type { QuestionDef } from "../../lib/intake/questionRegistry";
 import type { MatchOutcome } from "../../lib/related/types";
 
@@ -30,6 +31,8 @@ interface QuestionsStepProps {
   onNext: () => void;
   matchOutcome: MatchOutcome | null;
   matching: boolean;
+  /** Auditable source when this answer was pre-filled from an uploaded brief. */
+  prefillSource?: PrefillSource | null;
 }
 
 export default function QuestionsStep({
@@ -43,6 +46,7 @@ export default function QuestionsStep({
   onNext,
   matchOutcome,
   matching,
+  prefillSource = null,
 }: QuestionsStepProps) {
   const answered = value.trim() !== "";
   // The flow diagram's only real decision point: required fields gate Next.
@@ -96,6 +100,12 @@ export default function QuestionsStep({
         ) : null}
 
         <div className="aaa-field-group">
+          {prefillSource ? (
+            <p className="aaa-field-hint" role="status" id={`${question.id}-prefill`}>
+              Pre-filled from `{prefillSource.fileName}` (section: {prefillSource.matchedHeading}).
+              Edit as needed before continuing.
+            </p>
+          ) : null}
           {/* A choice group names itself through its legend, so an extra label would double it. */}
           {isChoice ? null : (
             <label className="sr-only" htmlFor={question.id}>
