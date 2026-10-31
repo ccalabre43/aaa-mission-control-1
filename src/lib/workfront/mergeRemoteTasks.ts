@@ -11,10 +11,10 @@ import {
   createBrief,
   type IntakeBrief,
   type RequesterIdentity,
-  type ReviewerPriority,
   type ReviewerStatus,
 } from "../intake/types";
 import type { WorkfrontRemoteIssue } from "./proxyClient";
+import { mapWorkfrontPriority } from "./priorityMap";
 
 const DEFAULT_HOST = "https://aaalife.my.workfront.com";
 
@@ -95,33 +95,7 @@ export function mapWorkfrontStatus(raw: string | null): ReviewerStatus | null {
   return null;
 }
 
-/**
- * Workfront priority is often numeric (1–9) or Urgent/High/Normal/Low.
- * Unrecognized → null.
- */
-export function mapWorkfrontPriority(raw: string | null): ReviewerPriority | null {
-  if (raw == null || String(raw).trim() === "") return null;
-  const key = String(raw).trim().toLowerCase();
-  if (key === "1" || key === "2" || key.includes("urgent") || key.includes("highest")) {
-    return "P1";
-  }
-  if (key === "3" || key.includes("high")) {
-    return "P1";
-  }
-  if (key === "4" || key === "5" || key.includes("normal") || key.includes("medium")) {
-    return "P2";
-  }
-  if (
-    key === "6" ||
-    key === "7" ||
-    key === "8" ||
-    key === "9" ||
-    key.includes("low")
-  ) {
-    return "P3";
-  }
-  return null;
-}
+export { mapWorkfrontPriority };
 
 /** Split "Chris Calabrese" into first/last; never invent email. */
 export function identityFromAssignedName(

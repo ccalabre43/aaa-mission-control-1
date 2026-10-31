@@ -24,6 +24,8 @@ function readConfig(env) {
     accessToken: (env.WORKFRONT_ACCESS_TOKEN || "").trim(),
     host: (env.WORKFRONT_HOST || DEFAULT_HOST).replace(/\/+$/, ""),
     projectId: (env.WORKFRONT_PROJECT_ID || DEFAULT_PROJECT_ID).trim(),
+    /** Portfolio ID for TEST PORTFOLIO - CHRIS (Portfolio Optimization ranks). Never VITE_*. */
+    portfolioId: (env.WORKFRONT_PORTFOLIO_ID || "").trim(),
     imsUrl: (env.WORKFRONT_IMS_URL || DEFAULT_IMS_URL).trim(),
     scope: (env.WORKFRONT_IMS_SCOPE || DEFAULT_SCOPE).trim(),
     liveSubmit: /^(1|true|yes)$/i.test((env.WORKFRONT_LIVE_SUBMIT || "").trim()),

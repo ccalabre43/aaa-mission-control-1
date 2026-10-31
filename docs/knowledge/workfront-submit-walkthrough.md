@@ -106,11 +106,37 @@ onto the Context dropzone:
 | Object | Task (project Tasks tab), not Issue |
 | Entered By | Signed-in Adobe user when a bearer is present; otherwise S2S tech account |
 | Requester | `A3IntakeRequestedBy` + description audit lines |
-| Columns | Best-guess: name, description, plannedCompletionDate, A3 custom form when accepted |
+| Columns | Best-guess: name, description, plannedCompletionDate, priority (P1→1 / P2→2 / P3→4), A3 custom form when accepted |
 | Documents | Task Documents tab + project Documents → **Tasks** folder (when session files uploaded) |
 
 If binaries were unavailable (reload), attachment **names** still ride in the Task description /
 payload; re-attach on Summary before live send to upload the originals.
+
+---
+
+## Priority: urgency vs Portfolio Optimization order
+
+These are **two different Workfront fields**. Do not use one control for both.
+
+### Request Queue Priority (P1–P3) → Task urgency
+
+1. On Request Queue, change the Priority select for a row that already has a Workfront Task ID.
+2. With `WORKFRONT_LIVE_SUBMIT=1`, confirm the dialog → proxy `POST /priority` updates Task
+   `priority` (1 / 2 / 4).
+3. Refresh from Workfront can pull Task priority back into the local select.
+4. Live create also sends `priority` from `brief.reviewer.priority`.
+
+This does **not** change Portfolio Optimization project order.
+
+### Executive Apply order → Portfolio Optimization `#`
+
+1. Open **Request Queue** → **Executive** tab.
+2. **Portfolio Optimization order** lists projects in `WORKFRONT_PORTFOLIO_ID` (TEST PORTFOLIO -
+   CHRIS) sorted by `portfolioPriority`.
+3. Reorder with the grip (drag, arrow keys, or Move up / Move down).
+4. Click **Apply order** (Workfront Set Priority analogue) → confirm → proxy `POST /portfolio`
+   writes contiguous `portfolioPriority` values.
+5. Verify in Workfront: Portfolio → **TEST PORTFOLIO - CHRIS** → **Portfolio Optimization** → `#`.
 
 ---
 
@@ -119,11 +145,14 @@ payload; re-attach on Summary before live send to upload the originals.
 1. Confirm Project `mission-control-v1` is assigned to Portfolio **TEST PORTFOLIO - CHRIS**
    in Project Details → Finance / Portfolio.
 2. Confirm the S2S tech account / signed-in user Access Level allows **Add Tasks** and
-   **Add Documents / Folders** on `mission-control-v1`.
-3. Confirm `WORKFRONT_PROJECT_ID=6abae2b600041e3ecb6a8da4dbe7b4a1` and
+   **Add Documents / Folders** on `mission-control-v1`, and **Manage** on portfolio projects for
+   Apply order.
+3. Confirm `WORKFRONT_PROJECT_ID=6abae2b600041e3ecb6a8da4dbe7b4a1`, set
+   `WORKFRONT_PORTFOLIO_ID` to the Portfolio ID for TEST PORTFOLIO - CHRIS, and
    `WORKFRONT_LIVE_SUBMIT=1` only when dual-write is approved (never `VITE_*`).
 4. After first live send with attachments, open the new Task’s **Documents** tab and
    `mission-control-v1` → **Documents** → **Tasks** folder and confirm both copies.
+5. After Apply order, confirm `#` ranks in Portfolio Optimization match Mission Control.
 
 ---
 

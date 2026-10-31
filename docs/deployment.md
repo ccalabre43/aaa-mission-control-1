@@ -233,6 +233,9 @@ reuse the `workfront-proxy` action modules (decision **048**):
 | `GET /api/workfront/issues` | Refresh from Workfront |
 | `POST /api/workfront/issues` | Live create when kill switch + `confirmLive` |
 | `POST /api/workfront/documents` | After Task create: upload to Task Documents + project Documents → Tasks folder (3 MB raw cap; kill switch + `confirmLive`) |
+| `POST /api/workfront/priority` | Dual-write Task urgency (`priority` 1/2/4 ↔ P1/P2/P3) |
+| `GET /api/workfront/portfolio` | List projects in `WORKFRONT_PORTFOLIO_ID` with `portfolioPriority` |
+| `POST /api/workfront/portfolio` | Apply Portfolio Optimization order (kill switch + `confirmLive`) |
 
 Set these as **Vercel project environment variables** (Production and Preview). Never `VITE_*`.
 Never paste values into chat:
@@ -241,6 +244,7 @@ Never paste values into chat:
 - `WORKFRONT_CLIENT_SECRET`
 - `WORKFRONT_HOST` = `https://aaalife.my.workfront.com`
 - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1`
+- `WORKFRONT_PORTFOLIO_ID` = Portfolio ID for TEST PORTFOLIO - CHRIS (Executive Apply order)
 - `WORKFRONT_LIVE_SUBMIT` = `1` only when dual-write create is approved
 
 Leave `WORKFRONT_PROXY_URL` unset for the Vercel build so the client stays on same-origin

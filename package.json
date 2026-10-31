@@ -20,7 +20,8 @@
     "aio:ctx": "aio auth ctx",
     "verify:guard": "node scripts/test-copy-guard.mjs",
     "verify:csp": "node scripts/probe-csp.mjs",
-    "verify:ux": "node scripts/verify-flow.mjs"
+    "verify:ux": "node scripts/verify-flow.mjs",
+    "test:workfront-priority": "node --test scripts/test-workfront-priority.mjs"
   },
   "dependencies": {
     "@adobe/exc-app": "^1.6.6",

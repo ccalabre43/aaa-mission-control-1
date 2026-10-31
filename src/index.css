@@ -2903,6 +2903,102 @@ select.select {
   color: var(--aaa-muted);
 }
 
+.aaa-exec-priority-counts {
+  margin: 0 0 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--aaa-ink); /* 10.05:1 on white */
+}
+
+.aaa-exec-portfolio-order {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.5rem;
+  background: var(--aaa-white, #fff);
+}
+
+.aaa-exec-portfolio-order-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.aaa-exec-portfolio-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aaa-exec-portfolio-order-status {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--aaa-ink);
+}
+
+.aaa-exec-portfolio-order-error {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--aaa-red);
+}
+
+.aaa-exec-portfolio-order-table .aaa-exec-portfolio-order-grip-col {
+  width: 7rem;
+}
+
+.aaa-exec-portfolio-order-reorder {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.aaa-exec-portfolio-order-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--aaa-border);
+  border-radius: 0.25rem;
+  background: var(--aaa-white, #fff);
+  color: var(--aaa-ink);
+  cursor: grab;
+}
+
+.aaa-exec-portfolio-order-handle:active {
+  cursor: grabbing;
+}
+
+.aaa-exec-portfolio-order-handle:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
+}
+
+.aaa-exec-portfolio-order-handle[aria-pressed="true"] {
+  border-color: var(--aaa-blue);
+  box-shadow: inset 0 0 0 1px var(--aaa-blue);
+}
+
+.aaa-exec-portfolio-order-moves {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.aaa-exec-portfolio-order-row-over {
+  outline: 3px solid var(--aaa-blue); /* 7.65:1 on white */
+  outline-offset: -3px;
+}
+
+.aaa-exec-portfolio-order-row-armed {
+  background: color-mix(in srgb, var(--aaa-blue) 6%, white);
+}
+
 .aaa-exec-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

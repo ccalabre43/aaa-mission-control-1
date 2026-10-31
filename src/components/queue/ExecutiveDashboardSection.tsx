@@ -7,6 +7,7 @@
  */
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { PortfolioOrderPanel } from "../executive/PortfolioOrderPanel";
 import {
   EXEC_DEMO_BUSY,
   EXEC_DEMO_CAPACITY,
@@ -19,7 +20,9 @@ import {
 } from "../../lib/dashboard/executiveDemoFigures";
 import { loadBriefs } from "../../lib/intake/storage";
 import {
+  REVIEWER_PRIORITIES,
   REVIEWER_STATUSES,
+  type ReviewerPriority,
   type ReviewerStatus,
 } from "../../lib/intake/types";
 import { STATUS_OPTIONS, type TrackerRow } from "../../lib/types";
@@ -119,8 +122,12 @@ export function ExecutiveDashboardSection({
     const byStatus = Object.fromEntries(
       REVIEWER_STATUSES.map((item) => [item.value, 0]),
     ) as Record<ReviewerStatus, number>;
+    const byPriority = Object.fromEntries(
+      REVIEWER_PRIORITIES.map((priority) => [priority, 0]),
+    ) as Record<ReviewerPriority, number>;
     for (const row of ready) {
       byStatus[row.reviewerStatus] += 1;
+      byPriority[row.priority] += 1;
     }
 
     const byTrackerStatus = Object.fromEntries(
@@ -165,6 +172,7 @@ export function ExecutiveDashboardSection({
     return {
       readyCount: ready.length,
       byStatus,
+      byPriority,
       byTrackerStatus,
       otherTracker,
       activeJobs,
@@ -225,6 +233,21 @@ export function ExecutiveDashboardSection({
           Reporting Week: {EXEC_DEMO_REPORTING_WEEK}
         </p>
       </div>
+
+      <p className="aaa-exec-priority-counts" role="note">
+        Request Queue urgency (this browser
+        {summary.readyCount > 0 ? `, ${summary.readyCount} ready` : ""}
+        ):{" "}
+        {REVIEWER_PRIORITIES.map((priority, index) => (
+          <span key={priority}>
+            {index > 0 ? " · " : ""}
+            {priority} {summary.byPriority[priority]}
+          </span>
+        ))}
+        . Separate from Portfolio Optimization project order below.
+      </p>
+
+      <PortfolioOrderPanel />
 
       <div className="aaa-exec-board">
         <article className="aaa-exec-panel">

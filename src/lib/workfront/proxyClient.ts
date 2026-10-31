@@ -1,8 +1,10 @@
 /**
- * Browser calls to the Workfront proxy (create / list Tasks). Secrets stay on the proxy.
- * HTTP path remains `/issues` for compatibility; Workfront object type is TASK (decision 036).
+ * Browser calls to the Workfront proxy (create / list Tasks, priority, portfolio).
+ * Secrets stay on the proxy. HTTP path `/issues` remains for Task create/list (decision 036).
  */
 
+import type { ReviewerPriority } from "../intake/types";
+import { toWorkfrontPriority } from "./priorityMap";
 import { workfrontHealthUrl } from "./proxyHealth";
 import type { WorkfrontIssuePayload } from "./submitToWorkfront";
 import { getWorkfrontUserBearer } from "./userBearer";
@@ -102,6 +104,7 @@ export async function createWorkfrontIssue(
       },
       body: JSON.stringify({
         ...payload,
+        ...(payload.priority != null ? { priority: payload.priority } : {}),
         confirmLive: options.confirmLive,
       }),
     });
@@ -141,6 +144,151 @@ export interface WorkfrontUploadedDocument {
 
 /** Cap matches the proxy (3 MB raw) so the UI fails early instead of after a large POST. */
 export const WORKFRONT_DOC_MAX_BYTES = 3 * 1024 * 1024;
+
+export async function updateWorkfrontTaskPriority(input: {
+  taskId: string;
+  priority: ReviewerPriority;
+  confirmLive: true;
+}): Promise<{ ok: true; priority: number } | { ok: false; error: string }> {
+  const endpoint = `${proxyBaseUrl()}/priority`;
+  const priority = toWorkfrontPriority(input.priority);
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        taskId: input.taskId,
+        priority,
+        confirmLive: input.confirmLive,
+      }),
+    });
+    const data = (await response.json()) as Record<string, unknown>;
+    if (data.ok === true) {
+      return {
+        ok: true,
+        priority: typeof data.priority === "number" ? data.priority : priority,
+      };
+    }
+    return {
+      ok: false,
+      error:
+        typeof data.error === "string"
+          ? data.error
+          : `Priority update failed (HTTP ${response.status}).`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Priority update failed.",
+    };
+  }
+}
+
+export interface WorkfrontPortfolioProject {
+  ID: string;
+  name: string;
+  portfolioPriority: number | null;
+  status: string | null;
+}
+
+export interface WorkfrontPortfolioListResult {
+  ok: boolean;
+  portfolioId?: string;
+  count?: number;
+  projects: WorkfrontPortfolioProject[];
+  coverage: string;
+  error?: string;
+  endpoint: string;
+}
+
+export async function fetchPortfolioProjects(
+  signal?: AbortSignal,
+): Promise<WorkfrontPortfolioListResult> {
+  const endpoint = `${proxyBaseUrl()}/portfolio`;
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: authHeaders(),
+      signal,
+      cache: "no-store",
+    });
+    const data = (await response.json()) as Record<string, unknown>;
+    const projects = Array.isArray(data.projects)
+      ? (data.projects as WorkfrontPortfolioProject[])
+      : [];
+    return {
+      ok: data.ok === true,
+      portfolioId:
+        typeof data.portfolioId === "string" ? data.portfolioId : undefined,
+      count: typeof data.count === "number" ? data.count : projects.length,
+      projects,
+      coverage:
+        typeof data.coverage === "string"
+          ? data.coverage
+          : "Workfront portfolio project search result.",
+      error: typeof data.error === "string" ? data.error : undefined,
+      endpoint,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      projects: [],
+      coverage:
+        "Workfront portfolio search failed. Executive order was not replaced.",
+      error: error instanceof Error ? error.message : "Portfolio list failed.",
+      endpoint,
+    };
+  }
+}
+
+export async function applyPortfolioOrder(input: {
+  orderedProjectIds: string[];
+  confirmLive: true;
+}): Promise<
+  | { ok: true; count: number; coverage: string }
+  | { ok: false; error: string }
+> {
+  const endpoint = `${proxyBaseUrl()}/portfolio`;
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        orderedProjectIds: input.orderedProjectIds,
+        confirmLive: input.confirmLive,
+      }),
+    });
+    const data = (await response.json()) as Record<string, unknown>;
+    if (data.ok === true) {
+      return {
+        ok: true,
+        count: typeof data.count === "number" ? data.count : input.orderedProjectIds.length,
+        coverage:
+          typeof data.coverage === "string"
+            ? data.coverage
+            : `Applied order for ${input.orderedProjectIds.length} projects.`,
+      };
+    }
+    return {
+      ok: false,
+      error:
+        typeof data.error === "string"
+          ? data.error
+          : `Portfolio order apply failed (HTTP ${response.status}).`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Portfolio order apply failed.",
+    };
+  }
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

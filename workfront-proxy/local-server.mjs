@@ -25,6 +25,13 @@ const {
 const {
   runUploadDocument,
 } = require("./src/dx-excshell-1/actions/workfront-documents/documents.js");
+const {
+  runUpdateTaskPriority,
+} = require("./src/dx-excshell-1/actions/workfront-issues/updatePriority.js");
+const {
+  runListPortfolioProjects,
+  runApplyPortfolioOrder,
+} = require("./src/dx-excshell-1/actions/workfront-portfolio/portfolio.js");
 
 const PORT = Number(process.env.WORKFRONT_PROXY_PORT || 8787);
 const ENV_FILE = join(__dirname, "..", ".env.workfront.local");
@@ -135,6 +142,43 @@ async function handleUploadDocument(req, res) {
   }
 }
 
+async function handleUpdatePriority(req, res) {
+  try {
+    const body = await readBody(req);
+    const result = await runUpdateTaskPriority(env, body, {
+      bearerToken: bearerFromReq(req),
+    });
+    sendJson(res, result.statusCode, result.body);
+  } catch (error) {
+    sendJson(res, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Invalid priority update.",
+    });
+  }
+}
+
+async function handleListPortfolio(req, res) {
+  const result = await runListPortfolioProjects(env, {
+    bearerToken: bearerFromReq(req),
+  });
+  sendJson(res, result.statusCode, result.body);
+}
+
+async function handleApplyPortfolioOrder(req, res) {
+  try {
+    const body = await readBody(req);
+    const result = await runApplyPortfolioOrder(env, body, {
+      bearerToken: bearerFromReq(req),
+    });
+    sendJson(res, result.statusCode, result.body);
+  } catch (error) {
+    sendJson(res, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Invalid portfolio order.",
+    });
+  }
+}
+
 async function once() {
   const result = await runHealth(env);
   process.stdout.write(`${JSON.stringify(result.body, null, 2)}\n`);
@@ -196,10 +240,37 @@ if (process.argv.includes("--once")) {
       });
       return;
     }
+    if (req.method === "POST" && url.pathname === "/priority") {
+      handleUpdatePriority(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
+    if (req.method === "GET" && url.pathname === "/portfolio") {
+      handleListPortfolio(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/portfolio") {
+      handleApplyPortfolioOrder(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
     sendJson(res, 404, {
       ok: false,
       error:
-        "Not found. Use GET /health, GET /issues, POST /issues, or POST /documents.",
+        "Not found. Use GET /health, GET /issues|/portfolio, POST /issues|/documents|/priority|/portfolio.",
     });
   });
 

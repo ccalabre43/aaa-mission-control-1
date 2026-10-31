@@ -50,8 +50,9 @@ npm run workfront:sample-create
 ```
 
 Local routes: `GET /health`, `GET /issues` (lists Tasks), `POST /issues` (creates a Task),
-`POST /documents` (uploads to Task Documents + project Documents → Tasks folder;
-requires kill switch + `confirmLive: true`).
+`POST /documents` (uploads to Task Documents + project Documents → Tasks folder),
+`POST /priority` (Task urgency), `GET`/`POST /portfolio` (Portfolio Optimization order);
+live writes require kill switch + `confirmLive: true`.
 
 If sample-create fails with *insufficient access to add this Task*, raise the S2S tech account
 Access Level — see `docs/knowledge/workfront-add-tasks-acl.md`.

@@ -1373,6 +1373,24 @@ connections are **Active** and discovery updates `docs/knowledge/deep-dive-excel
 PII and binaries stay on-device until an explicit live send through the proxy. Guardrail 7 (auditable
 signal) and Guardrail 8 (no unapproved vendor) apply.
 
+## 2026-10-30 - 052 - Dual Priority: Task urgency vs Portfolio Optimization order
+
+**Status:** accepted (architecture ships; live writes gated by `WORKFRONT_LIVE_SUBMIT`)
+
+Adobe keeps Task/Project **Priority** (urgency) separate from Portfolio Optimization **drag / #**
+(`portfolioPriority`). Mission Control mirrors that:
+
+| Control | Surface | Workfront |
+| --- | --- | --- |
+| P1–P3 select | Request Queue + Summary Override | Task `priority` via `POST /priority`; also on live create |
+| `#` + grip + Apply order | Executive Portfolio Optimization order | Project `portfolioPriority` via `GET`/`POST /portfolio` |
+
+Provisional urgency map: P1→1, P2→2, P3→4. Drag uses the three-route grip pattern from decision
+**026** (pointer / keyboard / Move up-down). Apply order is explicit (Set Priority analogue) — no
+auto-PATCH on drop. `WORKFRONT_PORTFOLIO_ID` required for portfolio list/apply; never `VITE_*`.
+
+Supersedes the “Priority not posted” framing in **030** for urgency only; Status write remains open.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The
