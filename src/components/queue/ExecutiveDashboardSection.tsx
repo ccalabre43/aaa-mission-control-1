@@ -210,12 +210,27 @@ export function ExecutiveDashboardSection({
   return (
     <section className="aaa-exec" aria-labelledby="exec-heading">
       <header className="aaa-exec-hero">
-        <h2 id="exec-heading" className="aaa-exec-page-title">
-          Executive dashboard
-        </h2>
-        <p className="aaa-exec-page-sub">
-          How the team is doing based on our intake information.
-        </p>
+        <div className="aaa-queue-hero-main">
+          <div className="aaa-queue-hero-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M4 19V10M10 19V5M16 19v-7M22 19H2"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 id="exec-heading" className="aaa-exec-page-title">
+              Executive dashboard
+            </h2>
+            <p className="aaa-exec-page-sub">
+              How the team is doing based on our intake information.
+            </p>
+          </div>
+        </div>
       </header>
 
       <div className="aaa-exec-board">
