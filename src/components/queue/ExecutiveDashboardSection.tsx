@@ -7,6 +7,7 @@
  */
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import frameViewIcon from "../../assets/dashboard-icons/frame-view.svg";
 import {
   EXEC_DEMO_BUSY,
   EXEC_DEMO_CAPACITY,
@@ -212,15 +213,13 @@ export function ExecutiveDashboardSection({
       <header className="aaa-exec-hero">
         <div className="aaa-queue-hero-main">
           <div className="aaa-queue-hero-icon" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M4 19V10M10 19V5M16 19v-7M22 19H2"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <img
+              src={frameViewIcon}
+              alt=""
+              width={28}
+              height={28}
+              className="aaa-exec-hero-glyph"
+            />
           </div>
           <div>
             <h2 id="exec-heading" className="aaa-exec-page-title">
