@@ -43,7 +43,6 @@ import {
   toQueueRow,
   type Viewer,
 } from "../lib/workfront/queueList";
-import { updateWorkfrontTaskPriority } from "../lib/workfront/proxyClient";
 import {
   buildWorkfrontPayload,
   submitToWorkfront,
@@ -663,8 +662,8 @@ export default function RequestSummaryView() {
           className="aaa-summary-payload"
         >
           <p className="aaa-panel-reason">
-            This is the A3 / Workfront Task payload. Reviewer Priority maps to Task priority on
-            live create. Local Status, Size, and Impact / Effort / Risk are not included.
+            This is the A3 / Workfront Task payload. Local reviewer Status, Priority, Size, and
+            Impact / Effort / Risk are not included.
             {sentDisplay.sent
               ? ` Linked Workfront Task: ${brief.workfront?.issueId}.`
               : " It has not been posted until Accept — Send to Workfront succeeds with a Task ID."}
@@ -733,34 +732,8 @@ export default function RequestSummaryView() {
           type="button"
           className="aaa-summary-btn aaa-summary-btn-ghost"
           onClick={() => {
-            void (async () => {
-              const next = cyclePriority(brief.reviewer.priority);
-              patchReviewer({ priority: next }, `Priority overridden to ${next}.`);
-              const taskId = brief.workfront?.issueId?.trim();
-              if (!(health?.connected && health.liveSubmit && taskId)) return;
-              const confirmed = window.confirm(
-                `Also update Workfront Task ${taskId} urgency to ${next}?`,
-              );
-              if (!confirmed) {
-                setStatusMessage(
-                  `Priority overridden to ${next} locally. Workfront sync cancelled.`,
-                );
-                return;
-              }
-              const result = await updateWorkfrontTaskPriority({
-                taskId,
-                priority: next,
-                confirmLive: true,
-              });
-              if (!result.ok) {
-                setError(`Priority saved locally but Workfront sync failed: ${result.error}`);
-                return;
-              }
-              setError("");
-              setStatusMessage(
-                `Priority overridden to ${next} locally and on Workfront Task ${taskId}.`,
-              );
-            })();
+            const next = cyclePriority(brief.reviewer.priority);
+            patchReviewer({ priority: next }, `Priority overridden to ${next}.`);
           }}
         >
           Override priority

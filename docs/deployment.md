@@ -233,7 +233,7 @@ reuse the `workfront-proxy` action modules (decision **048**):
 | `GET /api/workfront/issues` | Refresh from Workfront |
 | `POST /api/workfront/issues` | Live create when kill switch + `confirmLive` |
 | `POST /api/workfront/documents` | After Task create: upload to Task Documents + project Documents → Tasks folder (3 MB raw cap; kill switch + `confirmLive`) |
-| `POST /api/workfront/priority` | Dual-write Task urgency (`priority` 1/2/4 ↔ P1/P2/P3) |
+| `POST /api/workfront/priority` | Reserved for later Task urgency dual-write (UI unwired; decision 053) |
 | `GET /api/workfront/portfolio` | List projects in `WORKFRONT_PORTFOLIO_ID` with `portfolioPriority` |
 | `POST /api/workfront/portfolio` | Apply Portfolio Optimization order (kill switch + `confirmLive`) |
 

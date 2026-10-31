@@ -1,16 +1,17 @@
 # Reviewer queue fields and Workfront mapping
 
-- **Status:** active; Priority urgency dual-write and Portfolio Optimization order ship gated by
-  `WORKFRONT_LIVE_SUBMIT` (decision **052**)
+- **Status:** active; Request Queue Priority is **local-only** again (decision **053** supersedes
+  052 urgency dual-write). Portfolio Optimization order on Executive remains available when
+  `WORKFRONT_PORTFOLIO_ID` + live submit are configured.
 - **UI source:** `assets/mocks/request-queue-reviewer-interface.png`,
   `assets/mocks/request-summary-page.png`
-- **Related:** `docs/workfront-auth.md`, `docs/knowledge/a3-schema.md`, decisions 030, 052
+- **Related:** `docs/workfront-auth.md`, `docs/knowledge/a3-schema.md`, decisions 030, 052, 053
 
 The Mission Control Request Queue is reviewer-styled but still a **request list** aimed at the
-Workfront queue project `mission-control-v1`. Reviewer Status stays local. Reviewer Priority (P1–P3)
-is **Task urgency** and can dual-write native Task `priority` when live submit is on and the row has
-a Task ID. Portfolio Optimization drag order is a **separate** control on the Executive tab
-(project `portfolioPriority`), not the Request Queue Priority select.
+Workfront queue project `mission-control-v1`. Reviewer Status and Priority (P1–P3) stay in this
+browser. Priority is **not** posted on Task create, **not** patched from the queue select, and
+**not** overwritten by Refresh. Portfolio Optimization drag order is a **separate** Executive
+control (project `portfolioPriority`), not the Request Queue Priority select.
 
 ## Column sources today
 
@@ -19,7 +20,7 @@ a Task ID. Portfolio Optimization drag order is a **separate** control on the Ex
 | Subject | Issue name from `buildWorkfrontPayload` / `briefTitle` | Task `name` |
 | Channels | Removed from the Request Queue table; still used in search via `A3IntakeDeliverables` tokens | Same custom field (paragraph on the A3 form) |
 | Status | `brief.reviewer.status` (local) | Native Task/Issue `status` with a request-queue status group, **or** custom dropdown if native cannot match — write not enabled yet |
-| Priority | `brief.reviewer.priority` (local + dual-write) | Native Task `priority` (see map below) |
+| Priority | `brief.reviewer.priority` (local only) | Later: native Task `priority` (map below reserved) |
 | Entry Date | `submittedAt` or `createdAt` | Task `entryDate` |
 | Requestor | Identity name + initials (no email in the table) | `A3IntakeRequestedBy`; Entered By under S2S is the tech account |
 | NEW badge | Submitted/ready and `reviewer.firstReviewedAt` is null | Derived from entry date + status; no new field |
@@ -37,13 +38,13 @@ Project/Task details. Mission Control mirrors that split:
 
 | Control | Where | Meaning | Workfront field |
 | --- | --- | --- | --- |
-| Priority select P1–P3 | Request Queue + Summary Override | Urgency | Task `priority` (`POST /api/workfront/priority`) |
+| Priority select P1–P3 | Request Queue + Summary Override | Urgency (local only for now) | Later: Task `priority` via `POST /api/workfront/priority` (proxy kept, UI unwired) |
 | `#` + grip + Apply order | Executive → Portfolio Optimization order | Completion/resource order | Project `portfolioPriority` (`GET`/`POST /api/workfront/portfolio`) |
 
 Dragging a Request Queue row does **not** change P1–P3. Queue “order by Priority” means **sort by
 urgency**, not Portfolio Optimizer ranks.
 
-### Urgency map (provisional — admin may override)
+### Urgency map (reserved for later sync — admin may override)
 
 | App | Workfront Task `priority` |
 | --- | --- |
@@ -51,8 +52,7 @@ urgency**, not Portfolio Optimizer ranks.
 | P2 | `2` (High) |
 | P3 | `4` (Low) |
 
-Live create includes `priority`. Changing the queue select (or Summary Override) with kill switch on
-and a Task ID confirms, then PATCHes the Task. Refresh still maps Workfront → local (decision 037).
+Helpers live in `src/lib/workfront/priorityMap.ts`. Dual-write is deferred (decision 053).
 
 ### Portfolio Optimization drag UX
 

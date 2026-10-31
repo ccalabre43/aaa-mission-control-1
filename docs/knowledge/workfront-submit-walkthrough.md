@@ -106,11 +106,14 @@ onto the Context dropzone:
 | Object | Task (project Tasks tab), not Issue |
 | Entered By | Signed-in Adobe user when a bearer is present; otherwise S2S tech account |
 | Requester | `A3IntakeRequestedBy` + description audit lines |
-| Columns | Best-guess: name, description, plannedCompletionDate, priority (P1→1 / P2→2 / P3→4), A3 custom form when accepted |
+| Columns | Best-guess: name, description, plannedCompletionDate, A3 custom form when accepted |
 | Documents | Task Documents tab + project Documents → **Tasks** folder (when session files uploaded) |
 
 If binaries were unavailable (reload), attachment **names** still ride in the Task description /
 payload; re-attach on Summary before live send to upload the originals.
+
+Request Queue **Priority (P1–P3)** is local-only for now (decision **053**). It is not written on
+Task create and is not overwritten by Refresh. Task urgency dual-write can return later.
 
 ---
 
@@ -118,15 +121,10 @@ payload; re-attach on Summary before live send to upload the originals.
 
 These are **two different Workfront fields**. Do not use one control for both.
 
-### Request Queue Priority (P1–P3) → Task urgency
+### Request Queue Priority (P1–P3) — local only
 
-1. On Request Queue, change the Priority select for a row that already has a Workfront Task ID.
-2. With `WORKFRONT_LIVE_SUBMIT=1`, confirm the dialog → proxy `POST /priority` updates Task
-   `priority` (1 / 2 / 4).
-3. Refresh from Workfront can pull Task priority back into the local select.
-4. Live create also sends `priority` from `brief.reviewer.priority`.
-
-This does **not** change Portfolio Optimization project order.
+Change the Priority select or Summary Override priority — values stay in this browser under
+`brief.reviewer.priority`. No Workfront Task `priority` write until dual-write is re-enabled.
 
 ### Executive Apply order → Portfolio Optimization `#`
 

@@ -17,7 +17,6 @@ import {
 import { briefTitle, type IntakeBrief } from "../intake/types";
 import { describeCoverageForAudit } from "../related/coverage";
 import { createWorkfrontIssue, uploadWorkfrontDocument } from "./proxyClient";
-import { toWorkfrontPriority } from "./priorityMap";
 import { pathLabel, routeExplanation, routeFor } from "./routing";
 import { topicIsSubmittable, type QueueDef } from "./queueConfig";
 
@@ -42,11 +41,12 @@ export interface WorkfrontIssuePayload {
   projectID: string;
   /** A real Workfront Request Type, carried from the topic. */
   opTaskType: string;
-  /**
-   * Native Task priority (1/2/4 ↔ P1/P2/P3). Reviewer urgency — not Portfolio Optimization order.
-   * `referenceNumber` / `enteredByID` stay Workfront-assigned and are never invented locally.
+
+  /*
+   * Deliberately absent for now:
+   * - `referenceNumber` / `enteredByID` are Workfront-assigned.
+   * - `priority` stays on `brief.reviewer` (local queue only) until a later dual-write decision.
    */
-  priority: number | null;
 }
 
 export interface WorkfrontUploadedDocumentRecord {
@@ -220,7 +220,6 @@ export function buildWorkfrontPayload(
     queueTopicID: route.topic?.workfrontID ?? "",
     projectID: config.workfrontProjectID,
     opTaskType: route.topic?.requestType ?? "",
-    priority: toWorkfrontPriority(brief.reviewer.priority),
   };
 }
 

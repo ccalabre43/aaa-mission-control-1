@@ -3,8 +3,6 @@
  * Secrets stay on the proxy. HTTP path `/issues` remains for Task create/list (decision 036).
  */
 
-import type { ReviewerPriority } from "../intake/types";
-import { toWorkfrontPriority } from "./priorityMap";
 import { workfrontHealthUrl } from "./proxyHealth";
 import type { WorkfrontIssuePayload } from "./submitToWorkfront";
 import { getWorkfrontUserBearer } from "./userBearer";
@@ -104,7 +102,6 @@ export async function createWorkfrontIssue(
       },
       body: JSON.stringify({
         ...payload,
-        ...(payload.priority != null ? { priority: payload.priority } : {}),
         confirmLive: options.confirmLive,
       }),
     });
@@ -144,48 +141,6 @@ export interface WorkfrontUploadedDocument {
 
 /** Cap matches the proxy (3 MB raw) so the UI fails early instead of after a large POST. */
 export const WORKFRONT_DOC_MAX_BYTES = 3 * 1024 * 1024;
-
-export async function updateWorkfrontTaskPriority(input: {
-  taskId: string;
-  priority: ReviewerPriority;
-  confirmLive: true;
-}): Promise<{ ok: true; priority: number } | { ok: false; error: string }> {
-  const endpoint = `${proxyBaseUrl()}/priority`;
-  const priority = toWorkfrontPriority(input.priority);
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        ...authHeaders(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        taskId: input.taskId,
-        priority,
-        confirmLive: input.confirmLive,
-      }),
-    });
-    const data = (await response.json()) as Record<string, unknown>;
-    if (data.ok === true) {
-      return {
-        ok: true,
-        priority: typeof data.priority === "number" ? data.priority : priority,
-      };
-    }
-    return {
-      ok: false,
-      error:
-        typeof data.error === "string"
-          ? data.error
-          : `Priority update failed (HTTP ${response.status}).`,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Priority update failed.",
-    };
-  }
-}
 
 export interface WorkfrontPortfolioProject {
   ID: string;

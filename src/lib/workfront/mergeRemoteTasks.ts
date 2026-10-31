@@ -14,7 +14,6 @@ import {
   type ReviewerStatus,
 } from "../intake/types";
 import type { WorkfrontRemoteIssue } from "./proxyClient";
-import { mapWorkfrontPriority } from "./priorityMap";
 
 const DEFAULT_HOST = "https://aaalife.my.workfront.com";
 
@@ -95,7 +94,7 @@ export function mapWorkfrontStatus(raw: string | null): ReviewerStatus | null {
   return null;
 }
 
-export { mapWorkfrontPriority };
+export { mapWorkfrontPriority } from "./priorityMap";
 
 /** Split "Chris Calabrese" into first/last; never invent email. */
 export function identityFromAssignedName(
@@ -168,7 +167,6 @@ function applyWorkfrontSurface(
   const alan = parseAlanFromTaskName(name);
   const summary = summaryFromTaskName(name, alan);
   const mappedStatus = mapWorkfrontStatus(task.status);
-  const mappedPriority = mapWorkfrontPriority(task.priority);
   const entry =
     task.entryDate?.trim() || brief.submittedAt || brief.createdAt || now;
 
@@ -187,7 +185,7 @@ function applyWorkfrontSurface(
     reviewer: {
       ...brief.reviewer,
       ...(mappedStatus ? { status: mappedStatus } : {}),
-      ...(mappedPriority ? { priority: mappedPriority } : {}),
+      // Priority stays local-queue-only until dual-write is re-enabled (decision 053).
     },
     workfront: {
       mode: "workfront",
@@ -230,7 +228,7 @@ function createBriefFromTask(task: WorkfrontRemoteIssue, now: string): IntakeBri
     },
     reviewer: {
       status: mapWorkfrontStatus(task.status) ?? "needs_review",
-      priority: mapWorkfrontPriority(task.priority) ?? "P3",
+      priority: "P2",
       firstReviewedAt: null,
       size: "M",
       impact: "medium",

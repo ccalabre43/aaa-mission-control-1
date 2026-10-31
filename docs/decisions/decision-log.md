@@ -1391,6 +1391,20 @@ auto-PATCH on drop. `WORKFRONT_PORTFOLIO_ID` required for portfolio list/apply; 
 
 Supersedes the “Priority not posted” framing in **030** for urgency only; Status write remains open.
 
+## 2026-10-30 - 053 - Request Queue Priority returns to local-only (supersedes 052 urgency write)
+
+**Status:** accepted
+
+User directed: reset Priority to local queue only; sync with Workfront later.
+
+| Change | Detail |
+| --- | --- |
+| Queue / Summary | P1–P3 select and Override priority write `brief.reviewer` only — no confirm / `POST /priority` |
+| Live create | Task body no longer includes `priority` |
+| Refresh | Does not overwrite local `reviewer.priority`; new Tasks from Refresh default to P2 |
+| Kept for later | `priorityMap.ts`, proxy `POST /priority`, provisional 1/2/4 map in docs |
+| Unchanged | Executive Portfolio Optimization order (`portfolioPriority`) from **052** |
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

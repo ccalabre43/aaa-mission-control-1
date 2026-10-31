@@ -24,7 +24,6 @@ import {
 import { loadQueueConfig } from "../../lib/workfront/queueConfig";
 import {
   fetchWorkfrontIssues,
-  updateWorkfrontTaskPriority,
   type WorkfrontRemoteIssue,
 } from "../../lib/workfront/proxyClient";
 import {
@@ -321,10 +320,7 @@ export function RequestQueueSection() {
     }));
   }
 
-  async function updatePriority(briefId: string, priority: ReviewerPriority) {
-    const current = briefs.find((brief) => brief.id === briefId);
-    if (!current) return;
-
+  function updatePriority(briefId: string, priority: ReviewerPriority) {
     patchBrief(briefId, (brief) => ({
       ...brief,
       updatedAt: new Date().toISOString(),
@@ -334,48 +330,7 @@ export function RequestQueueSection() {
         firstReviewedAt: brief.reviewer.firstReviewedAt ?? new Date().toISOString(),
       },
     }));
-
-    const taskId = current.workfront?.issueId?.trim();
-    const wantLive = Boolean(health?.connected && health.liveSubmit && taskId);
-    if (!wantLive || !taskId) {
-      if (taskId && health?.connected && !health.liveSubmit) {
-        setStatus(
-          `Priority set to ${priority} in this browser. Live sync is off (WORKFRONT_LIVE_SUBMIT) — Workfront Task ${taskId} was not updated.`,
-        );
-      } else {
-        setStatus(`Priority set to ${priority} in this browser.`);
-      }
-      return;
-    }
-
-    const confirmed = window.confirm(
-      [
-        `Update Workfront Task ${taskId} priority to ${priority}?`,
-        "",
-        "This writes the Task priority field (urgency), not Portfolio Optimization project order.",
-      ].join("\n"),
-    );
-    if (!confirmed) {
-      setStatus(
-        `Priority set to ${priority} in this browser. Live Workfront sync cancelled.`,
-      );
-      return;
-    }
-
-    const result = await updateWorkfrontTaskPriority({
-      taskId,
-      priority,
-      confirmLive: true,
-    });
-    if (!result.ok) {
-      setError(`Priority saved locally but Workfront sync failed: ${result.error}`);
-      setStatus(`Priority ${priority} is local-only until sync succeeds.`);
-      return;
-    }
-    setError("");
-    setStatus(
-      `Priority ${priority} saved locally and on Workfront Task ${taskId} (urgency ${result.priority}).`,
-    );
+    setStatus(`Priority set to ${priority} in this browser (not sent to Workfront).`);
   }
 
   async function submitDraft(brief: IntakeBrief) {
@@ -902,9 +857,7 @@ export function RequestQueueSection() {
       )}
 
       <p className="aaa-queue-footnote">
-        Reviewer Status stays in this browser. Priority (P1–P3) is local urgency; when live submit
-        is on and the row has a Workfront Task ID, changing Priority can dual-write Task priority
-        (not Portfolio Optimization order). Ready to send stays local until
+        Reviewer Status and Priority are saved in this browser only. Ready to send stays local until
         Summary → Submit to Workfront Que succeeds with a real Task ID. Sent to Workfront: No is
         the default; (WF Aligned) appears only with that ID (hover the badge for the Task ID). Refresh
         loads Tasks on mission-control-v1 via the proxy — not the whole organization. Select rows

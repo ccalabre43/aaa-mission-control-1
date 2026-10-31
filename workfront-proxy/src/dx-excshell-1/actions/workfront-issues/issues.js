@@ -35,24 +35,11 @@ function validateCreatePayload(payload, configuredProjectId) {
       `projectID must match the configured queue project (${configuredProjectId}).`,
     );
   }
-  const priorityRaw = payload.priority;
-  let priority = null;
-  if (typeof priorityRaw === "number" && Number.isFinite(priorityRaw)) {
-    priority = priorityRaw;
-  } else if (typeof priorityRaw === "string" && priorityRaw.trim()) {
-    const n = Number(priorityRaw.trim());
-    if (Number.isFinite(n)) priority = n;
-  }
-  if (priority != null && ![1, 2, 4].includes(priority)) {
-    throw new Error("priority must be 1 (P1), 2 (P2), or 4 (P3) when provided.");
-  }
-
   return {
     name,
     description: text(payload.description),
     plannedCompletionDate: text(payload.plannedCompletionDate) || null,
     projectID,
-    priority,
     customForm:
       payload.customForm && typeof payload.customForm === "object"
         ? /** @type {Record<string, string>} */ (payload.customForm)
@@ -75,9 +62,6 @@ async function postTask(config, token, validated, withCustomForm) {
   };
   if (validated.plannedCompletionDate) {
     taskBody.plannedCompletionDate = validated.plannedCompletionDate;
-  }
-  if (validated.priority != null) {
-    taskBody.priority = validated.priority;
   }
   if (withCustomForm && Object.keys(validated.customForm).length > 0) {
     taskBody.parameterValues = toParameterValues(validated.customForm);
