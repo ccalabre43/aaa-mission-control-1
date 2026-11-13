@@ -1,12 +1,21 @@
 /**
- * Reviewer-style Request Queue list (mock: request-queue-reviewer-interface.png).
+ * Reviewer Request Queue (Concept v1 Figma node 666:5155).
  *
  * Local Ready-to-send rows stay in this browser. Refresh upserts summary Tasks from
  * mission-control-v1 into local briefs (Workfront wins on match); coverage names that corpus
  * (guardrail 7). Local-only briefs without a matching Task are kept.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { listAttachmentFiles } from "../../lib/intake/attachmentFileStore";
 import {
   deleteBrief,
   loadBriefs,
@@ -31,7 +40,12 @@ import {
   type WorkfrontProxyHealth,
 } from "../../lib/workfront/proxyHealth";
 import { mergeRemoteTasksIntoBriefs } from "../../lib/workfront/mergeRemoteTasks";
+import { routeFor } from "../../lib/workfront/routing";
 import { submitToWorkfront } from "../../lib/workfront/submitToWorkfront";
+import {
+  getWorkfrontUserAuth,
+  hasWorkfrontUserBearer,
+} from "../../lib/workfront/userBearer";
 import {
   DEFAULT_SORT,
   QUEUE_COLUMNS,
@@ -46,9 +60,11 @@ import {
   truncateWords,
   type QueueColumn,
   type QueueFilter,
+  type QueueRow,
   type SortState,
 } from "../../lib/workfront/queueList";
 import { WorkfrontRefreshDialog } from "./WorkfrontRefreshDialog";
+import { WorkfrontSentDialog } from "./WorkfrontSentDialog";
 
 interface RefreshDialogState {
   issues: WorkfrontRemoteIssue[];
@@ -56,6 +72,155 @@ interface RefreshDialogState {
   updated: number;
   linked: number;
   coverage: string;
+}
+
+interface SentDialogState {
+  issueId: string;
+  issueUrl?: string;
+  topicName: string;
+  uploadedDocuments?: Array<{ name: string; taskDocumentId?: string }>;
+  documentError?: string;
+}
+
+function QueueRowKebab({
+  row,
+  open,
+  sendDisabled,
+  onToggle,
+  onClose,
+  onSummary,
+  onSendToWf,
+  onParkingLot,
+}: {
+  row: QueueRow;
+  open: boolean;
+  sendDisabled?: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onSummary: () => void;
+  onSendToWf: () => void;
+  onParkingLot: () => void;
+}) {
+  const menuId = useId();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
+
+  const closeAndRestoreFocus = useCallback(() => {
+    onClose();
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    firstItemRef.current?.focus();
+    function onPointerDown(event: MouseEvent) {
+      if (!wrapRef.current?.contains(event.target as Node)) {
+        closeAndRestoreFocus();
+      }
+    }
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeAndRestoreFocus();
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, closeAndRestoreFocus]);
+
+  function onMenuKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const items = Array.from(
+      wrapRef.current?.querySelectorAll<HTMLButtonElement>(
+        "[role='menuitem']:not([disabled])",
+      ) ?? [],
+    );
+    if (items.length === 0) return;
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      items[(index + 1) % items.length]?.focus();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      items[(index - 1 + items.length) % items.length]?.focus();
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  }
+
+  return (
+    <div className="aaa-queue-kebab" ref={wrapRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="aaa-queue-kebab-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        aria-label={`Actions for ${row.name}`}
+        onClick={onToggle}
+      >
+        <span className="aaa-queue-kebab-icon" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="menu"
+          className="aaa-queue-kebab-menu"
+          aria-label={`Actions for ${row.name}`}
+          onKeyDown={onMenuKeyDown}
+        >
+          <button
+            ref={firstItemRef}
+            type="button"
+            role="menuitem"
+            className="aaa-queue-kebab-item"
+            onClick={() => {
+              onClose();
+              onSummary();
+            }}
+          >
+            Summary
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="aaa-queue-kebab-item"
+            disabled={sendDisabled}
+            onClick={() => {
+              onClose();
+              onSendToWf();
+            }}
+          >
+            {sendDisabled ? "Sending…" : "Send to WF"}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="aaa-queue-kebab-item"
+            onClick={() => {
+              onClose();
+              onParkingLot();
+            }}
+          >
+            Parking Lot
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function RequestQueueSection() {
@@ -70,6 +235,15 @@ export function RequestQueueSection() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshDialog, setRefreshDialog] = useState<RefreshDialogState | null>(
     null,
+  );
+  const [sentDialog, setSentDialog] = useState<SentDialogState | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [openKebabId, setOpenKebabId] = useState<string | null>(null);
+  /** Table and cards both list the same rows; mount only one so kebabs are not duplicated. */
+  const [wideLayout, setWideLayout] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 1024px)").matches
+      : true,
   );
 
   const [filter, setFilter] = useState<QueueFilter>("all");
@@ -93,6 +267,21 @@ export function RequestQueueSection() {
     const controller = new AbortController();
     fetchWorkfrontHealth(controller.signal).then(setHealth);
     return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      setWideLayout(media.matches);
+      setOpenKebabId(null);
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  const closeKebab = useCallback(() => {
+    setOpenKebabId(null);
   }, []);
 
   const refreshFromWorkfront = useCallback(async () => {
@@ -169,6 +358,9 @@ export function RequestQueueSection() {
 
   const activeFilter = QUEUE_FILTERS.find((item) => item.key === filter) ?? QUEUE_FILTERS[0];
   const draftCount = allRows.filter((row) => row.isDraft).length;
+  const parkingCount = allRows.filter(
+    (row) => !row.isDraft && row.reviewerStatus === "deferred",
+  ).length;
   const localReadyCount = allRows.filter((row) => !row.isDraft).length;
   const linkedBriefIds = useMemo(() => {
     const map: Record<string, string> = {};
@@ -225,70 +417,40 @@ export function RequestQueueSection() {
       selectedIds,
       direction,
     );
-    if (!nextOrder) {
-      setStatus(
-        direction === -1
-          ? "Selection is already at the top of the visible list."
-          : "Selection is already at the bottom of the visible list.",
-      );
-      return;
-    }
+    if (!nextOrder) return;
     const byId = new Map(briefs.map((brief) => [brief.id, brief]));
-    const reordered: IntakeBrief[] = [];
-    for (const id of nextOrder) {
-      const brief = byId.get(id);
-      if (brief) reordered.push(brief);
-    }
-    if (reordered.length !== briefs.length) {
-      setError("That reorder could not be applied. Your saved data was left untouched.");
-      return;
-    }
+    const reordered = nextOrder
+      .map((id) => byId.get(id))
+      .filter((brief): brief is IntakeBrief => Boolean(brief));
     const saved = saveBriefs(reordered);
     if (!saved.ok) {
-      setError(saved.reason ?? "That reorder could not be saved to this browser.");
+      setError(saved.reason ?? "That order could not be saved to this browser.");
       return;
     }
     setBriefs(reordered);
     setManualOrder(true);
     setError("");
-    setStatus(
-      `Moved ${selectedCount} selected request${selectedCount === 1 ? "" : "s"} in this browser's Request Queue. Order is saved locally.`,
-    );
+    setStatus("Custom order saved in this browser.");
   }
 
   function removeLocalBrief(briefId: string, subject: string) {
-    const brief = briefs.find((item) => item.id === briefId);
-    const taskId =
-      brief?.workfront?.mode === "workfront" && brief.workfront.issueId
-        ? brief.workfront.issueId
-        : null;
     const confirmed = window.confirm(
-      [
-        `Delete "${subject}" from this browser's Request Queue?`,
-        "",
-        taskId
-          ? `This only removes the local copy. Workfront Task ${taskId} is not deleted.`
-          : "This only removes the local copy. Nothing is sent to Workfront.",
-      ].join("\n"),
+      `Remove "${subject}" from this browser's Request Queue? Workfront Tasks are not deleted.`,
     );
     if (!confirmed) return;
     const saved = deleteBrief(briefId);
     if (!saved.ok) {
-      setError(saved.reason ?? "That request could not be deleted from this browser.");
+      setError(saved.reason ?? "That request could not be removed from this browser.");
       return;
     }
-    setBriefs((current) => current.filter((item) => item.id !== briefId));
+    setBriefs((current) => current.filter((brief) => brief.id !== briefId));
     setSelectedIds((current) => {
       const next = new Set(current);
       next.delete(briefId);
       return next;
     });
     setError("");
-    setStatus(
-      taskId
-        ? `Removed "${subject}" from this browser. Workfront Task ${taskId} was not deleted.`
-        : `Removed "${subject}" from this browser's Request Queue.`,
-    );
+    setStatus(`Removed "${subject}" from this browser's Request Queue.`);
   }
 
   function patchBrief(briefId: string, patch: (brief: IntakeBrief) => IntakeBrief) {
@@ -333,6 +495,158 @@ export function RequestQueueSection() {
     setStatus(`Priority set to ${priority} in this browser (not sent to Workfront).`);
   }
 
+  function moveToParkingLot(briefId: string, projectName: string) {
+    updateReviewerStatus(briefId, "deferred");
+    setStatus(
+      `"${projectName}" moved to Parking Lot in this browser (Deferred). Nothing was sent to Workfront.`,
+    );
+  }
+
+  async function sendToWorkfront(brief: IntakeBrief) {
+    if (sendingId) return;
+
+    const approvedAt = new Date().toISOString();
+    const approved: IntakeBrief = {
+      ...brief,
+      updatedAt: approvedAt,
+      reviewer: {
+        ...brief.reviewer,
+        status: "approved",
+        firstReviewedAt: brief.reviewer.firstReviewedAt ?? approvedAt,
+      },
+    };
+    const saved = upsertBrief(approved);
+    if (!saved.ok) {
+      setError(saved.reason ?? "That request could not be saved to this browser.");
+      return;
+    }
+    setBriefs((list) =>
+      list.map((item) => (item.id === approved.id ? approved : item)),
+    );
+    setError("");
+
+    const alreadySent =
+      approved.workfront?.mode === "workfront" && approved.workfront.issueId;
+    if (alreadySent) {
+      setStatus(
+        `Marked Approved — transfer. Already linked to Workfront Task ${approved.workfront?.issueId}.`,
+      );
+      return;
+    }
+
+    const wantLive = Boolean(health?.connected && health.liveSubmit);
+    if (wantLive) {
+      const asSignedInUser = hasWorkfrontUserBearer();
+      const signedInEmail = getWorkfrontUserAuth().email;
+      const enteredByLines = asSignedInUser
+        ? [
+            "Entered By will be your signed-in Adobe identity" +
+              (signedInEmail ? ` (${signedInEmail})` : "") +
+              ", not the Server-to-Server integration account.",
+          ]
+        : [
+            "Entered By will be the Server-to-Server integration account, not your name.",
+            "Open Mission Control inside Experience Cloud Shell to submit as yourself.",
+            "Your name stays in A3IntakeRequestedBy and the description audit lines.",
+          ];
+      const filesReady = listAttachmentFiles(approved.id).length;
+      const attachmentCount = approved.attachments.length;
+      const attachmentLine =
+        attachmentCount === 0
+          ? "No supporting files are attached."
+          : filesReady === attachmentCount
+            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Task Documents tab and the project Tasks folder.`
+            : `${filesReady} of ${attachmentCount} file${attachmentCount === 1 ? "" : "s"} ready in this browser session. Re-attach missing files on Summary before sending, or names-only will be recorded.`;
+      const confirmed = window.confirm(
+        [
+          "Create this request as a Workfront Task on mission-control-v1?",
+          "",
+          ...enteredByLines,
+          "",
+          attachmentLine,
+        ].join("\n"),
+      );
+      if (!confirmed) {
+        setStatus(
+          "Marked Approved — transfer. Live send cancelled. Nothing was posted to Workfront.",
+        );
+        return;
+      }
+    }
+
+    setSendingId(approved.id);
+    try {
+      const result = await submitToWorkfront(approved, queueConfig, {
+        live: wantLive,
+        confirmLive: wantLive ? true : undefined,
+        attachmentFiles: listAttachmentFiles(approved.id),
+      });
+      if (!result.ok) {
+        setError(
+          `"${approved.a3.A3IntakeProjectSummary || "This request"}" is not complete yet. Still needed: ${result.missingFields.join(", ")}.`,
+        );
+        setStatus(
+          "Marked Approved — transfer. Workfront send did not complete.",
+        );
+        return;
+      }
+      const submittedAt = new Date().toISOString();
+      const next: IntakeBrief = {
+        ...approved,
+        status: "submitted",
+        submittedAt: approved.submittedAt ?? submittedAt,
+        updatedAt: submittedAt,
+        workfront: {
+          mode: result.mode,
+          issueName: result.issueName,
+          submittedAt,
+          ...(result.issueId ? { issueId: result.issueId } : {}),
+          ...(result.issueUrl ? { issueUrl: result.issueUrl } : {}),
+          ...(result.uploadedDocuments
+            ? { uploadedDocuments: result.uploadedDocuments }
+            : {}),
+        },
+      };
+      const nextSaved = upsertBrief(next);
+      if (!nextSaved.ok) {
+        setError(nextSaved.reason ?? "That request could not be saved to this browser.");
+        return;
+      }
+      setBriefs((list) => list.map((item) => (item.id === next.id ? next : item)));
+      setError("");
+      if (result.mode === "workfront" && result.issueId) {
+        const routed = routeFor(queueConfig, next);
+        setSentDialog({
+          issueId: result.issueId,
+          issueUrl: result.issueUrl,
+          topicName: routed.topic?.name ?? "",
+          uploadedDocuments: result.uploadedDocuments,
+          documentError: result.documentError,
+        });
+        setStatus(
+          `Marked Approved — transfer. "${result.issueName}" created in Workfront as Task ${result.issueId}.`,
+        );
+      } else if (wantLive && result.liveError) {
+        setStatus(
+          `Marked Approved — transfer. "${result.issueName}" is ready locally. Live send failed: ${result.liveError}`,
+        );
+      } else if (!wantLive) {
+        const hint = health?.connected
+          ? " Proxy is connected but live submit is off (WORKFRONT_LIVE_SUBMIT)."
+          : " Workfront proxy is not connected.";
+        setStatus(
+          `Marked Approved — transfer. "${result.issueName}" is Ready to send in this browser.${hint}`,
+        );
+      } else {
+        setStatus(
+          `Marked Approved — transfer. "${result.issueName}" is Ready to send in this browser.`,
+        );
+      }
+    } finally {
+      setSendingId(null);
+    }
+  }
+
   async function submitDraft(brief: IntakeBrief) {
     const result = await submitToWorkfront(brief, queueConfig);
     if (!result.ok) {
@@ -361,6 +675,103 @@ export function RequestQueueSection() {
     setError("");
     setStatus(
       `"${result.issueName}" is marked Ready to send and saved in this browser. It has not been sent to Workfront.`,
+    );
+  }
+
+  function renderPrioritySelect(row: QueueRow) {
+    return (
+      <label className="aaa-queue-priority-control">
+        <span className="sr-only">Priority</span>
+        <select
+          className="aaa-queue-priority-select"
+          value={row.priority}
+          onChange={(event) =>
+            updatePriority(row.briefId, event.target.value as ReviewerPriority)
+          }
+        >
+          {REVIEWER_PRIORITIES.map((priority) => (
+            <option key={priority} value={priority}>
+              {priority}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  function renderStatusSelect(row: QueueRow) {
+    return (
+      <label className="aaa-queue-status-control">
+        <span
+          className={`aaa-queue-status-dot status-${row.reviewerStatus}`}
+          aria-hidden="true"
+        />
+        <span className="sr-only">Status</span>
+        <select
+          value={row.reviewerStatus}
+          onChange={(event) =>
+            updateReviewerStatus(
+              row.briefId,
+              event.target.value as ReviewerStatus,
+            )
+          }
+        >
+          {REVIEWER_STATUSES.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  function renderRowActions(row: QueueRow, brief: IntakeBrief | undefined) {
+    const isSelected = selectedIds.has(row.briefId);
+    return (
+      <div className="aaa-queue-actions">
+        <button
+          type="button"
+          className="aaa-queue-summary-link"
+          onClick={() => openSummary(row.briefId)}
+        >
+          Summary
+        </button>
+        <QueueRowKebab
+          row={row}
+          open={openKebabId === row.briefId}
+          sendDisabled={sendingId !== null}
+          onToggle={() =>
+            setOpenKebabId((current) =>
+              current === row.briefId ? null : row.briefId,
+            )
+          }
+          onClose={closeKebab}
+          onSummary={() => openSummary(row.briefId)}
+          onSendToWf={() => {
+            if (brief) void sendToWorkfront(brief);
+          }}
+          onParkingLot={() => moveToParkingLot(row.briefId, row.name)}
+        />
+        {row.isDraft && brief ? (
+          <button
+            type="button"
+            className="aaa-btn-text"
+            onClick={() => submitDraft(brief)}
+          >
+            Mark ready to send
+          </button>
+        ) : null}
+        {isSelected ? (
+          <button
+            type="button"
+            className="aaa-btn aaa-btn-secondary aaa-queue-action-btn aaa-queue-action-delete"
+            onClick={() => removeLocalBrief(row.briefId, row.name)}
+          >
+            Delete
+          </button>
+        ) : null}
+      </div>
     );
   }
 
@@ -441,6 +852,7 @@ export function RequestQueueSection() {
       <div className="sr-only" role="status" aria-live="polite">
         {refreshLiveAnnouncement || status}
         {error}
+        {sendingId ? "Sending to Workfront…" : ""}
       </div>
       {error ? (
         <div role="alert" className="aaa-flow-alert">
@@ -462,6 +874,7 @@ export function RequestQueueSection() {
           >
             {item.label}
             {item.key === "drafts" && draftCount > 0 ? ` (${draftCount})` : ""}
+            {item.key === "parking" && parkingCount > 0 ? ` (${parkingCount})` : ""}
           </button>
         ))}
       </div>
@@ -481,7 +894,11 @@ export function RequestQueueSection() {
             ? "No requests match that search in this browser."
             : filter === "drafts"
               ? "No drafts in this browser."
-              : "No ready-to-send requests in this browser yet."}{" "}
+              : filter === "parking"
+                ? "No Parking Lot requests in this browser."
+                : filter === "closed"
+                  ? "No closed requests in this browser."
+                  : "No ready-to-send requests in this browser yet."}{" "}
           <Link to="/request">Start a request</Link>
         </p>
       ) : (
@@ -513,8 +930,9 @@ export function RequestQueueSection() {
             </div>
           ) : null}
 
-          <div className="aaa-queue-table-wrap">
-            <table className="aaa-queue-table aaa-queue-table-reviewer">
+          {wideLayout ? (
+          <div className="aaa-queue-table-wrap" key="queue-table">
+            <table className="aaa-queue-table aaa-queue-table-reviewer aaa-queue-table-v1">
               <caption className="sr-only">
                 {manualOrder
                   ? "Custom order saved in this browser"
@@ -544,9 +962,11 @@ export function RequestQueueSection() {
                       className={
                         column.key === "name"
                           ? "aaa-queue-name"
-                          : column.key === "reviewerStatus"
-                            ? "aaa-queue-col-status"
-                            : undefined
+                          : column.key === "description"
+                            ? "aaa-queue-col-description"
+                            : column.key === "reviewerStatus"
+                              ? "aaa-queue-col-status"
+                              : undefined
                       }
                       aria-sort={
                         !manualOrder && column.sortable
@@ -574,6 +994,7 @@ export function RequestQueueSection() {
                       )}
                     </th>
                   ))}
+                  <th scope="col">Summary</th>
                   <th scope="col">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -595,9 +1016,7 @@ export function RequestQueueSection() {
                             checked={isSelected}
                             onChange={() => toggleRowSelected(row.briefId)}
                           />
-                          <span className="sr-only">
-                            Select {row.name}
-                          </span>
+                          <span className="sr-only">Select {row.name}</span>
                         </label>
                       </td>
                       <th scope="row" className="aaa-queue-name">
@@ -608,7 +1027,7 @@ export function RequestQueueSection() {
                           aria-label={row.name}
                           onClick={() => openSummary(row.briefId)}
                         >
-                          {truncateWords(row.name, 4)}
+                          {truncateWords(row.name, 6)}
                         </button>
                         {row.isNew ? (
                           <span className="aaa-queue-new">NEW</span>
@@ -626,68 +1045,44 @@ export function RequestQueueSection() {
                           </span>
                         ) : null}
                       </th>
-                      <td className="aaa-queue-col-status">
-                        <label className="aaa-queue-status-control">
-                          <span
-                            className={`aaa-queue-status-dot status-${row.reviewerStatus}`}
-                            aria-hidden="true"
-                          />
-                          <span className="sr-only">Status</span>
-                          <select
-                            value={row.reviewerStatus}
-                            onChange={(event) =>
-                              updateReviewerStatus(
-                                row.briefId,
-                                event.target.value as ReviewerStatus,
-                              )
-                            }
-                          >
-                            {REVIEWER_STATUSES.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </td>
-                      <td>
-                        <label className="aaa-queue-priority-control">
-                          <span className="sr-only">Priority</span>
-                          <select
-                            className="aaa-queue-priority-select"
-                            value={row.priority}
-                            onChange={(event) =>
-                              updatePriority(
-                                row.briefId,
-                                event.target.value as ReviewerPriority,
-                              )
-                            }
-                          >
-                            {REVIEWER_PRIORITIES.map((priority) => (
-                              <option key={priority} value={priority}>
-                                {priority}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                      <td>{row.requesterName}</td>
+                      <td className="aaa-queue-col-description" title={row.description}>
+                        {row.description
+                          ? truncateWords(row.description, 8)
+                          : ""}
                       </td>
                       <td>{formatQueueDate(row.entryDate)}</td>
+                      <td>{formatQueueDate(row.dueDate)}</td>
+                      <td>{renderPrioritySelect(row)}</td>
+                      <td className="aaa-queue-col-status">{renderStatusSelect(row)}</td>
                       <td>
-                        <span className="aaa-queue-requestor">
-                          <span className="aaa-queue-avatar" aria-hidden="true">
-                            {row.requesterInitials}
-                          </span>
-                          {row.requesterName}
-                        </span>
-                      </td>
-                      <td className="aaa-queue-actions">
                         <button
                           type="button"
-                          className="aaa-btn aaa-btn-secondary aaa-queue-action-btn"
+                          className="aaa-queue-summary-link"
                           onClick={() => openSummary(row.briefId)}
                         >
                           Summary
                         </button>
+                      </td>
+                      <td className="aaa-queue-actions-cell">
+                        <QueueRowKebab
+                          row={row}
+                          open={openKebabId === row.briefId}
+                          sendDisabled={sendingId !== null}
+                          onToggle={() =>
+                            setOpenKebabId((current) =>
+                              current === row.briefId ? null : row.briefId,
+                            )
+                          }
+                          onClose={closeKebab}
+                          onSummary={() => openSummary(row.briefId)}
+                          onSendToWf={() => {
+                            if (brief) void sendToWorkfront(brief);
+                          }}
+                          onParkingLot={() =>
+                            moveToParkingLot(row.briefId, row.name)
+                          }
+                        />
                         {row.isDraft && brief ? (
                           <button
                             type="button"
@@ -713,8 +1108,8 @@ export function RequestQueueSection() {
               </tbody>
             </table>
           </div>
-
-          <ul className="aaa-queue-cards" role="list">
+          ) : (
+          <ul className="aaa-queue-cards" role="list" key="queue-cards">
             {rows.map((row) => {
               const brief = briefs.find((item) => item.id === row.briefId);
               const isSelected = selectedIds.has(row.briefId);
@@ -736,132 +1131,52 @@ export function RequestQueueSection() {
                     </label>
                     <p className="aaa-queue-card-name" title={row.name}>
                       <span className="sr-only">{row.name}</span>
-                      <span aria-hidden="true">{truncateWords(row.name, 4)}</span>
+                      <span aria-hidden="true">{truncateWords(row.name, 6)}</span>
                       {row.isNew ? <span className="aaa-queue-new">NEW</span> : null}
                     </p>
                   </div>
                   <dl className="aaa-queue-card-list">
                     <div>
-                      <dt>Status</dt>
-                      <dd>
-                        <label className="aaa-queue-status-control">
-                          <span
-                            className={`aaa-queue-status-dot status-${row.reviewerStatus}`}
-                            aria-hidden="true"
-                          />
-                          <select
-                            value={row.reviewerStatus}
-                            onChange={(event) =>
-                              updateReviewerStatus(
-                                row.briefId,
-                                event.target.value as ReviewerStatus,
-                              )
-                            }
-                          >
-                            {REVIEWER_STATUSES.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Priority</dt>
-                      <dd>
-                        <select
-                          className="aaa-queue-priority-select"
-                          value={row.priority}
-                          onChange={(event) =>
-                            updatePriority(
-                              row.briefId,
-                              event.target.value as ReviewerPriority,
-                            )
-                          }
-                        >
-                          {REVIEWER_PRIORITIES.map((priority) => (
-                            <option key={priority} value={priority}>
-                              {priority}
-                            </option>
-                          ))}
-                        </select>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Entry Date</dt>
-                      <dd>{formatQueueDate(row.entryDate)}</dd>
-                    </div>
-                    <div>
-                      <dt>Requestor</dt>
+                      <dt>Owner</dt>
                       <dd>{row.requesterName}</dd>
                     </div>
                     <div>
-                      <dt>Workfront path</dt>
-                      <dd>
-                        {row.path}
-                        {row.routeSource === "derived" ? " (derived)" : ""}
-                      </dd>
+                      <dt>Description</dt>
+                      <dd>{row.description || "—"}</dd>
                     </div>
                     <div>
-                      <dt>Sent to Workfront</dt>
-                      <dd>
-                        {row.sentToWorkfrontLabel}
-                        {row.workfrontIssueUrl ? (
-                          <>
-                            {" "}
-                            <a
-                              href={row.workfrontIssueUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Open Task
-                            </a>
-                          </>
-                        ) : null}
-                      </dd>
+                      <dt>Entry Date</dt>
+                      <dd>{formatQueueDate(row.entryDate) || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Due Date</dt>
+                      <dd>{formatQueueDate(row.dueDate) || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Priority</dt>
+                      <dd>{renderPrioritySelect(row)}</dd>
+                    </div>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>{renderStatusSelect(row)}</dd>
                     </div>
                   </dl>
-                  <div className="aaa-queue-actions">
-                    <button
-                      type="button"
-                      className="aaa-btn aaa-btn-secondary aaa-queue-action-btn"
-                      onClick={() => openSummary(row.briefId)}
-                    >
-                      Summary
-                    </button>
-                    {row.isDraft && brief ? (
-                      <button
-                        type="button"
-                        className="aaa-btn-text"
-                        onClick={() => submitDraft(brief)}
-                      >
-                        Mark ready to send
-                      </button>
-                    ) : null}
-                    {isSelected ? (
-                      <button
-                        type="button"
-                        className="aaa-btn aaa-btn-secondary aaa-queue-action-btn aaa-queue-action-delete"
-                        onClick={() => removeLocalBrief(row.briefId, row.name)}
-                      >
-                        Delete
-                      </button>
-                    ) : null}
-                  </div>
+                  {renderRowActions(row, brief)}
                 </li>
               );
             })}
           </ul>
+          )}
         </>
       )}
 
       <p className="aaa-queue-footnote">
-        Reviewer Status and Priority are saved in this browser only. Ready to send stays local until
-        Summary → Submit to Workfront Que succeeds with a real Task ID. Sent to Workfront: No is
-        the default; (WF Aligned) appears only with that ID (hover the badge for the Task ID). Refresh
-        loads Tasks on mission-control-v1 via the proxy — not the whole organization. Select rows
-        to reorder locally or delete the local copy (Workfront Tasks are not deleted).
+        Reviewer Status and Priority are saved in this browser only. Parking Lot marks a request
+        Deferred locally and does not send it to Workfront. Ready to send stays local until Summary
+        or Send to WF succeeds with a real Task ID. Sent to Workfront: No is the default; (WF
+        Aligned) appears only with that ID. Refresh loads Tasks on mission-control-v1 via the proxy
+        — not the whole organization. Select rows to reorder locally or delete the local copy
+        (Workfront Tasks are not deleted).
       </p>
 
       {refreshDialog ? (
@@ -873,6 +1188,18 @@ export function RequestQueueSection() {
             openSummary(briefId);
           }}
           onClose={() => setRefreshDialog(null)}
+        />
+      ) : null}
+
+      {sentDialog ? (
+        <WorkfrontSentDialog
+          issueId={sentDialog.issueId}
+          issueUrl={sentDialog.issueUrl}
+          topicName={sentDialog.topicName}
+          uploadedDocuments={sentDialog.uploadedDocuments}
+          documentError={sentDialog.documentError}
+          onClose={() => setSentDialog(null)}
+          onViewQueue={() => setSentDialog(null)}
         />
       ) : null}
     </section>

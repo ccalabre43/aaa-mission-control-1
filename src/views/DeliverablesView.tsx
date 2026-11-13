@@ -35,7 +35,7 @@ export default function DeliverablesView() {
   const pageHeading =
     pageTab === "executive"
       ? "Mission Control / Executive dashboard"
-      : "Mission Control / New creative requests";
+      : "Mission Control / Requests";
 
   return (
     <main id="main" className="aaa-page-shell py-6">

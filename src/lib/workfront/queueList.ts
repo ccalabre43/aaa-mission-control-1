@@ -1,8 +1,8 @@
 /**
  * Turning saved briefs into reviewer-style Request Queue rows.
  *
- * Primary columns: Subject, Status, Priority, Entry Date, Requestor (Channels removed from the
- * visible table; channel tokens remain on the row for search). Workfront path, blockers, and send
+ * Concept v1 columns: Project, Owner, Description, Entry Date, Due Date, Priority, Status,
+ * Summary, kebab. Channel tokens remain on the row for search. Workfront path, blockers, and send
  * state remain on the row for the summary panel. Reviewer Status/Priority are local until dual-write
  * maps them — see docs/knowledge/reviewer-queue-fields.md.
  */
@@ -39,16 +39,20 @@ const KNOWN_CHANNELS = [
 
 export interface QueueRow {
   briefId: string;
-  /** Task name / subject — same string Workfront would show. */
+  /** Project / Task name — same string Workfront would show. */
   name: string;
+  /** Background / purpose preview for the Description column. */
+  description: string;
   channels: string[];
   reviewerStatus: ReviewerStatus;
   reviewerStatusLabel: string;
   priority: ReviewerPriority;
   /** ISO entry (submitted or created). */
   entryDate: string | null;
+  /** Desired completion date (A3 or guided answer). Empty when unset. */
+  dueDate: string | null;
   lastUpdateDate: string;
-  /** Display name only — never email (guardrail 6). */
+  /** Display name only — never email (guardrail 6). Owner column. */
   requesterName: string;
   requesterInitials: string;
   /** Department only when present; never email. */
@@ -76,10 +80,12 @@ export interface QueueRow {
 
 export type QueueColumn =
   | "name"
-  | "reviewerStatus"
-  | "priority"
+  | "requesterName"
+  | "description"
   | "entryDate"
-  | "requesterName";
+  | "dueDate"
+  | "priority"
+  | "reviewerStatus";
 
 export interface ColumnDef {
   key: QueueColumn;
@@ -88,14 +94,22 @@ export interface ColumnDef {
 }
 
 export const QUEUE_COLUMNS: ColumnDef[] = [
-  { key: "name", label: "Subject", sortable: true },
-  { key: "reviewerStatus", label: "Status", sortable: true },
-  { key: "priority", label: "Priority", sortable: true },
+  { key: "name", label: "Project", sortable: true },
+  { key: "requesterName", label: "Owner", sortable: true },
+  { key: "description", label: "Description", sortable: false },
   { key: "entryDate", label: "Entry Date", sortable: true },
-  { key: "requesterName", label: "Requestor", sortable: true },
+  { key: "dueDate", label: "Due Date", sortable: true },
+  { key: "priority", label: "Priority", sortable: true },
+  { key: "reviewerStatus", label: "Status", sortable: true },
 ];
 
-export type QueueFilter = "all" | "open" | "mine" | "mine-open" | "drafts";
+export type QueueFilter =
+  | "all"
+  | "open"
+  | "mine"
+  | "drafts"
+  | "parking"
+  | "closed";
 
 export interface FilterDef {
   key: QueueFilter;
@@ -115,17 +129,27 @@ export const QUEUE_FILTERS: FilterDef[] = [
     description:
       "Ready-to-send requests whose local reviewer status is not Approved, Closed, or Deferred.",
   },
-  { key: "mine", label: "My Requests", description: "Requests entered under your name." },
   {
-    key: "mine-open",
-    label: "My Open Requests",
-    description: "Your open requests still in review.",
+    key: "mine",
+    label: "My requests",
+    description: "Requests entered under your name.",
   },
   {
     key: "drafts",
     label: "Drafts",
     description:
       "Requests you started and have not marked Ready to send. Kept out of the main list, as Workfront keeps drafts out of Submitted Requests.",
+  },
+  {
+    key: "parking",
+    label: "Parking Lot",
+    description:
+      "Ready-to-send requests marked Deferred in this browser (Parking Lot). Not sent to Workfront by that mark alone.",
+  },
+  {
+    key: "closed",
+    label: "Closed",
+    description: "Ready-to-send requests whose local reviewer status is Closed.",
   },
 ];
 
@@ -188,6 +212,32 @@ function isReviewerOpen(status: ReviewerStatus): boolean {
   return status !== "approved" && status !== "closed" && status !== "deferred";
 }
 
+function firstNonEmpty(...parts: Array<string | undefined | null>): string {
+  for (const part of parts) {
+    const next = (part ?? "").trim();
+    if (next) return next;
+  }
+  return "";
+}
+
+/** Description column: background/purpose, then guided answer, then free-text context. */
+export function queueDescription(brief: IntakeBrief): string {
+  return firstNonEmpty(
+    brief.a3.A3IntakeBackgroundPurpose,
+    brief.answers["q-background"],
+    brief.contextText,
+  );
+}
+
+/** Due Date column: A3 desired completion, then guided deadline answer. */
+export function queueDueDate(brief: IntakeBrief): string | null {
+  const value = firstNonEmpty(
+    brief.a3.A3IntakeDesiredCompletionDate,
+    brief.answers["q-deadline"],
+  );
+  return value || null;
+}
+
 export function toQueueRow(
   brief: IntakeBrief,
   config: QueueDef,
@@ -211,11 +261,13 @@ export function toQueueRow(
       workfrontSubject ||
       buildWorkfrontPayload(brief, config).name ||
       briefTitle(brief),
+    description: queueDescription(brief),
     channels: parseChannels(brief.a3.A3IntakeDeliverables),
     reviewerStatus: reviewer.status,
     reviewerStatusLabel: reviewerStatusLabel(reviewer.status),
     priority: reviewer.priority,
     entryDate: brief.submittedAt ?? brief.createdAt,
+    dueDate: queueDueDate(brief),
     lastUpdateDate: brief.updatedAt,
     requesterName,
     requesterInitials: requesterInitials(firstName, lastName),
@@ -248,20 +300,27 @@ export function filterRows(rows: QueueRow[], filter: QueueFilter): QueueRow[] {
       return rows.filter((row) => !row.isDraft && row.isOpen);
     case "mine":
       return rows.filter((row) => !row.isDraft && row.isMine);
-    case "mine-open":
-      return rows.filter((row) => !row.isDraft && row.isMine && row.isOpen);
+    case "parking":
+      return rows.filter(
+        (row) => !row.isDraft && row.reviewerStatus === "deferred",
+      );
+    case "closed":
+      return rows.filter(
+        (row) => !row.isDraft && row.reviewerStatus === "closed",
+      );
     default:
       return rows.filter((row) => !row.isDraft);
   }
 }
 
-/** Search subject, requestor name, and channel tokens. */
+/** Search project, owner, description, and channel tokens. */
 export function searchRows(rows: QueueRow[], query: string): QueueRow[] {
   const q = query.trim().toLowerCase();
   if (!q) return rows;
   return rows.filter((row) => {
     if (row.name.toLowerCase().includes(q)) return true;
     if (row.requesterName.toLowerCase().includes(q)) return true;
+    if (row.description.toLowerCase().includes(q)) return true;
     if (row.channels.some((channel) => channel.toLowerCase().includes(q))) return true;
     if (row.reviewerStatusLabel.toLowerCase().includes(q)) return true;
     return false;
@@ -281,14 +340,18 @@ function sortValue(row: QueueRow, column: QueueColumn): string {
   switch (column) {
     case "name":
       return row.name.toLowerCase();
-    case "reviewerStatus":
-      return row.reviewerStatus;
-    case "priority":
-      return row.priority;
-    case "entryDate":
-      return row.entryDate ?? "";
     case "requesterName":
       return row.requesterName.toLowerCase();
+    case "description":
+      return row.description.toLowerCase();
+    case "entryDate":
+      return row.entryDate ?? "";
+    case "dueDate":
+      return row.dueDate ?? "";
+    case "priority":
+      return row.priority;
+    case "reviewerStatus":
+      return row.reviewerStatus;
   }
 }
 
@@ -375,10 +438,17 @@ export function ariaSortFor(
   return sort.direction === "asc" ? "ascending" : "descending";
 }
 
-/** Entry Date column: MM/DD/YY with leading zeros, no time. */
+/** Entry / Due Date columns: MM/DD/YY with leading zeros, no time. */
 export function formatQueueDate(iso: string | null): string {
   if (!iso) return "";
-  const date = new Date(iso);
+  const trimmed = iso.trim();
+  // Date-only A3 / guided answers: parse as local calendar day, not UTC midnight.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (dateOnly) {
+    const [, y, m, d] = dateOnly;
+    return `${m}/${d}/${y.slice(-2)}`;
+  }
+  const date = new Date(trimmed);
   if (Number.isNaN(date.getTime())) return "";
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");

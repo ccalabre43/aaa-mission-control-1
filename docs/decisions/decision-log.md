@@ -1405,6 +1405,20 @@ User directed: reset Priority to local queue only; sync with Workfront later.
 | Kept for later | `priorityMap.ts`, proxy `POST /priority`, provisional 1/2/4 map in docs |
 | Unchanged | Executive Portfolio Optimization order (`portfolioPriority`) from **052** |
 
+## 2026-11-13 - 054 - Request queue Concept v1 columns and Parking Lot filter
+
+**Status:** accepted
+
+Request queue tab restyled to Concept v1 (Figma node `666:5155`). Pill filters are **All, Open, My
+requests, Drafts, Parking Lot, Closed**. **My Open Requests** is removed; Open plus My requests
+covers that combination.
+
+**Parking Lot** sets local reviewer status to `deferred` (same Deferred state as Summary → Defer).
+All still includes parked rows; Open excludes them. The kebab items are Summary (existing summary
+route), Send to WF (same confirm-and-dual-write path as Accept — Send to Workfront), and Parking
+Lot. Table columns are Project, Owner, Description, Entry Date, Due Date, Priority, Status, Summary,
+and kebab. Status and Priority remain local-only until a later dual-write decision.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The
