@@ -1477,7 +1477,7 @@ See `docs/knowledge/workfront-brand-project-acl.md`.
 
 ## 2026-11-15 - 057 - New Project create lands in TEST PORTFOLIO - CHRIS
 
-**Status:** accepted (architecture ships; live create gated by S2S Manage ACL + kill switch)
+**Status:** accepted (live create verified same day after S2S portfolio share)
 
 Send / Accept create a bare **New Project** (no Email Creative template) in **TEST PORTFOLIO -
 CHRIS** (`6aa167f4000304470fb9e879fb8bbd56` via `WORKFRONT_PORTFOLIO_ID`). Project **name** is the
@@ -1494,6 +1494,13 @@ labeled A3 payload format. A3 `parameterValues` are not posted.
 
 Supersedes Brand Team + template landing from **055** for the reviewer send path. Executive Apply
 order continues to use the same portfolio ID.
+
+### 057 follow-up (same day): S2S share confirmed
+
+Techacct `6abfd42f01507a7bcbe5e395960e3f9f` has portfolio `accessRules` with `coreAction: DELETE`.
+`npm run workfront:sample-project` returned `"ok": true` (Project
+`6afa8c9a029f204bb0ac29cb18775864` in TEST PORTFOLIO). Sample project is safe to delete in
+Workfront.
 
 ## Flagged for the user, not applied
 

@@ -2498,15 +2498,46 @@ select.select {
   white-space: nowrap;
 }
 
-/* Push Delete away from Summary / Mark ready, same idea as question-admin delete. */
-.aaa-queue-action-delete {
-  margin-left: auto;
-}
-
 .aaa-queue-action-btn {
   min-height: 2rem;
   padding: 0.25rem 0.75rem;
   font-size: 0.8125rem;
+}
+
+.aaa-queue-row-end-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  vertical-align: middle;
+}
+
+/* Icon control aligned with kebab; Heroicons outline trash uses currentColor. */
+.aaa-queue-icon-btn {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--aaa-ink);
+  cursor: pointer;
+}
+
+.aaa-queue-icon-btn:hover {
+  background: var(--aaa-wash);
+  color: var(--aaa-red);
+}
+
+.aaa-queue-icon-btn:focus-visible {
+  outline: 2px solid var(--aaa-blue);
+  outline-offset: 2px;
+}
+
+.aaa-queue-action-delete {
+  flex-shrink: 0;
 }
 
 .aaa-queue-selection-toolbar {

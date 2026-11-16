@@ -95,6 +95,7 @@ test("create posts bare name + description + portfolioID without template", asyn
     assert.equal(sent.name, "ALAN-1 - Flyer");
     assert.equal(sent.description, "Intake summary text");
     assert.equal(sent.portfolioID, "6aa167f4000304470fb9e879fb8bbd56");
+    assert.equal(sent.status, "CUR");
     assert.equal(sent.templateID, undefined);
     assert.equal(sent.parameterValues, undefined);
     assert.equal(JSON.stringify(result.body).includes("test-secret"), false);

@@ -104,6 +104,7 @@ onto the Context dropzone:
 | Field | Value |
 | --- | --- |
 | Portfolio | TEST PORTFOLIO - CHRIS (`WORKFRONT_PORTFOLIO_ID`) |
+| Status | `CUR` (Current) so it appears under portfolio Projects |
 | Template | None (bare New Project; decision 057) |
 | Object | Project (PROJ), not Task on mission-control-v1 |
 | Entered By | Signed-in Adobe user when a bearer is present; otherwise S2S tech account |

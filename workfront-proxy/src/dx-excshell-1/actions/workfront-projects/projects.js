@@ -1,9 +1,13 @@
 /**
  * Create and list New Projects in TEST PORTFOLIO - CHRIS (WORKFRONT_PORTFOLIO_ID).
  * Create is a bare project (no template, no A3 parameterValues) — name + Overview Description.
+ * Status defaults to CUR (Current) so the project appears under the portfolio Projects view.
  * Create requires WORKFRONT_LIVE_SUBMIT=1 and confirmLive: true.
  * List scopes to WORKFRONT_PORTFOLIO_ID (never organization-wide).
  */
+
+/** Workfront project status: Current — required for the portfolio Projects folder listing. */
+const PROJECT_STATUS_CURRENT = "CUR";
 
 "use strict";
 
@@ -52,6 +56,7 @@ async function postProject(config, token, validated) {
     name: validated.name,
     description: validated.description,
     portfolioID: validated.portfolioID,
+    status: PROJECT_STATUS_CURRENT,
   };
   if (validated.plannedCompletionDate) {
     body.plannedCompletionDate = validated.plannedCompletionDate;

@@ -114,7 +114,7 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; Brand project cutover 055 2026-11-15 | Local Ready-to-send; Brand project-from-template; Priority local-only; Portfolio Apply order; Refresh Brand portfolio | active |
 | `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039; superseded for send path by 055) | historical — Task path |
 | `docs/knowledge/workfront-brand-project-acl.md` | 2026-11-15 | S2S Template + Brand portfolio ACL (055); superseded for Send landing by 057 | historical — Brand template path |
-| `docs/knowledge/workfront-test-portfolio-acl.md` | 2026-11-15 | S2S Manage on TEST PORTFOLIO - CHRIS for bare New Project create (057) | active — ACL pending admin |
+| `docs/knowledge/workfront-test-portfolio-acl.md` | 2026-11-15 | S2S Manage on TEST PORTFOLIO - CHRIS for bare New Project create (057) | resolved — sample create OK |
 | `workfront-proxy/README.md` | 2026-10-04 | How to set Runtime secrets, deploy the health action, and run the local stand-in | active |
 | `.env.example` | 2026-09-16; proxy URL 2026-10-04 | `APP_BASE_PATH`, public `WORKFRONT_PROXY_URL`, and the standing warning about `VITE_`-prefixed secrets | active |
 | `vercel.json` | 2026-09-16 | Vercel rewrite, headers, caching. Repo root because that is where Vercel reads it | active |
