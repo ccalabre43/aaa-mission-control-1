@@ -71,10 +71,12 @@ test("create fails clearly when WORKFRONT_PORTFOLIO_ID is missing", async () => 
 });
 
 test("create posts bare name + description + portfolioID without template", async () => {
-  const stub = stubFetch(() => ({
-    status: 200,
-    body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } },
-  }));
+  const stub = stubFetch((url) => {
+    if (url.includes("/TASK") || url.endsWith("/TASK")) {
+      return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
   try {
     const result = await runCreateProject(BASE_ENV, {
       name: "ALAN-1 - Flyer",
@@ -88,6 +90,10 @@ test("create posts bare name + description + portfolioID without template", asyn
     assert.equal(result.body.objectType, "PROJ");
     assert.equal(result.body.customFormApplied, false);
     assert.match(result.body.projectUrl, /project\/view\?ID=new-proj/);
+    assert.equal(result.body.workstart.taskId, "workstart-task");
+    assert.equal(result.body.workstart.taskName, "Workstart");
+    assert.equal(result.body.workstart.assignedToID, "641cb8d100053883a2499c4f0ac41735");
+    assert.equal(result.body.workstart.projectID, "6afa92ea025f5c90f681bf8ad1cc522a");
 
     const post = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/project"));
     assert.ok(post, "expected POST /project");
@@ -98,7 +104,40 @@ test("create posts bare name + description + portfolioID without template", asyn
     assert.equal(sent.status, "CUR");
     assert.equal(sent.templateID, undefined);
     assert.equal(sent.parameterValues, undefined);
+
+    const taskPost = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/TASK"));
+    assert.ok(taskPost, "expected POST /TASK for Workstart");
+    const taskSent = JSON.parse(String(taskPost.body));
+    assert.equal(taskSent.name, "Workstart");
+    assert.equal(taskSent.projectID, "6afa92ea025f5c90f681bf8ad1cc522a");
+    assert.equal(taskSent.assignedToID, "641cb8d100053883a2499c4f0ac41735");
+    assert.match(taskSent.description, /ALAN-1 - Flyer/);
     assert.equal(JSON.stringify(result.body).includes("test-secret"), false);
+  } finally {
+    stub.restore();
+  }
+});
+
+test("create keeps New Project when Workstart Task fails", async () => {
+  const stub = stubFetch((url) => {
+    if (url.includes("/TASK") || url.endsWith("/TASK")) {
+      return {
+        status: 403,
+        body: { error: { message: "You do not have sufficient access to add this Task" } },
+      };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
+  try {
+    const result = await runCreateProject(BASE_ENV, {
+      name: "ALAN-1 - Flyer",
+      description: "Intake summary text",
+      confirmLive: true,
+    });
+    assert.equal(result.statusCode, 201);
+    assert.equal(result.body.ok, true);
+    assert.equal(result.body.projectId, "new-proj");
+    assert.match(result.body.workstart.error, /sufficient access|Add Tasks/i);
   } finally {
     stub.restore();
   }

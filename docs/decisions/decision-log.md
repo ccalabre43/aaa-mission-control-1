@@ -1502,6 +1502,29 @@ Techacct `6abfd42f01507a7bcbe5e395960e3f9f` has portfolio `accessRules` with `co
 `6afa8c9a029f204bb0ac29cb18775864` in TEST PORTFOLIO). Sample project is safe to delete in
 Workfront.
 
+## 2026-11-16 - 058 - Workstart Task after New Project create
+
+**Status:** accepted
+
+After a successful New Project create in TEST PORTFOLIO - CHRIS, the proxy also creates a **Task**
+named **Workstart** on project `6afa92ea025f5c90f681bf8ad1cc522a` (Communications effort via poster
+and email), with **Assignments** defaulting to **Pat Gaskin**
+(`641cb8d100053883a2499c4f0ac41735` / `PGaskin@aaalife.com`).
+
+| Piece | Behavior |
+| --- | --- |
+| Task name | `Workstart` |
+| Parent project | `WORKFRONT_WORKSTART_PROJECT_ID` (default `6afa92ea…`) |
+| Assignee | `WORKFRONT_WORKSTART_ASSIGNEE_ID` (default Pat Gaskin) |
+| Failure mode | Non-fatal: New Project still succeeds; `workstart.error` returned |
+| ACL | S2S tech account needs Add Tasks on the Workstart parent project |
+
+### 058 live verify (same day)
+
+Sample create returned New Project `6afa994b05ef52d80b3aaf62579854fe` plus Workstart Task
+`6afa994c02b3a8ac71ff24e4c6b5477a` on `6afa92ea…`, `assignedToID` Pat Gaskin. Both sample objects
+are safe to delete in Workfront.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

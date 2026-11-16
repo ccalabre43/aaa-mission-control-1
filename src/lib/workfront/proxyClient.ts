@@ -28,6 +28,15 @@ export interface WorkfrontCreatedIssue {
   projectID: string;
 }
 
+export interface WorkfrontWorkstartTask {
+  taskId?: string;
+  taskName?: string;
+  taskUrl?: string;
+  assignedToID?: string;
+  projectID?: string;
+  error?: string;
+}
+
 export interface WorkfrontCreatedProject {
   ok: true;
   projectId: string;
@@ -35,6 +44,8 @@ export interface WorkfrontCreatedProject {
   projectUrl: string;
   portfolioID?: string;
   templateID?: string;
+  /** Default Workstart Task on the Communications effort project (Pat Gaskin). */
+  workstart?: WorkfrontWorkstartTask;
 }
 
 /** Summary row from TEST PORTFOLIO project list (or legacy Task list). */
@@ -128,6 +139,38 @@ export async function createWorkfrontProject(
           ? data.ID
           : "";
     if (data.ok === true && projectId) {
+      const workstartRaw =
+        data.workstart && typeof data.workstart === "object"
+          ? (data.workstart as Record<string, unknown>)
+          : null;
+      const workstart: WorkfrontWorkstartTask | undefined = workstartRaw
+        ? {
+            taskId:
+              typeof workstartRaw.taskId === "string"
+                ? workstartRaw.taskId
+                : undefined,
+            taskName:
+              typeof workstartRaw.taskName === "string"
+                ? workstartRaw.taskName
+                : undefined,
+            taskUrl:
+              typeof workstartRaw.taskUrl === "string"
+                ? workstartRaw.taskUrl
+                : undefined,
+            assignedToID:
+              typeof workstartRaw.assignedToID === "string"
+                ? workstartRaw.assignedToID
+                : undefined,
+            projectID:
+              typeof workstartRaw.projectID === "string"
+                ? workstartRaw.projectID
+                : undefined,
+            error:
+              typeof workstartRaw.error === "string"
+                ? workstartRaw.error
+                : undefined,
+          }
+        : undefined;
       return {
         ok: true,
         projectId,
@@ -142,6 +185,7 @@ export async function createWorkfrontProject(
           typeof data.portfolioID === "string" ? data.portfolioID : undefined,
         templateID:
           typeof data.templateID === "string" ? data.templateID : undefined,
+        ...(workstart ? { workstart } : {}),
       };
     }
     return {

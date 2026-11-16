@@ -255,6 +255,7 @@ export default function RequestSummaryView() {
         [
           "Create a New Project in TEST PORTFOLIO - CHRIS?",
           "The project name comes from the intake summary. Overview Description will contain the intake information.",
+          "A Workstart Task will also be created and assigned to Pat Gaskin.",
           "",
           ...enteredByLines,
           "",

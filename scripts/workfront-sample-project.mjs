@@ -53,6 +53,8 @@ const summary = {
         ? data.url
         : undefined,
   portfolioID: typeof data.portfolioID === "string" ? data.portfolioID : undefined,
+  workstart:
+    data.workstart && typeof data.workstart === "object" ? data.workstart : undefined,
   auth: typeof data.auth === "string" ? data.auth : undefined,
   objectType: typeof data.objectType === "string" ? data.objectType : undefined,
   error: typeof data.error === "string" ? data.error : undefined,

@@ -9,6 +9,9 @@
 /** Workfront project status: Current — required for the portfolio Projects folder listing. */
 const PROJECT_STATUS_CURRENT = "CUR";
 
+/** Default Workstart Task name (Assignments default to Pat Gaskin via config). */
+const WORKSTART_TASK_NAME = "Workstart";
+
 "use strict";
 
 const {
@@ -68,6 +71,41 @@ async function postProject(config, token, validated) {
 }
 
 /**
+ * Create the default Workstart Task on the configured parent project, assigned to Pat Gaskin.
+ *
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @param {{ projectName: string, projectId: string, projectUrl: string, description: string }} created
+ */
+async function postWorkstartTask(config, token, created) {
+  if (!config.workstartProjectId) {
+    throw new Error("WORKFRONT_WORKSTART_PROJECT_ID is not set.");
+  }
+  if (!config.workstartAssigneeId) {
+    throw new Error("WORKFRONT_WORKSTART_ASSIGNEE_ID is not set.");
+  }
+  const descriptionLines = [
+    `Workstart for New Project: ${created.projectName}`,
+    `Project ID: ${created.projectId}`,
+    `Project URL: ${created.projectUrl}`,
+  ];
+  if (created.description) {
+    descriptionLines.push("", "---", "", created.description);
+  }
+  /** @type {Record<string, unknown>} */
+  const taskBody = {
+    name: WORKSTART_TASK_NAME,
+    projectID: config.workstartProjectId,
+    assignedToID: config.workstartAssigneeId,
+    description: descriptionLines.join("\n"),
+  };
+  return workfrontApi(config, token, "TASK", {
+    method: "POST",
+    body: taskBody,
+  });
+}
+
+/**
  * @param {Record<string, string | undefined>} env
  * @param {Record<string, unknown>} body
  * @param {{ bearerToken?: string }} [options]
@@ -119,6 +157,41 @@ async function runCreateProject(env, body, options = {}) {
       throw new Error("Workfront create returned no Project ID.");
     }
     const url = `${config.host}/project/view?ID=${encodeURIComponent(id)}`;
+
+    /** @type {{ taskId?: string, taskUrl?: string, taskName?: string, assignedToID?: string, projectID?: string, error?: string }} */
+    let workstart = {};
+    try {
+      const taskData = await postWorkstartTask(config, token, {
+        projectName: name,
+        projectId: id,
+        projectUrl: url,
+        description: validated.description,
+      });
+      const task = taskData.data || taskData;
+      const taskId = String(task.ID || task.id || "");
+      if (!taskId) {
+        throw new Error("Workfront Workstart Task create returned no Task ID.");
+      }
+      workstart = {
+        taskId,
+        taskName: String(task.name || WORKSTART_TASK_NAME),
+        taskUrl: `${config.host}/task/view?ID=${encodeURIComponent(taskId)}`,
+        assignedToID: config.workstartAssigneeId,
+        projectID: config.workstartProjectId,
+      };
+    } catch (taskError) {
+      const taskMessage =
+        taskError instanceof Error ? taskError.message : "Workstart Task create failed.";
+      workstart = {
+        error:
+          /sufficient access/i.test(taskMessage)
+            ? `${taskMessage} The S2S tech account needs Add Tasks on project ${config.workstartProjectId}.`
+            : taskMessage,
+        projectID: config.workstartProjectId,
+        assignedToID: config.workstartAssigneeId,
+      };
+    }
+
     return {
       statusCode: 201,
       headers,
@@ -132,6 +205,7 @@ async function runCreateProject(env, body, options = {}) {
         portfolioID: validated.portfolioID,
         objectType: "PROJ",
         customFormApplied: false,
+        workstart,
         auth: authLabel(source),
       },
     };

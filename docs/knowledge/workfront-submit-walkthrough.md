@@ -105,8 +105,9 @@ onto the Context dropzone:
 | --- | --- |
 | Portfolio | TEST PORTFOLIO - CHRIS (`WORKFRONT_PORTFOLIO_ID`) |
 | Status | `CUR` (Current) so it appears under portfolio Projects |
+| Workstart Task | Created on project `6afa92ea…` named **Workstart**, assigned to **Pat Gaskin** |
 | Template | None (bare New Project; decision 057) |
-| Object | Project (PROJ), not Task on mission-control-v1 |
+| Object | Project (PROJ) in the portfolio, plus Workstart Task on the Communications effort project |
 | Entered By | Signed-in Adobe user when a bearer is present; otherwise S2S tech account |
 | Requester | Description audit lines in Overview Description |
 | Documents | Project Documents → **Intake** folder (when session files uploaded) |

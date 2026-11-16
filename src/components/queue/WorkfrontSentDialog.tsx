@@ -79,8 +79,9 @@ export function WorkfrontSentDialog({
             Sent to Workfront
           </h2>
           <p className="aaa-sent-dialog-copy">
-            {routeLine} Project {issueId} is in TEST PORTFOLIO - CHRIS. Overview
-            Description carries the intake information.
+            {routeLine} Project {issueId} is in TEST PORTFOLIO - CHRIS. A Workstart
+            Task is assigned to Pat Gaskin. Overview Description carries the intake
+            information.
           </p>
           {docLine ? <p className="aaa-sent-dialog-copy">{docLine}</p> : null}
           {docCount > 0 ? (

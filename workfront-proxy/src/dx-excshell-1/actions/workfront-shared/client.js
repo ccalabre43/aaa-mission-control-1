@@ -9,6 +9,10 @@ const { spawnSync } = require("node:child_process");
 
 const DEFAULT_HOST = "https://aaalife.my.workfront.com";
 const DEFAULT_PROJECT_ID = "6abae2b600041e3ecb6a8da4dbe7b4a1";
+/** Default Workstart task parent project (TEST PORTFOLIO Communications effort). Never VITE_*. */
+const DEFAULT_WORKSTART_PROJECT_ID = "6afa92ea025f5c90f681bf8ad1cc522a";
+/** Default Workstart assignee: Pat Gaskin (pgaskin@aaalife.com). Never VITE_*. */
+const DEFAULT_WORKSTART_ASSIGNEE_ID = "641cb8d100053883a2499c4f0ac41735";
 const DEFAULT_IMS_URL = "https://ims-na1.adobelogin.com/ims/token/v3";
 const DEFAULT_SCOPE =
   "openid,session,profile,AdobeID,additional_info.roles,read_organizations,additional_info.projectedProductContext";
@@ -36,6 +40,19 @@ function readConfig(env) {
      * Not the Project URL id that looks like a template. Never VITE_*.
      */
     templateId: (env.WORKFRONT_TEMPLATE_ID || "").trim(),
+    /**
+     * Parent project for the default Workstart Task created on each New Project submit.
+     * Never VITE_*.
+     */
+    workstartProjectId: (
+      env.WORKFRONT_WORKSTART_PROJECT_ID || DEFAULT_WORKSTART_PROJECT_ID
+    ).trim(),
+    /**
+     * Default Workstart Task assignee (Pat Gaskin). Never VITE_*.
+     */
+    workstartAssigneeId: (
+      env.WORKFRONT_WORKSTART_ASSIGNEE_ID || DEFAULT_WORKSTART_ASSIGNEE_ID
+    ).trim(),
     imsUrl: (env.WORKFRONT_IMS_URL || DEFAULT_IMS_URL).trim(),
     scope: (env.WORKFRONT_IMS_SCOPE || DEFAULT_SCOPE).trim(),
     liveSubmit: /^(1|true|yes)$/i.test((env.WORKFRONT_LIVE_SUBMIT || "").trim()),
@@ -425,6 +442,8 @@ module.exports = {
   API_VERSION,
   DEFAULT_HOST,
   DEFAULT_PROJECT_ID,
+  DEFAULT_WORKSTART_PROJECT_ID,
+  DEFAULT_WORKSTART_ASSIGNEE_ID,
   readConfig,
   httpRequest,
   extractBearerToken,

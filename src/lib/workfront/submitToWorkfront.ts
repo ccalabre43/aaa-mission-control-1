@@ -78,6 +78,11 @@ export interface WorkfrontSubmitResult {
   uploadedDocuments?: WorkfrontUploadedDocumentRecord[];
   /** Non-fatal: Project was created but one or more document uploads failed. */
   documentError?: string;
+  /** Workstart Task created on the Communications effort project (Pat Gaskin). */
+  workstartTaskId?: string;
+  workstartTaskUrl?: string;
+  /** Non-fatal Workstart Task failure after a successful New Project create. */
+  workstartError?: string;
 }
 
 const MAX_ISSUE_NAME = 140;
@@ -404,6 +409,15 @@ export async function submitToWorkfront(
     ...(uploadedDocuments.length > 0 ? { uploadedDocuments } : {}),
     ...(documentErrors.length > 0
       ? { documentError: documentErrors.join("; ") }
+      : {}),
+    ...(created.workstart?.taskId
+      ? {
+          workstartTaskId: created.workstart.taskId,
+          workstartTaskUrl: created.workstart.taskUrl,
+        }
+      : {}),
+    ...(created.workstart?.error
+      ? { workstartError: created.workstart.error }
       : {}),
   };
 }
