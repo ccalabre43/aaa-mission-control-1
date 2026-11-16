@@ -57,6 +57,10 @@ const summary = {
   templateID: typeof data.templateID === "string" ? data.templateID : undefined,
   placement:
     data.placement && typeof data.placement === "object" ? data.placement : undefined,
+  stakeholders:
+    data.stakeholders && typeof data.stakeholders === "object"
+      ? data.stakeholders
+      : undefined,
   workstart:
     data.workstart && typeof data.workstart === "object" ? data.workstart : undefined,
   auth: typeof data.auth === "string" ? data.auth : undefined,

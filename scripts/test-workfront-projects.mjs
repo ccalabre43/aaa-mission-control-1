@@ -188,6 +188,138 @@ test("create normalizes QUE status to CUR for Projects tab", async () => {
   }
 });
 
+test("create swaps stakeholder Pat Gaskin for Chris Calabrese", async () => {
+  const PAT = "641cb8d100053883a2499c4f0ac41735";
+  const CHRIS = "690946b90001f53ab97763a1753be08f";
+  const stub = stubFetch((url, init) => {
+    const method = init.method || "GET";
+    if (url.endsWith("/TASK")) {
+      return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if (method === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "CUR",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            selectedOnPortfolioOptimizer: false,
+            ownerID: PAT,
+            projectUsers: [{ ID: "prtu-pat", userID: PAT }],
+          },
+        },
+      };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
+  try {
+    const result = await runCreateProject(BASE_ENV, {
+      name: "ALAN-1 - Flyer",
+      description: "Intake summary text",
+      confirmLive: true,
+    });
+    assert.equal(result.statusCode, 201);
+    assert.equal(result.body.stakeholders.stakeholderID, CHRIS);
+    assert.equal(result.body.stakeholders.added, true);
+    assert.deepEqual(result.body.stakeholders.removed, [PAT]);
+    assert.equal(result.body.stakeholders.ownerChanged, true);
+
+    const add = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/PRTU"));
+    assert.ok(add, "expected POST /PRTU for Chris");
+    assert.deepEqual(JSON.parse(String(add.body)), { projectID: "new-proj", userID: CHRIS });
+    const del = stub.calls.find((c) => c.method === "DELETE" && c.url.endsWith("/PRTU/prtu-pat"));
+    assert.ok(del, "expected DELETE of Pat's PRTU");
+    const ownerPut = stub.calls.find(
+      (c) => c.method === "PUT" && String(c.body).includes("ownerID"),
+    );
+    assert.ok(ownerPut, "expected owner moved to Chris");
+    assert.equal(JSON.parse(String(ownerPut.body)).ownerID, CHRIS);
+    assert.ok(
+      stub.calls.indexOf(add) < stub.calls.indexOf(del),
+      "Chris is added before Pat is removed",
+    );
+  } finally {
+    stub.restore();
+  }
+});
+
+test("create does not re-add Chris when he is already a stakeholder", async () => {
+  const CHRIS = "690946b90001f53ab97763a1753be08f";
+  const stub = stubFetch((url, init) => {
+    if (url.endsWith("/TASK")) {
+      return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if ((init.method || "GET") === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "CUR",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            selectedOnPortfolioOptimizer: false,
+            ownerID: CHRIS,
+            projectUsers: [{ ID: "prtu-chris", userID: CHRIS }],
+          },
+        },
+      };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
+  try {
+    const result = await runCreateProject(BASE_ENV, {
+      name: "ALAN-1 - Flyer",
+      description: "x",
+      confirmLive: true,
+    });
+    assert.equal(result.body.stakeholders.added, false);
+    assert.deepEqual(result.body.stakeholders.removed, []);
+    assert.equal(stub.calls.some((c) => c.url.endsWith("/PRTU")), false);
+    assert.equal(stub.calls.some((c) => c.method === "DELETE"), false);
+  } finally {
+    stub.restore();
+  }
+});
+
+test("create keeps New Project when the stakeholder update fails", async () => {
+  const stub = stubFetch((url, init) => {
+    if (url.endsWith("/TASK")) {
+      return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if ((init.method || "GET") === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "CUR",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            selectedOnPortfolioOptimizer: false,
+            projectUsers: [],
+          },
+        },
+      };
+    }
+    if (url.endsWith("/PRTU")) {
+      return { status: 403, body: { error: { message: "no access" } } };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
+  try {
+    const result = await runCreateProject(BASE_ENV, {
+      name: "ALAN-1 - Flyer",
+      description: "x",
+      confirmLive: true,
+    });
+    assert.equal(result.statusCode, 201);
+    assert.match(result.body.stakeholders.error, /no access/);
+    assert.equal(result.body.workstart.taskId, "workstart-task");
+  } finally {
+    stub.restore();
+  }
+});
+
 test("create keeps New Project when Workstart Task fails", async () => {
   const stub = stubFetch((url, init) => {
     if (url.includes("/TASK") || url.endsWith("/TASK")) {

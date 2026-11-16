@@ -1602,6 +1602,25 @@ Project `6afaaecf02df06c284d23eee971e8b87` plus Workstart Task `6afaaed102df0947
 on **Mission Control Main** (`6afaae95…`), assigned to Chris. The sample project and task are safe
 to delete. **Mission Control Main** itself must be kept.
 
+## 2026-11-16 - 062 - New requests: stakeholder Chris Calabrese replaces Pat Gaskin
+
+**Status:** accepted
+
+New projects were arriving with **Pat Gaskin** (`641cb8d100053883a2499c4f0ac41735`) as a project
+user (PRTU, the Stakeholders list). After every New Project create the proxy now reconciles it:
+
+| Step | Behavior |
+| --- | --- |
+| Add | POST `PRTU` for Chris Calabrese `690946b90001f53ab97763a1753be08f` unless already present |
+| Owner | If Pat is the project owner, `ownerID` moves to Chris |
+| Remove | DELETE Pat's `PRTU` (only after Chris is added, so the list is never empty) |
+| Failure | Non-fatal, like Workstart: the project is kept and `stakeholders.error` is returned |
+| Config | `WORKFRONT_STAKEHOLDER_ID`, `WORKFRONT_REMOVE_STAKEHOLDER_IDS` (defaults above) |
+
+Applies to new requests only. Existing projects are not changed. This is a Workfront write against
+a project, still behind `WORKFRONT_LIVE_SUBMIT` and `confirmLive`. It supersedes the Pat Gaskin
+default from **058** only for stakeholders; the Workstart assignee was already moved to Chris in 059.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

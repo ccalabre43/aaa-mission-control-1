@@ -15,6 +15,10 @@ const DEFAULT_TEMPLATE_ID = "669e92cd00136878c607c40cf02e356c";
 const DEFAULT_WORKSTART_PROJECT_ID = "6afaae95029356651c144f998b870ea4";
 /** Default Workstart assignee: Chris Calabrese (ccalabrese@aaalife.com). Never VITE_*. */
 const DEFAULT_WORKSTART_ASSIGNEE_ID = "690946b90001f53ab97763a1753be08f";
+/** Default project stakeholder (PRTU) on every new request: Chris Calabrese. Never VITE_*. */
+const DEFAULT_STAKEHOLDER_ID = "690946b90001f53ab97763a1753be08f";
+/** Stakeholders removed from every new request: Pat Gaskin (PGaskin@aaalife.com). Never VITE_*. */
+const DEFAULT_REMOVED_STAKEHOLDER_IDS = ["641cb8d100053883a2499c4f0ac41735"];
 const DEFAULT_IMS_URL = "https://ims-na1.adobelogin.com/ims/token/v3";
 const DEFAULT_SCOPE =
   "openid,session,profile,AdobeID,additional_info.roles,read_organizations,additional_info.projectedProductContext";
@@ -55,6 +59,21 @@ function readConfig(env) {
     workstartAssigneeId: (
       env.WORKFRONT_WORKSTART_ASSIGNEE_ID || DEFAULT_WORKSTART_ASSIGNEE_ID
     ).trim(),
+    /**
+     * Project stakeholder added to every new project (Chris Calabrese). Never VITE_*.
+     */
+    stakeholderId: (env.WORKFRONT_STAKEHOLDER_ID || DEFAULT_STAKEHOLDER_ID).trim(),
+    /**
+     * Comma-separated user IDs removed from the new project's stakeholders (Pat Gaskin).
+     * Never VITE_*.
+     */
+    removedStakeholderIds: (
+      env.WORKFRONT_REMOVE_STAKEHOLDER_IDS === undefined
+        ? DEFAULT_REMOVED_STAKEHOLDER_IDS
+        : env.WORKFRONT_REMOVE_STAKEHOLDER_IDS.split(",")
+    )
+      .map((value) => value.trim())
+      .filter(Boolean),
     imsUrl: (env.WORKFRONT_IMS_URL || DEFAULT_IMS_URL).trim(),
     scope: (env.WORKFRONT_IMS_SCOPE || DEFAULT_SCOPE).trim(),
     liveSubmit: /^(1|true|yes)$/i.test((env.WORKFRONT_LIVE_SUBMIT || "").trim()),
@@ -447,6 +466,8 @@ module.exports = {
   DEFAULT_TEMPLATE_ID,
   DEFAULT_WORKSTART_PROJECT_ID,
   DEFAULT_WORKSTART_ASSIGNEE_ID,
+  DEFAULT_STAKEHOLDER_ID,
+  DEFAULT_REMOVED_STAKEHOLDER_IDS,
   readConfig,
   httpRequest,
   extractBearerToken,

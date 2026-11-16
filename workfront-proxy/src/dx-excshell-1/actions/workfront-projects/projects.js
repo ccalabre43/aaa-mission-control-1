@@ -156,6 +156,74 @@ async function ensureProjectsTabPlacement(config, token, projectId, expectedPort
 }
 
 /**
+ * Make Chris Calabrese the project stakeholder (PRTU) and remove Pat Gaskin.
+ * Chris is added first so the project is never left without a stakeholder. If Pat is the
+ * project owner, ownership moves to Chris as well.
+ *
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @param {string} projectId
+ * @returns {Promise<{
+ *   stakeholderID: string,
+ *   added: boolean,
+ *   removed: string[],
+ *   ownerChanged: boolean,
+ *   error?: string,
+ * }>}
+ */
+async function ensureProjectStakeholders(config, token, projectId) {
+  const stakeholderID = config.stakeholderId;
+  if (!stakeholderID) {
+    throw new Error("WORKFRONT_STAKEHOLDER_ID is not set.");
+  }
+  const removeIds = new Set(
+    config.removedStakeholderIds.filter((id) => id !== stakeholderID),
+  );
+
+  const readData = await workfrontApi(
+    config,
+    token,
+    `project/${encodeURIComponent(projectId)}?fields=${encodeURIComponent("ownerID,projectUsers:userID")}`,
+  );
+  const row = readData.data || readData;
+  const members = Array.isArray(row.projectUsers) ? row.projectUsers : [];
+
+  let added = false;
+  const hasStakeholder = members.some(
+    (member) => member && String(member.userID) === stakeholderID,
+  );
+  if (!hasStakeholder) {
+    await workfrontApi(config, token, "PRTU", {
+      method: "POST",
+      body: { projectID: projectId, userID: stakeholderID },
+    });
+    added = true;
+  }
+
+  let ownerChanged = false;
+  if (row.ownerID != null && removeIds.has(String(row.ownerID))) {
+    await workfrontApi(config, token, "PROJ", {
+      method: "PUT",
+      body: { ID: projectId, ownerID: stakeholderID },
+    });
+    ownerChanged = true;
+  }
+
+  /** @type {string[]} */
+  const removed = [];
+  for (const member of members) {
+    if (member && removeIds.has(String(member.userID)) && member.ID) {
+      await workfrontApi(config, token, `PRTU/${encodeURIComponent(String(member.ID))}`, {
+        method: "DELETE",
+      });
+      removed.push(String(member.userID));
+    }
+  }
+
+  return { stakeholderID, added, removed, ownerChanged };
+}
+
+/**
  * Create the default Workstart Task on the configured parent project, assigned to Chris Calabrese.
  *
  * @param {ReturnType<typeof readConfig>} config
@@ -270,6 +338,20 @@ async function runCreateProject(env, body, options = {}) {
       };
     }
 
+    /** @type {{ stakeholderID?: string, added?: boolean, removed?: string[], ownerChanged?: boolean, error?: string }} */
+    let stakeholders = {};
+    try {
+      stakeholders = await ensureProjectStakeholders(config, token, id);
+    } catch (stakeholderError) {
+      stakeholders = {
+        stakeholderID: config.stakeholderId,
+        error:
+          stakeholderError instanceof Error
+            ? stakeholderError.message
+            : "Stakeholder update failed.",
+      };
+    }
+
     /** @type {{ taskId?: string, taskUrl?: string, taskName?: string, assignedToID?: string, projectID?: string, error?: string }} */
     let workstart = {};
     try {
@@ -319,6 +401,7 @@ async function runCreateProject(env, body, options = {}) {
         objectType: "PROJ",
         customFormApplied: false,
         placement,
+        stakeholders,
         workstart,
         auth: authLabel(source),
       },
