@@ -35,7 +35,7 @@ These govern. When something else disagrees with one of these, these win.
 | `assets/mocks/reviewer-ux-flow.jpg` | 2026-09-16 | The reviewer state machine. Sprint 2 | active |
 | `assets/brand/AAAL-Brand-Visual-Style-Guide.pdf` | 2026-09-16 | Brand system, MAR 2025. Proprietary, internal use only | active |
 | `docs/knowledge/brand-system.md` | 2026-09-16 | The brand guide as actually implemented, with every ratio computed. Records six places the guide's own ADA guidance fails when measured | active |
-| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07; Vercel WF 048–051 / priority 052 / local Priority 053 2026-10-30; Brand portfolio health 056 2026-11-15 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
+| `docs/decisions/decision-log.md` | 2026-09-16; 037 Refresh upsert 2026-10-07; Vercel WF 048–051 / priority 052 / local Priority 053 2026-10-30; Brand portfolio health 056 / TEST PORTFOLIO create 057 2026-11-15 | Dated decisions, brand exceptions, guardrail changes, and open items | active |
 
 ## Requirements and flows
 
@@ -113,7 +113,8 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04; dual-write 2026-10-07; Refresh upsert 2026-10-07 | S2S + App Builder proxy; Task create/list; Refresh upserts into local queue (035–037) | active — Task dual-write; S2S Add Task ACL pending |
 | `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; Brand project cutover 055 2026-11-15 | Local Ready-to-send; Brand project-from-template; Priority local-only; Portfolio Apply order; Refresh Brand portfolio | active |
 | `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039; superseded for send path by 055) | historical — Task path |
-| `docs/knowledge/workfront-brand-project-acl.md` | 2026-11-15 | S2S Template + Brand portfolio ACL for project create (055); portfolio ID is not a queue project ID (056) | active — ACL pending admin |
+| `docs/knowledge/workfront-brand-project-acl.md` | 2026-11-15 | S2S Template + Brand portfolio ACL (055); superseded for Send landing by 057 | historical — Brand template path |
+| `docs/knowledge/workfront-test-portfolio-acl.md` | 2026-11-15 | S2S Manage on TEST PORTFOLIO - CHRIS for bare New Project create (057) | active — ACL pending admin |
 | `workfront-proxy/README.md` | 2026-10-04 | How to set Runtime secrets, deploy the health action, and run the local stand-in | active |
 | `.env.example` | 2026-09-16; proxy URL 2026-10-04 | `APP_BASE_PATH`, public `WORKFRONT_PROXY_URL`, and the standing warning about `VITE_`-prefixed secrets | active |
 | `vercel.json` | 2026-09-16 | Vercel rewrite, headers, caching. Repo root because that is where Vercel reads it | active |

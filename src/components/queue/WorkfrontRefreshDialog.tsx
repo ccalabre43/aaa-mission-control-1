@@ -1,5 +1,5 @@
 /**
- * Refresh-from-Workfront result dialog: Brand Team portfolio project inventory.
+ * Refresh-from-Workfront result dialog: TEST PORTFOLIO - CHRIS project inventory.
  * Layout from assets/mocks/workfront-refresh-modal.jpg (success title + centered blocks).
  */
 import { useEffect, useRef } from "react";
@@ -79,11 +79,11 @@ export function WorkfrontRefreshDialog({
             Refresh from Workfront: Complete
           </h2>
           <p className="aaa-refresh-dialog-section">
-            Workfront Brand Team portfolio projects
+            Workfront TEST PORTFOLIO - CHRIS projects
           </p>
           {issues.length === 0 ? (
             <p className="aaa-sent-dialog-copy">
-              No projects were returned from the Brand Team portfolio.
+              No projects were returned from TEST PORTFOLIO - CHRIS.
             </p>
           ) : (
             <ul className="aaa-refresh-dialog-list" role="list">

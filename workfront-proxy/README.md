@@ -1,110 +1,34 @@
-# Workfront proxy (health + Brand projects + documents)
+# Workfront proxy (health + New Projects + documents)
 
 Adobe App Builder Runtime actions that hold the Workfront OAuth Server-to-Server secret and expose
-health, Brand Team project create/list, and document upload for Mission Control. The Vite app never
-sees `client_secret`.
+health, New Project create/list in TEST PORTFOLIO - CHRIS, and document upload for Mission Control.
+The Vite app never sees `client_secret`.
 
-## Runtime setup (Developer Console)
+## Local setup
 
-1. On the **same** Adobe Developer Console project that has the Workfront S2S credential, enable
-   **Runtime** / App Builder if it is not already on.
-2. Set Runtime secrets (or `.env` used by `aio app deploy`) — never paste values into chat:
-
-   - `WORKFRONT_CLIENT_ID`
-   - `WORKFRONT_CLIENT_SECRET`
+1. Copy `.env.example` values into the repo-root `.env.workfront.local` (gitignored).
+2. Required for create:
+   - `WORKFRONT_CLIENT_ID` / `WORKFRONT_CLIENT_SECRET`
    - `WORKFRONT_HOST` = `https://aaalife.my.workfront.com`
    - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1` (health / legacy)
-   - `WORKFRONT_TEMPLATE_ID` = Email Creative Development TMPL id
-   - `WORKFRONT_BRAND_PORTFOLIO_ID` = Brand Team portfolio id
+   - `WORKFRONT_PORTFOLIO_ID` = TEST PORTFOLIO - CHRIS id (create + Refresh + Apply order)
    - `WORKFRONT_LIVE_SUBMIT` = `1` only when dual-write create is approved (kill switch)
-
-   **Rotate `WORKFRONT_CLIENT_SECRET` on first production publish** (and whenever a value has been pasted in chat): add a new secret in Developer Console, put only the new value in `.env.workfront.local` and in Runtime secrets, delete the old secret, then `npm run workfront:health`. Never paste secrets into chat. Never `VITE_*`.
-
-3. From this folder, with `@adobe/aio-cli` installed and logged in:
-
-   ```bash
-   aio app deploy
-   ```
-
-4. Point Mission Control at the deployed web action URL via `WORKFRONT_PROXY_URL` (repo-root build
-   env, **not** `VITE_`). Or leave it unset for local dev and use the Vite `/api/workfront` proxy.
-
-## Local verify (no aio required)
+3. From the repo root: `npm run workfront:proxy`
 
 ```bash
-# repo root — gitignored
-cp workfront-proxy/.env.example .env.workfront.local
-# fill CLIENT_ID + CLIENT_SECRET, or WORKFRONT_ACCESS_TOKEN for a short-lived local check
-
-npm run workfront:proxy
-# other terminal:
 curl -sS http://127.0.0.1:8787/health
-# expect connected + liveSubmit from WORKFRONT_LIVE_SUBMIT
-curl -sS http://127.0.0.1:8787/projects
-# list Brand Team portfolio projects (summary fields)
-```
+# projectCreateConfigured + createPortfolio.reachable when WORKFRONT_PORTFOLIO_ID is set
 
-One-shot without a long-running server:
-
-```bash
-npm run workfront:health
 npm run workfront:sample-project
+# bare New Project in TEST PORTFOLIO; Overview Description from the sample payload
+
+curl -sS http://127.0.0.1:8787/projects
+# list TEST PORTFOLIO projects (summary fields)
 ```
 
-Local routes: `GET /health`, `GET`/`POST /projects` (Brand create/list), `POST /documents`
-(uploads to Brand project Documents → Intake), `GET`/`POST /issues` (legacy Task path),
-`POST /priority` (Task urgency), `GET`/`POST /portfolio` (Portfolio Optimization order);
-live writes require kill switch + `confirmLive: true`.
+Local routes: `GET /health`, `GET`/`POST /projects` (New Project create/list), `POST /documents`
+(uploads to project Documents → Intake), `GET`/`POST /issues` (legacy Task path),
+`POST /priority` (Task urgency), `GET`/`POST /portfolio` (Portfolio Optimization order).
 
-If sample-project fails with *insufficient access*, share the Template and Brand portfolio with
-the S2S tech account — see `docs/knowledge/workfront-brand-project-acl.md`.
-
-If the request includes `Authorization: Bearer <IMS user token>`, that token is used for
-Workfront instead of S2S `client_credentials`. Responses include `auth: "bearer"` (or
-`client_credentials` / `access_token`). Never put the token in `VITE_*` or commit it.
-
-## Step 4 — run as Chris (local verify before ExC host)
-
-Full Path A hosts Mission Control inside Experience Cloud Shell. Until that host is wired,
-verify the Bearer path locally:
-
-1. From the **repo root**, with Vite + `npm run workfront:proxy` already running:
-
-   ```bash
-   npm run aio:login
-   ```
-
-   Sign in as **CCalabrese@aaalife.com** in the browser. The CLI prints an access token once —
-   **do not paste it into chat**.
-
-2. In Mission Control (`http://127.0.0.1:5173`), open DevTools → Console and run
-   (replace `PASTE` with the token; session only; clears when the tab closes):
-
-   ```js
-   sessionStorage.setItem("__mc_dev_ims__", "PASTE");
-   location.reload();
-   ```
-
-3. Summary → Submit to Workfront Que: confirm should say **signed-in Adobe identity** (or at
-   least not only S2S). Network on create should show `Authorization: Bearer` and the proxy
-   response `auth: "bearer"`.
-
-4. Production Path A still needs Mission Control as the ExC Shell `web-src` (`aio app run` /
-   deploy against Runtime `4374692-155tomatopeacock`) so the token comes from `@adobe/exc-app`
-   instead of step 2.
-
-## Response contract
-
-Success (health):
-
-```json
-{
-  "connected": true,
-  "liveSubmit": false,
-  "project": { "ID": "6abae2b600041e3ecb6a8da4dbe7b4a1", "name": "mission-control-v1" },
-  "auth": "client_credentials",
-  "host": "https://aaalife.my.workfront.com"
-}
-```
-
-Failure: HTTP 503, `{ "connected": false, "error": "..." }` — never includes tokens or secrets.
+If sample-project fails with *insufficient access*, share Manage on TEST PORTFOLIO - CHRIS with
+the S2S tech account — see `docs/knowledge/workfront-test-portfolio-acl.md`.

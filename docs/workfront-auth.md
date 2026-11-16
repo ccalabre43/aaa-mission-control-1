@@ -4,12 +4,13 @@
 the Email Creative Development template (decision 055) when the kill switch is on and the S2S ACL
 is granted; otherwise it stays local.**
 
-The Request Queue assembles a complete, valid Workfront payload. Live send posts it as a **Project**
-(name + Overview Description) into the Brand Team portfolio, superseding the earlier Task on
-`mission-control-v1`. Needed on the proxy: `WORKFRONT_TEMPLATE_ID`, `WORKFRONT_BRAND_PORTFOLIO_ID`,
-`WORKFRONT_LIVE_SUBMIT=1`. ACL steps: `docs/knowledge/workfront-brand-project-acl.md`. Health still
-proves reachability through `mission-control-v1` and reports `brandCreateConfigured`. Mission Control
-can ask **our** proxy whether Workfront is reachable, without ever holding `client_secret`.
+The Request Queue assembles a complete, valid Workfront payload. Live send posts it as a bare
+**New Project** (name + Overview Description) into TEST PORTFOLIO - CHRIS, superseding Task-on-
+`mission-control-v1` and Brand template landing. Needed on the proxy: `WORKFRONT_PORTFOLIO_ID`,
+`WORKFRONT_LIVE_SUBMIT=1`. ACL steps: `docs/knowledge/workfront-test-portfolio-acl.md`. Health still
+proves reachability through `mission-control-v1` and reports `projectCreateConfigured` plus
+`createPortfolio`. Mission Control can ask **our** proxy whether Workfront is reachable, without
+ever holding `client_secret`.
 
 Adopting Adobe Developer Console + App Builder Runtime is a **Vendor Management Policy consideration
 under guardrail 8**. No live third-party write without explicit approval (Step 6).

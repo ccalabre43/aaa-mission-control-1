@@ -230,11 +230,11 @@ reuse the `workfront-proxy` action modules (decision **048**):
 | Path | Role |
 | --- | --- |
 | `GET /api/workfront/health` | Connection badge on Request Queue |
-| `GET /api/workfront/projects` | Refresh Brand Team portfolio projects |
-| `POST /api/workfront/projects` | Live Brand project create when kill switch + `confirmLive` |
+| `GET /api/workfront/projects` | Refresh TEST PORTFOLIO - CHRIS projects |
+| `POST /api/workfront/projects` | Live New Project create when kill switch + `confirmLive` |
 | `GET /api/workfront/issues` | Legacy Task list (superseded for Refresh by `/projects`) |
 | `POST /api/workfront/issues` | Legacy Task create (superseded for Send by `/projects`) |
-| `POST /api/workfront/documents` | After Brand project create: upload to project Documents → Intake folder (3 MB raw cap; kill switch + `confirmLive`) |
+| `POST /api/workfront/documents` | After project create: upload to project Documents → Intake folder (3 MB raw cap; kill switch + `confirmLive`) |
 | `POST /api/workfront/priority` | Reserved for later Task urgency dual-write (UI unwired; decision 053) |
 | `GET /api/workfront/portfolio` | List projects in `WORKFRONT_PORTFOLIO_ID` with `portfolioPriority` |
 | `POST /api/workfront/portfolio` | Apply Portfolio Optimization order (kill switch + `confirmLive`) |
@@ -246,19 +246,18 @@ Never paste values into chat:
 - `WORKFRONT_CLIENT_SECRET`
 - `WORKFRONT_HOST` = `https://aaalife.my.workfront.com`
 - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1`
-- `WORKFRONT_PORTFOLIO_ID` = Portfolio ID for TEST PORTFOLIO - CHRIS (Executive Apply order)
-- `WORKFRONT_TEMPLATE_ID` = Email Creative Development TMPL id (not the Project URL id; decision 055)
-- `WORKFRONT_BRAND_PORTFOLIO_ID` = Brand Team portfolio id (Brand create + Refresh)
+- `WORKFRONT_PORTFOLIO_ID` = Portfolio ID for TEST PORTFOLIO - CHRIS (New Project create, Refresh, Apply order)
 - `WORKFRONT_LIVE_SUBMIT` = `1` only when dual-write create is approved
+- Optional / unused for create (decision 057): `WORKFRONT_TEMPLATE_ID`, `WORKFRONT_BRAND_PORTFOLIO_ID`
 
 Leave `WORKFRONT_PROXY_URL` unset for the Vercel build so the client stays on same-origin
 `/api/workfront` (CSP `connect-src 'self'`). Locally, Vite still proxies that path to
 `workfront-proxy` on `:8787`.
 
-After deploy: open `/deliverables`, confirm **Workfront: connected (Brand project create…)**
-(`proxy only` means the two Brand env vars are missing on the host), and that Refresh returns
+After deploy: open `/deliverables`, confirm **Workfront: connected (TEST PORTFOLIO reachable…)**
+(`proxy only` means `WORKFRONT_PORTFOLIO_ID` is missing on the host), and that Refresh returns
 `GET /api/workfront/projects` JSON (not HTML). `curl -sS https://<host>/api/workfront/health` should
-show `"brandCreateConfigured": true`.
+show `"projectCreateConfigured": true`.
 
 Adobe Runtime (`aio app deploy` + `WORKFRONT_PROXY_URL`) remains the App Builder path; see
 [workfront-proxy/README.md](../workfront-proxy/README.md).
@@ -270,6 +269,6 @@ Before the static app is published **or** `workfront-proxy` is deployed with `ai
 1. Adobe Developer Console → the Workfront OAuth Server-to-Server credential → **add a new client secret**.
 2. Put it in gitignored `.env.workfront.local` as `WORKFRONT_CLIENT_SECRET`. If Runtime or Vercel is going live, set the **same new** value as the hosted secret. Never `VITE_*`. Never paste it into chat.
 3. Delete the previous client secret in Console.
-4. Run `npm run workfront:health` (local) and/or `curl -sS https://<host>/api/workfront/health` and confirm `connected: true` (health still probes `mission-control-v1` for reachability; Brand readiness is `brandCreateConfigured`).
+4. Run `npm run workfront:health` (local) and/or `curl -sS https://<host>/api/workfront/health` and confirm `connected: true` (health still probes `mission-control-v1` for reachability; create readiness is `projectCreateConfigured` + `createPortfolio`).
 
 A secret that has appeared in a chat transcript is already exposed; rotate it as soon as practical, then confirm the rotated value at go-live. See [docs/workfront-auth.md](workfront-auth.md).

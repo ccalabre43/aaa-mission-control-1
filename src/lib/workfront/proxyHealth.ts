@@ -15,10 +15,10 @@ export interface WorkfrontProxyProject {
 }
 
 /**
- * Brand Team portfolio probe via project/search (not GET portfolio/<id>).
- * `reachable` proves list access only — not Template Use or portfolio Manage.
+ * Create/list portfolio probe via project/search (not GET portfolio/<id>).
+ * `reachable` proves list access only — not portfolio Manage.
  */
-export interface WorkfrontBrandPortfolioHealth {
+export interface WorkfrontCreatePortfolioHealth {
   id: string;
   reachable: boolean;
   projectCount: number;
@@ -27,10 +27,15 @@ export interface WorkfrontBrandPortfolioHealth {
   reason?: string;
 }
 
+/** @deprecated decision 057 — use WorkfrontCreatePortfolioHealth */
+export type WorkfrontBrandPortfolioHealth = WorkfrontCreatePortfolioHealth;
+
 export interface WorkfrontProxyHealth {
   connected: boolean;
   project?: WorkfrontProxyProject;
-  brandPortfolio?: WorkfrontBrandPortfolioHealth;
+  createPortfolio?: WorkfrontCreatePortfolioHealth;
+  /** @deprecated decision 057 — alias of createPortfolio */
+  brandPortfolio?: WorkfrontCreatePortfolioHealth;
   auth?: "client_credentials" | "access_token" | "bearer";
   host?: string;
   error?: string;
@@ -39,9 +44,11 @@ export interface WorkfrontProxyHealth {
    */
   liveSubmit: boolean;
   /**
-   * Proxy has both WORKFRONT_TEMPLATE_ID and WORKFRONT_BRAND_PORTFOLIO_ID set.
-   * Says nothing about S2S ACL; only that Brand create is configured.
+   * Proxy has WORKFRONT_PORTFOLIO_ID set (TEST PORTFOLIO - CHRIS).
+   * Says nothing about S2S Manage ACL; only that New Project create is configured.
    */
+  projectCreateConfigured: boolean;
+  /** @deprecated decision 057 — alias of projectCreateConfigured */
   brandCreateConfigured: boolean;
   /** Where the client called. Named so a negative result is auditable (guardrail 7). */
   endpoint: string;
@@ -89,6 +96,7 @@ export async function fetchWorkfrontHealth(
       return {
         connected: false,
         liveSubmit: false,
+        projectCreateConfigured: false,
         brandCreateConfigured: false,
         endpoint,
         error: `Proxy returned non-JSON (HTTP ${response.status}).`,
@@ -104,13 +112,18 @@ export async function fetchWorkfrontHealth(
         ? (projectRaw as WorkfrontProxyProject)
         : undefined;
 
-    const brandPortfolio = parseBrandPortfolio(data.brandPortfolio);
+    const createPortfolio =
+      parseCreatePortfolio(data.createPortfolio) ??
+      parseCreatePortfolio(data.brandPortfolio);
 
     const connected = data.connected === true && Boolean(project);
+    const projectCreateConfigured =
+      data.projectCreateConfigured === true || data.brandCreateConfigured === true;
     return {
       connected,
       project,
-      brandPortfolio,
+      createPortfolio,
+      brandPortfolio: createPortfolio,
       auth:
         data.auth === "client_credentials" ||
         data.auth === "access_token" ||
@@ -119,7 +132,8 @@ export async function fetchWorkfrontHealth(
           : undefined,
       host: typeof data.host === "string" ? data.host : undefined,
       liveSubmit: data.liveSubmit === true,
-      brandCreateConfigured: data.brandCreateConfigured === true,
+      projectCreateConfigured,
+      brandCreateConfigured: projectCreateConfigured,
       error:
         typeof data.error === "string"
           ? data.error
@@ -138,6 +152,7 @@ export async function fetchWorkfrontHealth(
     return {
       connected: false,
       liveSubmit: false,
+      projectCreateConfigured: false,
       brandCreateConfigured: false,
       endpoint,
       error: message,
@@ -145,7 +160,7 @@ export async function fetchWorkfrontHealth(
   }
 }
 
-function parseBrandPortfolio(raw: unknown): WorkfrontBrandPortfolioHealth | undefined {
+function parseCreatePortfolio(raw: unknown): WorkfrontCreatePortfolioHealth | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const row = raw as Record<string, unknown>;
   const sampleRaw = Array.isArray(row.sample) ? row.sample : [];

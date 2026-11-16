@@ -1,7 +1,8 @@
 /**
- * Create and list Brand Team Projects from the Email Creative Development template.
+ * Create and list New Projects in TEST PORTFOLIO - CHRIS (WORKFRONT_PORTFOLIO_ID).
+ * Create is a bare project (no template, no A3 parameterValues) — name + Overview Description.
  * Create requires WORKFRONT_LIVE_SUBMIT=1 and confirmLive: true.
- * List scopes to WORKFRONT_BRAND_PORTFOLIO_ID (never organization-wide).
+ * List scopes to WORKFRONT_PORTFOLIO_ID (never organization-wide).
  */
 
 "use strict";
@@ -11,7 +12,6 @@ const {
   resolveAccessToken,
   authLabel,
   workfrontApi,
-  toParameterValues,
 } = require("../workfront-shared/client");
 
 /**
@@ -23,31 +23,21 @@ function text(value) {
 
 /**
  * @param {Record<string, unknown>} payload
- * @param {{ templateId: string, brandPortfolioId: string }} ids
+ * @param {{ portfolioId: string }} ids
  */
 function validateCreatePayload(payload, ids) {
   const name = text(payload.name);
   if (!name) throw new Error("Project name is required.");
-  if (!ids.templateId) {
+  if (!ids.portfolioId) {
     throw new Error(
-      "WORKFRONT_TEMPLATE_ID is not set. Use the TMPL id behind the Email Creative Development pattern (not the Project URL id).",
-    );
-  }
-  if (!ids.brandPortfolioId) {
-    throw new Error(
-      "WORKFRONT_BRAND_PORTFOLIO_ID is not set. Add the Brand Team portfolio id to .env.workfront.local (never VITE_*).",
+      "WORKFRONT_PORTFOLIO_ID is not set. Add the TEST PORTFOLIO - CHRIS id to .env.workfront.local (never VITE_*).",
     );
   }
   return {
     name,
     description: text(payload.description),
     plannedCompletionDate: text(payload.plannedCompletionDate) || null,
-    templateID: ids.templateId,
-    portfolioID: ids.brandPortfolioId,
-    customForm:
-      payload.customForm && typeof payload.customForm === "object"
-        ? /** @type {Record<string, string>} */ (payload.customForm)
-        : {},
+    portfolioID: ids.portfolioId,
   };
 }
 
@@ -55,21 +45,16 @@ function validateCreatePayload(payload, ids) {
  * @param {ReturnType<typeof readConfig>} config
  * @param {string} token
  * @param {ReturnType<typeof validateCreatePayload>} validated
- * @param {boolean} withCustomForm
  */
-async function postProject(config, token, validated, withCustomForm) {
+async function postProject(config, token, validated) {
   /** @type {Record<string, unknown>} */
   const body = {
     name: validated.name,
     description: validated.description,
-    templateID: validated.templateID,
     portfolioID: validated.portfolioID,
   };
   if (validated.plannedCompletionDate) {
     body.plannedCompletionDate = validated.plannedCompletionDate;
-  }
-  if (withCustomForm && Object.keys(validated.customForm).length > 0) {
-    body.parameterValues = toParameterValues(validated.customForm);
   }
   return workfrontApi(config, token, "project", {
     method: "POST",
@@ -107,29 +92,20 @@ async function runCreateProject(env, body, options = {}) {
       body: {
         ok: false,
         error:
-          "confirmLive must be true. The UI must show the Brand project + Entered By disclosure first.",
+          "confirmLive must be true. The UI must show the New Project + Entered By disclosure first.",
       },
     };
   }
 
   try {
     const validated = validateCreatePayload(body, {
-      templateId: config.templateId,
-      brandPortfolioId: config.brandPortfolioId,
+      portfolioId: config.portfolioId,
     });
     const { token, source } = await resolveAccessToken(config, {
       bearerToken: options.bearerToken,
     });
 
-    let data;
-    let usedCustomForm = Object.keys(validated.customForm).length > 0;
-    try {
-      data = await postProject(config, token, validated, usedCustomForm);
-    } catch (firstError) {
-      if (!usedCustomForm) throw firstError;
-      data = await postProject(config, token, validated, false);
-      usedCustomForm = false;
-    }
+    const data = await postProject(config, token, validated);
 
     const project = data.data || data;
     const id = String(project.ID || project.id || "");
@@ -149,9 +125,8 @@ async function runCreateProject(env, body, options = {}) {
         projectUrl: url,
         url,
         portfolioID: validated.portfolioID,
-        templateID: validated.templateID,
         objectType: "PROJ",
-        customFormApplied: usedCustomForm,
+        customFormApplied: false,
         auth: authLabel(source),
       },
     };
@@ -159,9 +134,9 @@ async function runCreateProject(env, body, options = {}) {
     let message = error instanceof Error ? error.message : "Project create failed.";
     if (/sufficient access/i.test(message)) {
       message =
-        `${message} The S2S tech account needs View/Use on the Email Creative Development ` +
-        `Template (TMPL) and Manage on the Brand Team portfolio so projects can land there. ` +
-        `See docs/knowledge/workfront-brand-project-acl.md.`;
+        `${message} The S2S tech account needs Manage on TEST PORTFOLIO - CHRIS ` +
+        `(WORKFRONT_PORTFOLIO_ID) so a New Project can land there. ` +
+        `See docs/knowledge/workfront-test-portfolio-acl.md.`;
     }
     return {
       statusCode: 502,
@@ -175,7 +150,7 @@ async function runCreateProject(env, body, options = {}) {
 }
 
 /**
- * List Brand Team portfolio projects (summary fields only).
+ * List TEST PORTFOLIO - CHRIS projects (summary fields only).
  *
  * @param {Record<string, string | undefined>} env
  * @param {{ bearerToken?: string }} [options]
@@ -188,17 +163,17 @@ async function runListProjects(env, options = {}) {
 
   try {
     const config = readConfig(env);
-    if (!config.brandPortfolioId) {
+    if (!config.portfolioId) {
       return {
         statusCode: 400,
         headers,
         body: {
           ok: false,
           error:
-            "WORKFRONT_BRAND_PORTFOLIO_ID is not set. Add the Brand Team portfolio id to .env.workfront.local (never VITE_*).",
+            "WORKFRONT_PORTFOLIO_ID is not set. Add the TEST PORTFOLIO - CHRIS id to .env.workfront.local (never VITE_*).",
           projects: [],
           coverage:
-            "Brand Team project list skipped — brand portfolio ID not configured on the proxy.",
+            "TEST PORTFOLIO project list skipped — WORKFRONT_PORTFOLIO_ID not configured on the proxy.",
         },
       };
     }
@@ -216,7 +191,7 @@ async function runListProjects(env, options = {}) {
       "owner:name",
     ].join(",");
     const query = [
-      `portfolioID=${encodeURIComponent(config.brandPortfolioId)}`,
+      `portfolioID=${encodeURIComponent(config.portfolioId)}`,
       `fields=${encodeURIComponent(fields)}`,
       "$$LIMIT=100",
     ].join("&");
@@ -248,12 +223,12 @@ async function runListProjects(env, options = {}) {
       headers,
       body: {
         ok: true,
-        portfolioId: config.brandPortfolioId,
+        portfolioId: config.portfolioId,
         count: projects.length,
         projects,
         auth: authLabel(source),
         coverage:
-          `Workfront Brand Team portfolio ${config.brandPortfolioId}: ${projects.length} project` +
+          `Workfront TEST PORTFOLIO - CHRIS ${config.portfolioId}: ${projects.length} project` +
           `${projects.length === 1 ? "" : "s"} (summary fields). Not organization-wide; local briefs are a separate corpus.`,
       },
     };
@@ -265,7 +240,7 @@ async function runListProjects(env, options = {}) {
         ok: false,
         projects: [],
         coverage:
-          "Brand Team portfolio project search failed. Showing local Request Queue rows only.",
+          "TEST PORTFOLIO project search failed. Showing local Request Queue rows only.",
         error: error instanceof Error ? error.message : "Project list failed.",
       },
     };

@@ -1,5 +1,5 @@
 /**
- * Browser calls to the Workfront proxy (Brand project create/list, priority, portfolio).
+ * Browser calls to the Workfront proxy (New Project create/list, priority, portfolio).
  * Secrets stay on the proxy. Legacy `/issues` helpers remain for older callers.
  */
 
@@ -37,7 +37,7 @@ export interface WorkfrontCreatedProject {
   templateID?: string;
 }
 
-/** Summary row from Brand portfolio project list (or legacy Task list). */
+/** Summary row from TEST PORTFOLIO project list (or legacy Task list). */
 export interface WorkfrontRemoteIssue {
   ID: string;
   name: string;
@@ -84,7 +84,7 @@ export async function fetchWorkfrontIssues(
       coverage:
         typeof data.coverage === "string"
           ? data.coverage
-          : "Workfront Brand Team portfolio project search result.",
+          : "Workfront TEST PORTFOLIO project search result.",
       error: typeof data.error === "string" ? data.error : undefined,
       endpoint,
     };
@@ -93,7 +93,7 @@ export async function fetchWorkfrontIssues(
       ok: false,
       issues: [],
       coverage:
-        "Workfront Brand Team project search failed. Showing local Request Queue rows only.",
+        "Workfront TEST PORTFOLIO project search failed. Showing local Request Queue rows only.",
       error: error instanceof Error ? error.message : "Project list failed.",
       endpoint,
     };
@@ -149,13 +149,13 @@ export async function createWorkfrontProject(
       error:
         typeof data.error === "string"
           ? data.error
-          : `Brand project create failed (HTTP ${response.status}).`,
+          : `Project create failed (HTTP ${response.status}).`,
     };
   } catch (error) {
     return {
       ok: false,
       error:
-        error instanceof Error ? error.message : "Brand project create failed.",
+        error instanceof Error ? error.message : "Project create failed.",
     };
   }
 }
@@ -308,7 +308,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Uploads one file to a Brand Workfront Project Documents → Intake folder.
+ * Uploads one file to a Workfront Project Documents → Intake folder.
  * Optional taskId still mirrors onto a Task when provided (legacy).
  * Secrets stay on the proxy; the browser only sends base64 over the same-origin/local proxy.
  */

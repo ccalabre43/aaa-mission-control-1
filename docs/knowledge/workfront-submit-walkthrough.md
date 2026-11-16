@@ -1,19 +1,19 @@
 # How to submit a request (today) and what dual-write adds
 
-**Status:** walkthrough for Ready-to-send (local), dual-write **Brand Team Project** create from
-the Email Creative Development template, brief deciphering, and document upload to project
-Documents → **Intake** (`WORKFRONT_LIVE_SUBMIT=1`, decisions 035–036, **055**).
+**Status:** walkthrough for Ready-to-send (local), dual-write **New Project** create in
+TEST PORTFOLIO - CHRIS, brief deciphering, and document upload to project Documents → **Intake**
+(`WORKFRONT_LIVE_SUBMIT=1`, decisions 035–036, **057**).
 
-Task dual-write onto **mission-control-v1** is superseded by decision **055**.
+Task dual-write onto **mission-control-v1** is superseded by **055**; Brand template landing is
+superseded by **057**.
 
 ## Prerequisites
 
 1. `npm run dev` → http://localhost:5173/
 2. `npm run workfront:proxy` → http://127.0.0.1:8787/health
 3. Request queue badge: **Workfront: connected**
-4. **S2S tech account can create projects from the Email Creative Development Template and under
-   the Brand Team portfolio** — otherwise create fails with *insufficient access*.
-   Admin steps: [`workfront-brand-project-acl.md`](workfront-brand-project-acl.md).  
+4. **S2S tech account can create projects under TEST PORTFOLIO - CHRIS** — otherwise create fails
+   with *insufficient access*. Admin steps: [`workfront-test-portfolio-acl.md`](workfront-test-portfolio-acl.md).  
    Quick check: `npm run workfront:sample-project` (expects `"ok": true`).
 
 Without the proxy, health shows not connected. Credentials live only in gitignored
@@ -25,13 +25,11 @@ Without the proxy, health shows not connected. Credentials live only in gitignor
 
 | Layer | Workfront object | Mission Control role |
 | --- | --- | --- |
-| **Portfolio (Brand)** | Brand Team portfolio (`WORKFRONT_BRAND_PORTFOLIO_ID`) | Landing place for live Send / Accept creates; Refresh corpus |
-| **Portfolio (Executive)** | `TEST PORTFOLIO - CHRIS` (`WORKFRONT_PORTFOLIO_ID`) | Portfolio Optimization `#` / Apply order only |
-| **Template (TMPL)** | BIM Email Creative Development (`WORKFRONT_TEMPLATE_ID`) | Source of phases (Intake → Compliance) on create |
-| **Project** | New Brand project per intake | Created via `POST /projects` (`templateID` + `portfolioID` + name + description) |
+| **Portfolio (create + Refresh)** | `TEST PORTFOLIO - CHRIS` (`WORKFRONT_PORTFOLIO_ID`) | Landing place for live Send / Accept creates; Refresh corpus; Apply order |
+| **Project** | Bare New Project per intake | Created via `POST /projects` (`name` + `description` + `portfolioID`) |
 | **Documents** | New project Documents → **Intake** folder | Session files after create |
 
-### Documents placement (after Brand project create)
+### Documents placement (after New Project create)
 
 When session `File` binaries are available:
 
@@ -42,8 +40,8 @@ Proxy routes:
 
 | Path (local / Vercel) | Role |
 | --- | --- |
-| `POST /projects` / `POST /api/workfront/projects` | Create Brand project from template; kill switch + `confirmLive: true` |
-| `GET /projects` / `GET /api/workfront/projects` | List Brand portfolio projects (summary fields) for Refresh |
+| `POST /projects` / `POST /api/workfront/projects` | Create New Project in TEST PORTFOLIO; kill switch + `confirmLive: true` |
+| `GET /projects` / `GET /api/workfront/projects` | List TEST PORTFOLIO projects (summary fields) for Refresh |
 | `POST /documents` / `POST /api/workfront/documents` | Upload binary to project Intake folder; kill switch + `confirmLive: true`; raw file capped at 3 MB |
 
 Binary files never go into `localStorage`. They stay in an in-memory session map
@@ -91,10 +89,10 @@ onto the Context dropzone:
    if opening from a later browser session.
 5. Click **Accept — Send to Workfront** (or queue kebab **Send to WF**):
    - **Without** `WORKFRONT_LIVE_SUBMIT=1`: still local; honest “not sent” messaging.
-   - **With** kill switch on: confirm dialog (Brand project + Entered By + attachment readiness) →
-     proxy `POST /projects` creates a **Project** from the Email Creative Development template in
-     the Brand Team portfolio → Overview **Description** carries the intake summary → for each
-     session file, proxy `POST /documents` attaches to Documents → **Intake** →
+   - **With** kill switch on: confirm dialog (New Project in TEST PORTFOLIO + Entered By +
+     attachment readiness) → proxy `POST /projects` creates a bare **Project** in TEST PORTFOLIO -
+     CHRIS → name from intake summary → Overview **Description** carries the intake information →
+     for each session file, proxy `POST /documents` attaches to Documents → **Intake** →
      UI may show **Sent to Workfront: (WF Aligned)** only when a real Project ID is stored
      (storage key remains `workfront.issueId`). The sent dialog lists uploaded document names; a
      non-fatal document error still keeps the Project ID if create succeeded.
@@ -105,11 +103,11 @@ onto the Context dropzone:
 
 | Field | Value |
 | --- | --- |
-| Portfolio | Brand Team (`WORKFRONT_BRAND_PORTFOLIO_ID`) |
-| Template | Email Creative Development TMPL (`WORKFRONT_TEMPLATE_ID`) |
+| Portfolio | TEST PORTFOLIO - CHRIS (`WORKFRONT_PORTFOLIO_ID`) |
+| Template | None (bare New Project; decision 057) |
 | Object | Project (PROJ), not Task on mission-control-v1 |
 | Entered By | Signed-in Adobe user when a bearer is present; otherwise S2S tech account |
-| Requester | `A3IntakeRequestedBy` + description audit lines in Overview Description |
+| Requester | Description audit lines in Overview Description |
 | Documents | Project Documents → **Intake** folder (when session files uploaded) |
 
 If binaries were unavailable (reload), attachment **names** still ride in the project description /
@@ -143,21 +141,19 @@ Change the Priority select or Summary Override priority — values stay in this 
 
 ## Workfront admin checklist
 
-1. Confirm TMPL id `669e92cd00136878c607c40cf02e356c` (not the pattern Project URL id) and share it
-   with the S2S tech account — see [`workfront-brand-project-acl.md`](workfront-brand-project-acl.md).
-2. Share Brand Team portfolio `63fe29510080e44cc362ace791da828a` with Manage for the tech account.
-3. Set `WORKFRONT_TEMPLATE_ID`, `WORKFRONT_BRAND_PORTFOLIO_ID`, keep `WORKFRONT_PORTFOLIO_ID` for
-   TEST PORTFOLIO - CHRIS, and `WORKFRONT_LIVE_SUBMIT=1` only when dual-write is approved
-   (never `VITE_*`).
-4. After first live send, open the new project → **Overview → Description** and **Documents →
-   Intake**; confirm Brand Team Projects report filters include the new status.
-5. After Apply order, confirm `#` ranks in Portfolio Optimization match Mission Control.
+1. Share TEST PORTFOLIO - CHRIS `6aa167f4000304470fb9e879fb8bbd56` with **Manage** for the S2S
+   tech account — see [`workfront-test-portfolio-acl.md`](workfront-test-portfolio-acl.md).
+2. Set `WORKFRONT_PORTFOLIO_ID=6aa167f4000304470fb9e879fb8bbd56` and `WORKFRONT_LIVE_SUBMIT=1`
+   only when dual-write is approved (never `VITE_*`).
+3. After first live send, open the new project in TEST PORTFOLIO → **Overview → Description** and
+   **Documents → Intake**.
+4. After Apply order, confirm `#` ranks in Portfolio Optimization match Mission Control.
 
 ---
 
 ## Queue sync (pull)
 
-With the proxy up, Request queue can **Refresh from Workfront** to list projects in the Brand Team
-portfolio (summary fields) and **upsert them into this browser’s Request Queue** (Workfront wins on
+With the proxy up, Request queue can **Refresh from Workfront** to list projects in TEST PORTFOLIO -
+CHRIS (summary fields) and **upsert them into this browser’s Request Queue** (Workfront wins on
 match by Project ID / name). Coverage copy names that portfolio — never organization-wide. Local-only
 rows without a matching project are kept.

@@ -33,8 +33,8 @@ async function fetchProject(config, token) {
 }
 
 /**
- * Probes Brand Team portfolio reachability via project search (S2S often cannot
- * GET portfolio/<id> directly). Does not prove Template Use or portfolio Manage.
+ * Probes the create/list portfolio (TEST PORTFOLIO - CHRIS) via project search.
+ * S2S often cannot GET portfolio/<id> directly. Does not prove portfolio Manage.
  *
  * @param {ReturnType<typeof readConfig>} config
  * @param {string} token
@@ -47,8 +47,8 @@ async function fetchProject(config, token) {
  *   reason?: string,
  * }>}
  */
-async function probeBrandPortfolio(config, token) {
-  const id = config.brandPortfolioId;
+async function probeCreatePortfolio(config, token) {
+  const id = config.portfolioId;
   if (!id) {
     return {
       id: "",
@@ -56,7 +56,7 @@ async function probeBrandPortfolio(config, token) {
       projectCount: 0,
       sample: [],
       probed: "none",
-      reason: "WORKFRONT_BRAND_PORTFOLIO_ID is not set on the proxy.",
+      reason: "WORKFRONT_PORTFOLIO_ID is not set on the proxy.",
     };
   }
 
@@ -77,7 +77,7 @@ async function probeBrandPortfolio(config, token) {
       probed,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Brand portfolio probe failed.";
+    const message = error instanceof Error ? error.message : "Create portfolio probe failed.";
     return {
       id,
       reachable: false,
@@ -105,37 +105,45 @@ async function runHealth(env = process.env, options = {}) {
       bearerToken: options.bearerToken,
     });
     const project = await fetchProject(config, token);
-    const brandPortfolio = await probeBrandPortfolio(config, token);
+    const createPortfolio = await probeCreatePortfolio(config, token);
+    const projectCreateConfigured = Boolean(config.portfolioId);
     return {
       statusCode: 200,
       headers,
       body: {
         connected: true,
         project,
-        brandPortfolio,
+        createPortfolio,
+        /** @deprecated decision 057 — same as createPortfolio; kept for transitional clients */
+        brandPortfolio: createPortfolio,
         auth: authLabel(source),
         host: config.host,
         liveSubmit: config.liveSubmit,
-        brandCreateConfigured: Boolean(config.templateId && config.brandPortfolioId),
+        projectCreateConfigured,
+        /** @deprecated decision 057 — alias of projectCreateConfigured */
+        brandCreateConfigured: projectCreateConfigured,
       },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown health check failure.";
+    const emptyPortfolio = {
+      id: "",
+      reachable: false,
+      projectCount: 0,
+      sample: [],
+      probed: "none",
+      reason: "Health failed before the create portfolio probe ran.",
+    };
     return {
       statusCode: 503,
       headers,
       body: {
         connected: false,
         liveSubmit: false,
+        projectCreateConfigured: false,
         brandCreateConfigured: false,
-        brandPortfolio: {
-          id: "",
-          reachable: false,
-          projectCount: 0,
-          sample: [],
-          probed: "none",
-          reason: "Health failed before the Brand portfolio probe ran.",
-        },
+        createPortfolio: emptyPortfolio,
+        brandPortfolio: emptyPortfolio,
         error: message,
       },
     };
@@ -144,7 +152,7 @@ async function runHealth(env = process.env, options = {}) {
 
 module.exports = {
   runHealth,
-  probeBrandPortfolio,
+  probeCreatePortfolio,
   readConfig,
   DEFAULT_HOST,
   DEFAULT_PROJECT_ID,

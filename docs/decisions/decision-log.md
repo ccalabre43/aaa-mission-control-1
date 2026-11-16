@@ -1475,6 +1475,26 @@ Instead:
 
 See `docs/knowledge/workfront-brand-project-acl.md`.
 
+## 2026-11-15 - 057 - New Project create lands in TEST PORTFOLIO - CHRIS
+
+**Status:** accepted (architecture ships; live create gated by S2S Manage ACL + kill switch)
+
+Send / Accept create a bare **New Project** (no Email Creative template) in **TEST PORTFOLIO -
+CHRIS** (`6aa167f4000304470fb9e879fb8bbd56` via `WORKFRONT_PORTFOLIO_ID`). Project **name** is the
+intake summary (ALAN-prefixed when present). Overview **Description** carries the existing audit +
+labeled A3 payload format. A3 `parameterValues` are not posted.
+
+| Piece | Behavior |
+| --- | --- |
+| Create / Refresh list | `WORKFRONT_PORTFOLIO_ID` only |
+| Template / Brand portfolio env | Not required for create (055 Brand landing superseded for Send/Accept) |
+| Health | `projectCreateConfigured` + `createPortfolio` probe via `project/search` |
+| Kill switch / HITL | Unchanged (`WORKFRONT_LIVE_SUBMIT` + `confirmLive`) |
+| ACL runbook | `docs/knowledge/workfront-test-portfolio-acl.md` |
+
+Supersedes Brand Team + template landing from **055** for the reviewer send path. Executive Apply
+order continues to use the same portfolio ID.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

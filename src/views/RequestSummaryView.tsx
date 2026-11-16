@@ -249,12 +249,12 @@ export default function RequestSummaryView() {
         attachmentCount === 0
           ? "No supporting files are attached."
           : filesReady === attachmentCount
-            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Brand project Documents → Intake folder.`
+            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the new project Documents → Intake folder.`
             : `${filesReady} of ${attachmentCount} file${attachmentCount === 1 ? "" : "s"} ready in this browser session. Re-attach missing files below before sending, or names-only will be recorded.`;
       const confirmed = window.confirm(
         [
-          "Create a Brand Team project from the Email Creative Development template?",
-          "It will land in the Brand Team portfolio. Overview Description will contain the intake summary.",
+          "Create a New Project in TEST PORTFOLIO - CHRIS?",
+          "The project name comes from the intake summary. Overview Description will contain the intake information.",
           "",
           ...enteredByLines,
           "",
@@ -323,12 +323,12 @@ export default function RequestSummaryView() {
           documentError: result.documentError,
         });
         const docNote = result.uploadedDocuments?.length
-          ? ` Uploaded ${result.uploadedDocuments.length} document${result.uploadedDocuments.length === 1 ? "" : "s"} to the Brand project Documents → Intake folder.`
+          ? ` Uploaded ${result.uploadedDocuments.length} document${result.uploadedDocuments.length === 1 ? "" : "s"} to the project Documents → Intake folder.`
           : result.documentError
             ? ` Document upload issue: ${result.documentError}`
             : "";
         setStatusMessage(
-          `Marked Accepted. "${result.issueName}" created in Workfront as Brand Project ${result.issueId}. Saved in this browser with that ID.${docNote}`,
+          `Marked Accepted. "${result.issueName}" created in Workfront as Project ${result.issueId} in TEST PORTFOLIO - CHRIS. Saved in this browser with that ID.${docNote}`,
         );
       } else if (wantLive && result.liveError) {
         setStatusMessage(
@@ -663,7 +663,7 @@ export default function RequestSummaryView() {
           className="aaa-summary-payload"
         >
           <p className="aaa-panel-reason">
-            This is the A3 / Workfront Brand project payload (name + Overview Description). Local
+            This is the A3 / Workfront New Project payload (name + Overview Description). Local
             reviewer Status, Priority, Size, and Impact / Effort / Risk are not included.
             {sentDisplay.sent
               ? ` Linked Workfront Project: ${brief.workfront?.issueId}.`

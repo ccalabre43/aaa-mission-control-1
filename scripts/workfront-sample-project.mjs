@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * SAMPLE Brand Team project create against the local Workfront proxy.
- * Expects WORKFRONT_TEMPLATE_ID + WORKFRONT_BRAND_PORTFOLIO_ID on the proxy env.
+ * SAMPLE New Project create against the local Workfront proxy (TEST PORTFOLIO - CHRIS).
+ * Expects WORKFRONT_PORTFOLIO_ID + WORKFRONT_LIVE_SUBMIT=1 on the proxy env.
  * Never logs secrets. Exit 0 only when ok:true and a Project ID returns.
  *
  *   npm run workfront:sample-project
@@ -13,11 +13,10 @@ const BASE = (process.env.WORKFRONT_PROXY_TARGET || "http://127.0.0.1:8787").rep
 );
 
 const payload = {
-  name: "SAMPLE - Mission Control Brand project — delete me",
+  name: "SAMPLE - Mission Control New Project — delete me",
   description:
-    "Automated Brand Team project-create probe from Mission Control. Safe to delete in Workfront. Overview Description should show this text.",
+    "Automated TEST PORTFOLIO New Project probe from Mission Control. Safe to delete in Workfront.\n\n---\n\nProject Summary\nSample create from Mission Control\n\nBackground / Purpose\nOverview Description should show this labeled intake block intact.",
   confirmLive: true,
-  customForm: {},
 };
 
 const response = await fetch(`${BASE}/projects`, {
@@ -53,6 +52,7 @@ const summary = {
       : typeof data.url === "string"
         ? data.url
         : undefined,
+  portfolioID: typeof data.portfolioID === "string" ? data.portfolioID : undefined,
   auth: typeof data.auth === "string" ? data.auth : undefined,
   objectType: typeof data.objectType === "string" ? data.objectType : undefined,
   error: typeof data.error === "string" ? data.error : undefined,
@@ -67,7 +67,7 @@ if (summary.ok && summary.projectId) {
 
 if (summary.error && /sufficient access/i.test(summary.error)) {
   console.error(
-    "\nBrand project create still blocked (Template and/or Brand portfolio share). See docs/knowledge/workfront-brand-project-acl.md",
+    "\nNew Project create still blocked (TEST PORTFOLIO Manage share). See docs/knowledge/workfront-test-portfolio-acl.md",
   );
 }
 process.exit(1);

@@ -227,10 +227,11 @@ export function buildWorkfrontPayload(
 /**
  * Why this payload could not be transmitted. Empty means local routing alone would allow a send.
  *
- * Brand project create (decision 055) does not require mission-control queue topic or project IDs;
- * those stay in the description Path audit line. Live kill-switch, confirm, and the proxy's
- * Template / Brand portfolio config are checked at submit time when `options.live` is set. They are
- * not listed here so Ready-to-send saves are not punished for an administrator's off switch.
+ * New Project create in TEST PORTFOLIO - CHRIS (decision 057) does not require mission-control
+ * queue topic or project IDs; those stay in the description Path audit line. Live kill-switch,
+ * confirm, and the proxy's WORKFRONT_PORTFOLIO_ID are checked at submit time when `options.live`
+ * is set. They are not listed here so Ready-to-send saves are not punished for an administrator's
+ * off switch.
  */
 export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
   const blockers: string[] = [];
@@ -282,10 +283,10 @@ export interface WorkfrontSubmitOptions {
    * `confirmLive: true`. Ready-to-send flows leave this false.
    */
   live?: boolean;
-  /** Must be true for a live create. UI shows Brand project + Entered By disclosure first. */
+  /** Must be true for a live create. UI shows New Project + Entered By disclosure first. */
   confirmLive?: boolean;
   /**
-   * Session File binaries from `attachmentFileStore`. Uploaded after Brand project create via
+   * Session File binaries from `attachmentFileStore`. Uploaded after project create via
    * POST /documents onto the new Project Documents → Intake folder.
    * Names-only still ride on the payload when binaries are missing (reloaded session).
    */
