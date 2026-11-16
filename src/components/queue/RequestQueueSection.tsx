@@ -805,11 +805,18 @@ export function RequestQueueSection() {
             }
             title={
               health?.connected
-                ? `Proxy health OK via ${health.endpoint}${
+                ? [
+                    `Proxy health OK via ${health.endpoint}`,
+                    health.brandPortfolio?.reachable
+                      ? `Brand portfolio reachable via ${health.brandPortfolio.probed} (${health.brandPortfolio.projectCount} projects listed)`
+                      : health.brandPortfolio?.reason
+                        ? `Brand portfolio not reachable: ${health.brandPortfolio.reason}`
+                        : "Brand portfolio not probed",
                     health.brandCreateConfigured
-                      ? "; Brand template + portfolio configured"
-                      : "; Brand template/portfolio env not set on proxy"
-                  }${health.liveSubmit ? "; live submit on" : "; live submit off"}`
+                      ? "Brand template + portfolio env set (Template Use / portfolio Manage not verified)"
+                      : "Brand template/portfolio env not set on proxy",
+                    health.liveSubmit ? "live submit on" : "live submit off",
+                  ].join("; ")
                 : health?.error
                   ? `${health.error} (checked ${health.endpoint})`
                   : "Checking the Workfront proxy…"
@@ -818,7 +825,11 @@ export function RequestQueueSection() {
             <span className="aaa-queue-connection-dot" aria-hidden="true" />
             {health?.connected
               ? `Workfront: connected (${
-                  health.brandCreateConfigured ? "Brand project create" : "proxy only"
+                  health.brandPortfolio?.reachable
+                    ? `Brand portfolio reachable (${health.brandPortfolio.projectCount} projects)`
+                    : health.brandCreateConfigured
+                      ? "Brand project create"
+                      : "proxy only"
                 }${health.liveSubmit ? "; live submit on" : ""})`
               : health === null
                 ? "Workfront: checking…"

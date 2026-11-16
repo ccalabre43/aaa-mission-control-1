@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | Pattern URL object | `6ae251e20006bc4078d76f88518f32e8` | **PROJ** named `BIM \| EMAIL CREATIVE DEVELOPMENT TEMPLATE - Project` (not a Setup Template) |
 | Real Template (TMPL) | `669e92cd00136878c607c40cf02e356c` | On the PROJ as `templateID`. S2S **cannot view** this Template yet |
-| Brand Team portfolio | `63fe29510080e44cc362ace791da828a` | `project/search?portfolioID=` works; direct Portfolio view and assign **fail** (insufficient access) |
+| Brand Team portfolio | `63fe29510080e44cc362ace791da828a` | **Portfolio**, not a project. Do not set as `WORKFRONT_PROJECT_ID` / queue `workfrontProjectID` — health would call `project/<id>` and fail. `project/search?portfolioID=` works (health uses this); direct Portfolio view and assign **fail** (insufficient access) |
 | Bare `POST project` + `description` | n/a | **Works** — Overview Description can be set on create |
 | `POST project` with `templateID` + `portfolioID` | n/a | **Fails** until Template View/Use and Brand portfolio Manage are granted |
 

@@ -1454,6 +1454,27 @@ path. Sample probe: `npm run workfront:sample-project`.
 - Hosts: Vercel needs `WORKFRONT_TEMPLATE_ID` and `WORKFRONT_BRAND_PORTFOLIO_ID` (documented in
   `docs/deployment.md`); Runtime inputs already listed in `ext.config.yaml`.
 
+## 2026-11-15 - 056 - Brand portfolio connection check (not a queue project ID swap)
+
+**Status:** accepted
+
+A request to change the mission-control-v1 queue Workfront project ID from
+`6abae2b600041e3ecb6a8da4dbe7b4a1` to `63fe29510080e44cc362ace791da828a` was declined as a literal
+swap. That second ID is the **Brand Team portfolio** (already `WORKFRONT_BRAND_PORTFOLIO_ID`), not a
+project. `GET project/63fe2951…` returns not found; `GET portfolio/63fe2951…` returns insufficient
+access for the S2S account.
+
+Instead:
+
+| Piece | Behavior |
+| --- | --- |
+| Queue `workfrontProjectID` / `WORKFRONT_PROJECT_ID` | Unchanged — still mission-control-v1 |
+| Health | Keeps `project/<WORKFRONT_PROJECT_ID>`; adds `brandPortfolio` via `project/search?portfolioID=` |
+| Badge | Shows "Brand portfolio reachable (N projects)" when the search succeeds |
+| Coverage claim | Read reachability only — does not verify Template Use or portfolio Manage |
+
+See `docs/knowledge/workfront-brand-project-acl.md`.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

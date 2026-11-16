@@ -152,15 +152,82 @@ test("list refuses to run without a brand portfolio id", async () => {
 });
 
 test("health reports whether brand create is configured", async () => {
-  const stub = stubFetch(() => ({
-    status: 200,
-    body: { data: { ID: "proj-queue", name: "mission-control-v1" } },
-  }));
+  const stub = stubFetch((url) => {
+    if (url.includes("project/search")) {
+      return {
+        status: 200,
+        body: { data: [{ ID: "p1", name: "One" }] },
+      };
+    }
+    return {
+      status: 200,
+      body: { data: { ID: "proj-queue", name: "mission-control-v1" } },
+    };
+  });
   try {
     const on = await runHealth(BASE_ENV);
     assert.equal(on.body.brandCreateConfigured, true);
     const off = await runHealth({ ...BASE_ENV, WORKFRONT_TEMPLATE_ID: "" });
     assert.equal(off.body.brandCreateConfigured, false);
+  } finally {
+    stub.restore();
+  }
+});
+
+test("health reports Brand portfolio reachable via project search", async () => {
+  const stub = stubFetch((url) => {
+    if (url.includes("project/search")) {
+      return {
+        status: 200,
+        body: {
+          data: [
+            { ID: "bp1", name: "Brand One" },
+            { ID: "bp2", name: "Brand Two" },
+            { ID: "bp3", name: "Brand Three" },
+          ],
+        },
+      };
+    }
+    return {
+      status: 200,
+      body: { data: { ID: "proj-queue", name: "mission-control-v1" } },
+    };
+  });
+  try {
+    const result = await runHealth(BASE_ENV);
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.body.connected, true);
+    assert.equal(result.body.brandPortfolio.reachable, true);
+    assert.equal(result.body.brandPortfolio.id, "port-brand");
+    assert.equal(result.body.brandPortfolio.projectCount, 3);
+    assert.match(result.body.brandPortfolio.probed, /portfolioID=port-brand/);
+    const search = stub.calls.find((c) => c.url.includes("project/search"));
+    assert.ok(search, "expected project/search Brand portfolio probe");
+  } finally {
+    stub.restore();
+  }
+});
+
+test("health keeps queue project connected when Brand portfolio probe fails", async () => {
+  const stub = stubFetch((url) => {
+    if (url.includes("project/search")) {
+      return {
+        status: 403,
+        body: { error: { message: "You do not have sufficient access to view this Portfolio" } },
+      };
+    }
+    return {
+      status: 200,
+      body: { data: { ID: "proj-queue", name: "mission-control-v1" } },
+    };
+  });
+  try {
+    const result = await runHealth(BASE_ENV);
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.body.connected, true);
+    assert.equal(result.body.project.name, "mission-control-v1");
+    assert.equal(result.body.brandPortfolio.reachable, false);
+    assert.match(result.body.brandPortfolio.reason, /sufficient access|Workfront API failed/i);
   } finally {
     stub.restore();
   }

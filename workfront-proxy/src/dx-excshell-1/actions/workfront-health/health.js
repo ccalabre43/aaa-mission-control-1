@@ -33,6 +33,63 @@ async function fetchProject(config, token) {
 }
 
 /**
+ * Probes Brand Team portfolio reachability via project search (S2S often cannot
+ * GET portfolio/<id> directly). Does not prove Template Use or portfolio Manage.
+ *
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @returns {Promise<{
+ *   id: string,
+ *   reachable: boolean,
+ *   projectCount: number,
+ *   sample: Array<{ ID: string, name: string }>,
+ *   probed: string,
+ *   reason?: string,
+ * }>}
+ */
+async function probeBrandPortfolio(config, token) {
+  const id = config.brandPortfolioId;
+  if (!id) {
+    return {
+      id: "",
+      reachable: false,
+      projectCount: 0,
+      sample: [],
+      probed: "none",
+      reason: "WORKFRONT_BRAND_PORTFOLIO_ID is not set on the proxy.",
+    };
+  }
+
+  const probed = `project/search?portfolioID=${id}&fields=ID,name&$$LIMIT=5`;
+  try {
+    const data = await workfrontApi(config, token, probed);
+    const rows = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+    const sample = rows.slice(0, 5).map((row) => ({
+      ID: String(row.ID || row.id || ""),
+      name: String(row.name || ""),
+    })).filter((row) => row.ID);
+
+    return {
+      id,
+      reachable: true,
+      projectCount: sample.length,
+      sample,
+      probed,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Brand portfolio probe failed.";
+    return {
+      id,
+      reachable: false,
+      projectCount: 0,
+      sample: [],
+      probed,
+      reason: message,
+    };
+  }
+}
+
+/**
  * @param {Record<string, string | undefined>} [env]
  * @param {{ bearerToken?: string }} [options]
  */
@@ -48,12 +105,14 @@ async function runHealth(env = process.env, options = {}) {
       bearerToken: options.bearerToken,
     });
     const project = await fetchProject(config, token);
+    const brandPortfolio = await probeBrandPortfolio(config, token);
     return {
       statusCode: 200,
       headers,
       body: {
         connected: true,
         project,
+        brandPortfolio,
         auth: authLabel(source),
         host: config.host,
         liveSubmit: config.liveSubmit,
@@ -69,6 +128,14 @@ async function runHealth(env = process.env, options = {}) {
         connected: false,
         liveSubmit: false,
         brandCreateConfigured: false,
+        brandPortfolio: {
+          id: "",
+          reachable: false,
+          projectCount: 0,
+          sample: [],
+          probed: "none",
+          reason: "Health failed before the Brand portfolio probe ran.",
+        },
         error: message,
       },
     };
@@ -77,6 +144,7 @@ async function runHealth(env = process.env, options = {}) {
 
 module.exports = {
   runHealth,
+  probeBrandPortfolio,
   readConfig,
   DEFAULT_HOST,
   DEFAULT_PROJECT_ID,

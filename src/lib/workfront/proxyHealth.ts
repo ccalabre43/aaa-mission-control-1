@@ -14,9 +14,23 @@ export interface WorkfrontProxyProject {
   name: string;
 }
 
+/**
+ * Brand Team portfolio probe via project/search (not GET portfolio/<id>).
+ * `reachable` proves list access only — not Template Use or portfolio Manage.
+ */
+export interface WorkfrontBrandPortfolioHealth {
+  id: string;
+  reachable: boolean;
+  projectCount: number;
+  sample: WorkfrontProxyProject[];
+  probed: string;
+  reason?: string;
+}
+
 export interface WorkfrontProxyHealth {
   connected: boolean;
   project?: WorkfrontProxyProject;
+  brandPortfolio?: WorkfrontBrandPortfolioHealth;
   auth?: "client_credentials" | "access_token" | "bearer";
   host?: string;
   error?: string;
@@ -90,10 +104,13 @@ export async function fetchWorkfrontHealth(
         ? (projectRaw as WorkfrontProxyProject)
         : undefined;
 
+    const brandPortfolio = parseBrandPortfolio(data.brandPortfolio);
+
     const connected = data.connected === true && Boolean(project);
     return {
       connected,
       project,
+      brandPortfolio,
       auth:
         data.auth === "client_credentials" ||
         data.auth === "access_token" ||
@@ -126,4 +143,29 @@ export async function fetchWorkfrontHealth(
       error: message,
     };
   }
+}
+
+function parseBrandPortfolio(raw: unknown): WorkfrontBrandPortfolioHealth | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const row = raw as Record<string, unknown>;
+  const sampleRaw = Array.isArray(row.sample) ? row.sample : [];
+  const sample: WorkfrontProxyProject[] = [];
+  for (const item of sampleRaw) {
+    if (
+      item &&
+      typeof item === "object" &&
+      typeof (item as WorkfrontProxyProject).ID === "string" &&
+      typeof (item as WorkfrontProxyProject).name === "string"
+    ) {
+      sample.push(item as WorkfrontProxyProject);
+    }
+  }
+  return {
+    id: typeof row.id === "string" ? row.id : "",
+    reachable: row.reachable === true,
+    projectCount: typeof row.projectCount === "number" ? row.projectCount : sample.length,
+    sample,
+    probed: typeof row.probed === "string" ? row.probed : "none",
+    reason: typeof row.reason === "string" ? row.reason : undefined,
+  };
 }
