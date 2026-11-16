@@ -143,6 +143,7 @@ export function PortfolioOrderPanel() {
         `Apply Portfolio Optimization order for ${ranks.length} project${ranks.length === 1 ? "" : "s"}?`,
         "",
         "This writes project portfolioPriority (the # column in Portfolio Optimization), not Task urgency (P1–P3).",
+        "Every listed project receives a rank and appears on the Optimization tab. Queue Send does not rank projects.",
       ].join("\n"),
     );
     if (!confirmed) {

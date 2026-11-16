@@ -1,5 +1,5 @@
 /**
- * Unit tests for TEST PORTFOLIO New Project create/list (decision 057).
+ * Unit tests for TEST PORTFOLIO New Project-from-template create/list (decisions 057–059).
  * No network: global fetch is stubbed for IMS + Workfront. Run: npm run test:workfront-projects
  */
 import assert from "node:assert/strict";
@@ -70,10 +70,24 @@ test("create fails clearly when WORKFRONT_PORTFOLIO_ID is missing", async () => 
   assert.match(result.body.error, /WORKFRONT_PORTFOLIO_ID/);
 });
 
-test("create posts bare name + description + portfolioID without template", async () => {
-  const stub = stubFetch((url) => {
+test("create posts name + description + portfolioID + Email Creative template", async () => {
+  const stub = stubFetch((url, init) => {
     if (url.includes("/TASK") || url.endsWith("/TASK")) {
       return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if ((init.method || "GET") === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "CUR",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            portfolioPriority: null,
+            selectedOnPortfolioOptimizer: false,
+          },
+        },
+      };
     }
     return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
   });
@@ -88,11 +102,15 @@ test("create posts bare name + description + portfolioID without template", asyn
     assert.equal(result.body.ok, true);
     assert.equal(result.body.projectId, "new-proj");
     assert.equal(result.body.objectType, "PROJ");
+    assert.equal(result.body.templateID, "669e92cd00136878c607c40cf02e356c");
     assert.equal(result.body.customFormApplied, false);
     assert.match(result.body.projectUrl, /project\/view\?ID=new-proj/);
+    assert.equal(result.body.placement.status, "CUR");
+    assert.equal(result.body.placement.onOptimizer, false);
+    assert.deepEqual(result.body.placement.normalized, []);
     assert.equal(result.body.workstart.taskId, "workstart-task");
     assert.equal(result.body.workstart.taskName, "Workstart");
-    assert.equal(result.body.workstart.assignedToID, "641cb8d100053883a2499c4f0ac41735");
+    assert.equal(result.body.workstart.assignedToID, "690946b90001f53ab97763a1753be08f");
     assert.equal(result.body.workstart.projectID, "6afa92ea025f5c90f681bf8ad1cc522a");
 
     const post = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/project"));
@@ -102,7 +120,7 @@ test("create posts bare name + description + portfolioID without template", asyn
     assert.equal(sent.description, "Intake summary text");
     assert.equal(sent.portfolioID, "6aa167f4000304470fb9e879fb8bbd56");
     assert.equal(sent.status, "CUR");
-    assert.equal(sent.templateID, undefined);
+    assert.equal(sent.templateID, "669e92cd00136878c607c40cf02e356c");
     assert.equal(sent.parameterValues, undefined);
 
     const taskPost = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/TASK"));
@@ -110,7 +128,7 @@ test("create posts bare name + description + portfolioID without template", asyn
     const taskSent = JSON.parse(String(taskPost.body));
     assert.equal(taskSent.name, "Workstart");
     assert.equal(taskSent.projectID, "6afa92ea025f5c90f681bf8ad1cc522a");
-    assert.equal(taskSent.assignedToID, "641cb8d100053883a2499c4f0ac41735");
+    assert.equal(taskSent.assignedToID, "690946b90001f53ab97763a1753be08f");
     assert.match(taskSent.description, /ALAN-1 - Flyer/);
     assert.equal(JSON.stringify(result.body).includes("test-secret"), false);
   } finally {
@@ -118,12 +136,77 @@ test("create posts bare name + description + portfolioID without template", asyn
   }
 });
 
+test("create normalizes QUE status to CUR for Projects tab", async () => {
+  const stub = stubFetch((url, init) => {
+    if (url.includes("/TASK") || url.endsWith("/TASK")) {
+      return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if ((init.method || "GET") === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "QUE",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            portfolioPriority: null,
+            selectedOnPortfolioOptimizer: true,
+          },
+        },
+      };
+    }
+    if ((init.method || "GET") === "PUT" && (url.endsWith("/PROJ") || url.includes("/PROJ"))) {
+      return { status: 200, body: { data: { ID: "new-proj", status: "CUR" } } };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
+  try {
+    const result = await runCreateProject(BASE_ENV, {
+      name: "ALAN-1 - Flyer",
+      description: "Intake summary text",
+      confirmLive: true,
+    });
+    assert.equal(result.statusCode, 201);
+    assert.equal(result.body.placement.status, "CUR");
+    assert.equal(result.body.placement.onOptimizer, false);
+    assert.ok(
+      result.body.placement.normalized.includes("status:QUE->CUR"),
+      JSON.stringify(result.body.placement.normalized),
+    );
+    assert.ok(
+      result.body.placement.normalized.includes(
+        "selectedOnPortfolioOptimizer:true->false",
+      ),
+    );
+    const put = stub.calls.find((c) => c.method === "PUT");
+    assert.ok(put, "expected PUT to normalize placement");
+    const putBody = JSON.parse(String(put.body));
+    assert.equal(putBody.status, "CUR");
+    assert.equal(putBody.selectedOnPortfolioOptimizer, false);
+  } finally {
+    stub.restore();
+  }
+});
+
 test("create keeps New Project when Workstart Task fails", async () => {
-  const stub = stubFetch((url) => {
+  const stub = stubFetch((url, init) => {
     if (url.includes("/TASK") || url.endsWith("/TASK")) {
       return {
         status: 403,
         body: { error: { message: "You do not have sufficient access to add this Task" } },
+      };
+    }
+    if ((init.method || "GET") === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "CUR",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            selectedOnPortfolioOptimizer: false,
+          },
+        },
       };
     }
     return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
@@ -153,6 +236,7 @@ test("create surfaces an ACL error with the TEST PORTFOLIO runbook pointer", asy
     assert.equal(result.statusCode, 502);
     assert.match(result.body.error, /sufficient access/);
     assert.match(result.body.error, /workfront-test-portfolio-acl\.md/);
+    assert.match(result.body.error, /EMAIL CREATIVE|workfront-brand-project-acl\.md/);
   } finally {
     stub.restore();
   }

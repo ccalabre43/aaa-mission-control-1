@@ -1525,6 +1525,58 @@ Sample create returned New Project `6afa994b05ef52d80b3aaf62579854fe` plus Works
 `6afa994c02b3a8ac71ff24e4c6b5477a` on `6afa92ea…`, `assignedToID` Pat Gaskin. Both sample objects
 are safe to delete in Workfront.
 
+## 2026-11-16 - 059 - New Project from Email Creative template + Workstart → Chris
+
+**Status:** accepted (live sample verified same day)
+
+Send / Accept create a **New Project from Template** using **BIM | EMAIL CREATIVE DEVELOPMENT
+TEMPLATE** (`669e92cd00136878c607c40cf02e356c`) into **TEST PORTFOLIO - CHRIS**
+(`WORKFRONT_PORTFOLIO_ID`), status `CUR`. Overview Description still carries the intake audit block.
+A3 `parameterValues` are not posted.
+
+Workstart dual-write (**058**) continues on project `6afa92ea…`, with Assignments defaulting to
+**Chris Calabrese** (`690946b90001f53ab97763a1753be08f` / `CCalabrese@aaalife.com`), superseding the
+Pat Gaskin default from **058**.
+
+| Piece | Behavior |
+| --- | --- |
+| Template | `WORKFRONT_TEMPLATE_ID` (default `669e92cd…`) |
+| Landing portfolio | TEST PORTFOLIO - CHRIS (not Brand portfolio) |
+| Workstart assignee | Chris Calabrese |
+| Auth | S2S tech account; Pat/admin shares Template with techacct |
+| ACL | Template View/Use — see `workfront-brand-project-acl.md` |
+
+Supersedes bare create from **057** for the Send path. Brand portfolio env remains unused for Send.
+
+### 059 live verify (same day)
+
+Sample create returned Project `6afaa05d027756d5d2fc8ad61a7ac15c` with `templateID` `669e92cd…`
+plus Workstart Task `6afaa05e05febc1b3d8af212895ef73c` assigned to Chris. Both sample objects are
+safe to delete in Workfront.
+
+## 2026-11-16 - 060 - Queue creates stay on Projects tab (not Optimization)
+
+**Status:** accepted
+
+Queue Send creates a Current project (`status: CUR`) in TEST PORTFOLIO - CHRIS and does **not**
+write `portfolioPriority`. After create, the proxy reads back `status` /
+`selectedOnPortfolioOptimizer` and normalizes to CUR + off-optimizer when needed. Response includes
+`placement`. The Sent dialog states Projects-tab placement.
+
+Only Executive **Apply order** writes ranks and puts projects on the Optimization tab. Existing
+ranks are not cleared by this change.
+
+| Piece | Behavior |
+| --- | --- |
+| Create | `portfolioID` + template + `CUR`, no rank |
+| Readback | Normalize QUE→CUR; clear unranked optimizer flag |
+| Optimization | Apply order only |
+
+### 060 live verify (same day)
+
+Sample Project `6afaa46a0606c5d972a42ca25899c686` returned `placement.status: CUR`,
+`onOptimizer: false`, empty `normalized`. Safe to delete in Workfront.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

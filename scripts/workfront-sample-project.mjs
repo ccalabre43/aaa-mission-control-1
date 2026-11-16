@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * SAMPLE New Project create against the local Workfront proxy (TEST PORTFOLIO - CHRIS).
- * Expects WORKFRONT_PORTFOLIO_ID + WORKFRONT_LIVE_SUBMIT=1 on the proxy env.
+ * SAMPLE New Project from Email Creative template against the local Workfront proxy
+ * (TEST PORTFOLIO - CHRIS). Expects WORKFRONT_PORTFOLIO_ID + WORKFRONT_LIVE_SUBMIT=1
+ * (WORKFRONT_TEMPLATE_ID defaults to BIM Email Creative TMPL).
  * Never logs secrets. Exit 0 only when ok:true and a Project ID returns.
  *
  *   npm run workfront:sample-project
@@ -53,6 +54,9 @@ const summary = {
         ? data.url
         : undefined,
   portfolioID: typeof data.portfolioID === "string" ? data.portfolioID : undefined,
+  templateID: typeof data.templateID === "string" ? data.templateID : undefined,
+  placement:
+    data.placement && typeof data.placement === "object" ? data.placement : undefined,
   workstart:
     data.workstart && typeof data.workstart === "object" ? data.workstart : undefined,
   auth: typeof data.auth === "string" ? data.auth : undefined,

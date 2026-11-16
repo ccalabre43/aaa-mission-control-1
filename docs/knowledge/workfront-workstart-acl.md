@@ -1,4 +1,4 @@
-# Workstart Task ACL (decision 058)
+# Workstart Task ACL (decisions 058 / 059)
 
 After each New Project create in **TEST PORTFOLIO - CHRIS**, Mission Control creates a Task named
 **Workstart** on:
@@ -7,7 +7,7 @@ After each New Project create in **TEST PORTFOLIO - CHRIS**, Mission Control cre
 | --- | --- |
 | Parent project | `6afa92ea025f5c90f681bf8ad1cc522a` (Communications effort via poster and email) |
 | Task name | `Workstart` |
-| Assignments | Pat Gaskin (`641cb8d100053883a2499c4f0ac41735`, `PGaskin@aaalife.com`) |
+| Assignments | Chris Calabrese (`690946b90001f53ab97763a1753be08f`, `CCalabrese@aaalife.com`) |
 
 ## Required S2S access
 

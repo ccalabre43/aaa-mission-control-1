@@ -248,7 +248,7 @@ Never paste values into chat:
 - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1`
 - `WORKFRONT_PORTFOLIO_ID` = Portfolio ID for TEST PORTFOLIO - CHRIS (New Project create, Refresh, Apply order)
 - `WORKFRONT_LIVE_SUBMIT` = `1` only when dual-write create is approved
-- Optional / unused for create (decision 057): `WORKFRONT_TEMPLATE_ID`, `WORKFRONT_BRAND_PORTFOLIO_ID`
+- Create from template (decision 059): `WORKFRONT_TEMPLATE_ID` (defaults to BIM Email Creative TMPL). Optional / unused for Send landing: `WORKFRONT_BRAND_PORTFOLIO_ID`
 
 Leave `WORKFRONT_PROXY_URL` unset for the Vercel build so the client stays on same-origin
 `/api/workfront` (CSP `connect-src 'self'`). Locally, Vite still proxies that path to

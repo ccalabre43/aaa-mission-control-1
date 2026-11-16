@@ -1,6 +1,6 @@
 /**
  * Create and list New Projects in TEST PORTFOLIO - CHRIS (WORKFRONT_PORTFOLIO_ID).
- * Create is a bare project (no template, no A3 parameterValues) — name + Overview Description.
+ * Create uses BIM | EMAIL CREATIVE DEVELOPMENT TEMPLATE (WORKFRONT_TEMPLATE_ID) + Overview Description.
  * Status defaults to CUR (Current) so the project appears under the portfolio Projects view.
  * Create requires WORKFRONT_LIVE_SUBMIT=1 and confirmLive: true.
  * List scopes to WORKFRONT_PORTFOLIO_ID (never organization-wide).
@@ -9,7 +9,7 @@
 /** Workfront project status: Current — required for the portfolio Projects folder listing. */
 const PROJECT_STATUS_CURRENT = "CUR";
 
-/** Default Workstart Task name (Assignments default to Pat Gaskin via config). */
+/** Default Workstart Task name (Assignments default to Chris Calabrese via config). */
 const WORKSTART_TASK_NAME = "Workstart";
 
 "use strict";
@@ -30,7 +30,7 @@ function text(value) {
 
 /**
  * @param {Record<string, unknown>} payload
- * @param {{ portfolioId: string }} ids
+ * @param {{ portfolioId: string, templateId: string }} ids
  */
 function validateCreatePayload(payload, ids) {
   const name = text(payload.name);
@@ -40,11 +40,17 @@ function validateCreatePayload(payload, ids) {
       "WORKFRONT_PORTFOLIO_ID is not set. Add the TEST PORTFOLIO - CHRIS id to .env.workfront.local (never VITE_*).",
     );
   }
+  if (!ids.templateId) {
+    throw new Error(
+      "WORKFRONT_TEMPLATE_ID is not set. Use the BIM | EMAIL CREATIVE DEVELOPMENT TEMPLATE id (TMPL), never the pattern Project URL id.",
+    );
+  }
   return {
     name,
     description: text(payload.description),
     plannedCompletionDate: text(payload.plannedCompletionDate) || null,
     portfolioID: ids.portfolioId,
+    templateID: ids.templateId,
   };
 }
 
@@ -59,6 +65,7 @@ async function postProject(config, token, validated) {
     name: validated.name,
     description: validated.description,
     portfolioID: validated.portfolioID,
+    templateID: validated.templateID,
     status: PROJECT_STATUS_CURRENT,
   };
   if (validated.plannedCompletionDate) {
@@ -71,7 +78,85 @@ async function postProject(config, token, validated) {
 }
 
 /**
- * Create the default Workstart Task on the configured parent project, assigned to Pat Gaskin.
+ * Read back Projects-tab placement and normalize status / optimizer flag when needed.
+ * Queue creates must land as CUR and not join Optimization unless Executive Apply order ranks them.
+ *
+ * @param {ReturnType<typeof readConfig>} config
+ * @param {string} token
+ * @param {string} projectId
+ * @param {string} expectedPortfolioId
+ * @returns {Promise<{
+ *   status: string | null,
+ *   portfolioID: string | null,
+ *   onOptimizer: boolean,
+ *   portfolioPriority: number | null,
+ *   normalized: string[],
+ *   error?: string,
+ * }>}
+ */
+async function ensureProjectsTabPlacement(config, token, projectId, expectedPortfolioId) {
+  /** @type {string[]} */
+  const normalized = [];
+  const fields = [
+    "status",
+    "portfolioID",
+    "portfolioPriority",
+    "selectedOnPortfolioOptimizer",
+  ].join(",");
+  const readData = await workfrontApi(
+    config,
+    token,
+    `project/${encodeURIComponent(projectId)}?fields=${encodeURIComponent(fields)}`,
+  );
+  const row = readData.data || readData;
+  let status = row.status != null ? String(row.status) : null;
+  const portfolioID =
+    row.portfolioID != null
+      ? String(row.portfolioID)
+      : expectedPortfolioId || null;
+  let onOptimizer = row.selectedOnPortfolioOptimizer === true;
+  const portfolioPriority =
+    row.portfolioPriority != null && Number.isFinite(Number(row.portfolioPriority))
+      ? Number(row.portfolioPriority)
+      : null;
+
+  /** @type {Record<string, unknown>} */
+  const putBody = { ID: projectId };
+  let needsPut = false;
+
+  if (status !== PROJECT_STATUS_CURRENT) {
+    putBody.status = PROJECT_STATUS_CURRENT;
+    needsPut = true;
+    normalized.push(`status:${status || "missing"}->CUR`);
+  }
+  if (onOptimizer && portfolioPriority == null) {
+    putBody.selectedOnPortfolioOptimizer = false;
+    needsPut = true;
+    normalized.push("selectedOnPortfolioOptimizer:true->false");
+  }
+
+  if (needsPut) {
+    await workfrontApi(config, token, "PROJ", {
+      method: "PUT",
+      body: putBody,
+    });
+    status = PROJECT_STATUS_CURRENT;
+    if (putBody.selectedOnPortfolioOptimizer === false) {
+      onOptimizer = false;
+    }
+  }
+
+  return {
+    status,
+    portfolioID,
+    onOptimizer,
+    portfolioPriority,
+    normalized,
+  };
+}
+
+/**
+ * Create the default Workstart Task on the configured parent project, assigned to Chris Calabrese.
  *
  * @param {ReturnType<typeof readConfig>} config
  * @param {string} token
@@ -143,6 +228,7 @@ async function runCreateProject(env, body, options = {}) {
   try {
     const validated = validateCreatePayload(body, {
       portfolioId: config.portfolioId,
+      templateId: config.templateId,
     });
     const { token, source } = await resolveAccessToken(config, {
       bearerToken: options.bearerToken,
@@ -157,6 +243,32 @@ async function runCreateProject(env, body, options = {}) {
       throw new Error("Workfront create returned no Project ID.");
     }
     const url = `${config.host}/project/view?ID=${encodeURIComponent(id)}`;
+
+    /** @type {{ status: string | null, portfolioID: string | null, onOptimizer: boolean, portfolioPriority: number | null, normalized: string[], error?: string }} */
+    let placement = {
+      status: PROJECT_STATUS_CURRENT,
+      portfolioID: validated.portfolioID,
+      onOptimizer: false,
+      portfolioPriority: null,
+      normalized: [],
+    };
+    try {
+      placement = await ensureProjectsTabPlacement(
+        config,
+        token,
+        id,
+        validated.portfolioID,
+      );
+    } catch (placementError) {
+      const placementMessage =
+        placementError instanceof Error
+          ? placementError.message
+          : "Projects-tab placement check failed.";
+      placement = {
+        ...placement,
+        error: placementMessage,
+      };
+    }
 
     /** @type {{ taskId?: string, taskUrl?: string, taskName?: string, assignedToID?: string, projectID?: string, error?: string }} */
     let workstart = {};
@@ -203,8 +315,10 @@ async function runCreateProject(env, body, options = {}) {
         projectUrl: url,
         url,
         portfolioID: validated.portfolioID,
+        templateID: validated.templateID,
         objectType: "PROJ",
         customFormApplied: false,
+        placement,
         workstart,
         auth: authLabel(source),
       },
@@ -214,8 +328,9 @@ async function runCreateProject(env, body, options = {}) {
     if (/sufficient access/i.test(message)) {
       message =
         `${message} The S2S tech account needs Manage on TEST PORTFOLIO - CHRIS ` +
-        `(WORKFRONT_PORTFOLIO_ID) so a New Project can land there. ` +
-        `See docs/knowledge/workfront-test-portfolio-acl.md.`;
+        `(WORKFRONT_PORTFOLIO_ID) and View/Use on BIM | EMAIL CREATIVE DEVELOPMENT TEMPLATE ` +
+        `(WORKFRONT_TEMPLATE_ID) so a New Project from Template can land there. ` +
+        `See docs/knowledge/workfront-test-portfolio-acl.md and docs/knowledge/workfront-brand-project-acl.md.`;
     }
     return {
       statusCode: 502,

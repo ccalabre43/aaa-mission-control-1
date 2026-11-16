@@ -9,10 +9,12 @@ const { spawnSync } = require("node:child_process");
 
 const DEFAULT_HOST = "https://aaalife.my.workfront.com";
 const DEFAULT_PROJECT_ID = "6abae2b600041e3ecb6a8da4dbe7b4a1";
+/** BIM | EMAIL CREATIVE DEVELOPMENT TEMPLATE (TMPL, not the pattern PROJ URL). Never VITE_*. */
+const DEFAULT_TEMPLATE_ID = "669e92cd00136878c607c40cf02e356c";
 /** Default Workstart task parent project (TEST PORTFOLIO Communications effort). Never VITE_*. */
 const DEFAULT_WORKSTART_PROJECT_ID = "6afa92ea025f5c90f681bf8ad1cc522a";
-/** Default Workstart assignee: Pat Gaskin (pgaskin@aaalife.com). Never VITE_*. */
-const DEFAULT_WORKSTART_ASSIGNEE_ID = "641cb8d100053883a2499c4f0ac41735";
+/** Default Workstart assignee: Chris Calabrese (ccalabrese@aaalife.com). Never VITE_*. */
+const DEFAULT_WORKSTART_ASSIGNEE_ID = "690946b90001f53ab97763a1753be08f";
 const DEFAULT_IMS_URL = "https://ims-na1.adobelogin.com/ims/token/v3";
 const DEFAULT_SCOPE =
   "openid,session,profile,AdobeID,additional_info.roles,read_organizations,additional_info.projectedProductContext";
@@ -39,7 +41,7 @@ function readConfig(env) {
      * Workfront Template (TMPL) id for BIM Email Creative Development.
      * Not the Project URL id that looks like a template. Never VITE_*.
      */
-    templateId: (env.WORKFRONT_TEMPLATE_ID || "").trim(),
+    templateId: (env.WORKFRONT_TEMPLATE_ID || DEFAULT_TEMPLATE_ID).trim(),
     /**
      * Parent project for the default Workstart Task created on each New Project submit.
      * Never VITE_*.
@@ -48,7 +50,7 @@ function readConfig(env) {
       env.WORKFRONT_WORKSTART_PROJECT_ID || DEFAULT_WORKSTART_PROJECT_ID
     ).trim(),
     /**
-     * Default Workstart Task assignee (Pat Gaskin). Never VITE_*.
+     * Default Workstart Task assignee (Chris Calabrese). Never VITE_*.
      */
     workstartAssigneeId: (
       env.WORKFRONT_WORKSTART_ASSIGNEE_ID || DEFAULT_WORKSTART_ASSIGNEE_ID
@@ -442,6 +444,7 @@ module.exports = {
   API_VERSION,
   DEFAULT_HOST,
   DEFAULT_PROJECT_ID,
+  DEFAULT_TEMPLATE_ID,
   DEFAULT_WORKSTART_PROJECT_ID,
   DEFAULT_WORKSTART_ASSIGNEE_ID,
   readConfig,

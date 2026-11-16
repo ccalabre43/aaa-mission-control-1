@@ -14,6 +14,10 @@ export interface WorkfrontSentDialogProps {
   uploadedDocuments?: Array<{ name: string; taskDocumentId?: string }>;
   /** Non-fatal upload issue after project create. */
   documentError?: string;
+  /** Projects-tab placement after create (CUR, not Optimization). */
+  placementStatus?: string | null;
+  placementOnOptimizer?: boolean;
+  placementError?: string;
   onClose: () => void;
   onViewQueue: () => void;
 }
@@ -24,6 +28,9 @@ export function WorkfrontSentDialog({
   topicName,
   uploadedDocuments,
   documentError,
+  placementStatus,
+  placementOnOptimizer,
+  placementError,
   onClose,
   onViewQueue,
 }: WorkfrontSentDialogProps) {
@@ -79,9 +86,18 @@ export function WorkfrontSentDialog({
             Sent to Workfront
           </h2>
           <p className="aaa-sent-dialog-copy">
-            {routeLine} Project {issueId} is in TEST PORTFOLIO - CHRIS. A Workstart
-            Task is assigned to Pat Gaskin. Overview Description carries the intake
-            information.
+            {routeLine} Project {issueId} is in TEST PORTFOLIO - CHRIS from the Email
+            Creative template. A Workstart Task is assigned to Chris Calabrese.
+            Overview Description carries the intake information.
+          </p>
+          <p className="aaa-sent-dialog-copy">
+            {placementError
+              ? `Placement check issue: ${placementError}`
+              : placementStatus === "CUR" && placementOnOptimizer !== true
+                ? "Current project in TEST PORTFOLIO - CHRIS (Projects tab); not ranked on Optimization."
+                : placementOnOptimizer === true
+                  ? "Project is on Portfolio Optimization. Only Executive Apply order should rank projects there."
+                  : "Open the portfolio Projects tab (Current / unfiltered view) to confirm placement."}
           </p>
           {docLine ? <p className="aaa-sent-dialog-copy">{docLine}</p> : null}
           {docCount > 0 ? (

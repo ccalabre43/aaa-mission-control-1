@@ -1,7 +1,10 @@
-# Unblock Mission Control Brand Team project create (S2S ACL)
+# Unblock Mission Control project-from-template create (S2S ACL)
 
-**Status:** probe complete 2026-11-15 — create blocked until Template + Brand portfolio shares  
-**Related:** decision 055; `docs/knowledge/workfront-submit-walkthrough.md`
+**Status:** resolved for Send into TEST PORTFOLIO - CHRIS (decision 059 live sample OK 2026-11-16)  
+**Related:** decisions 055 / 059; `docs/knowledge/workfront-submit-walkthrough.md`
+
+Send creates from this Template into **TEST PORTFOLIO - CHRIS** (`WORKFRONT_PORTFOLIO_ID`), not
+the Brand portfolio. Brand portfolio Manage is only needed if you revive Brand landing.
 
 ## Probe findings (admin gate)
 

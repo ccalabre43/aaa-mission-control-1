@@ -37,6 +37,16 @@ export interface WorkfrontWorkstartTask {
   error?: string;
 }
 
+/** Projects-tab placement after create (not Optimization unless ranked). */
+export interface WorkfrontProjectPlacement {
+  status?: string | null;
+  portfolioID?: string | null;
+  onOptimizer?: boolean;
+  portfolioPriority?: number | null;
+  normalized?: string[];
+  error?: string;
+}
+
 export interface WorkfrontCreatedProject {
   ok: true;
   projectId: string;
@@ -44,8 +54,10 @@ export interface WorkfrontCreatedProject {
   projectUrl: string;
   portfolioID?: string;
   templateID?: string;
-  /** Default Workstart Task on the Communications effort project (Pat Gaskin). */
+  /** Default Workstart Task on the Communications effort project (Chris Calabrese). */
   workstart?: WorkfrontWorkstartTask;
+  /** Confirmed Current / not on Optimization after create. */
+  placement?: WorkfrontProjectPlacement;
 }
 
 /** Summary row from TEST PORTFOLIO project list (or legacy Task list). */
@@ -171,6 +183,45 @@ export async function createWorkfrontProject(
                 : undefined,
           }
         : undefined;
+      const placementRaw =
+        data.placement && typeof data.placement === "object"
+          ? (data.placement as Record<string, unknown>)
+          : null;
+      const placement: WorkfrontProjectPlacement | undefined = placementRaw
+        ? {
+            status:
+              typeof placementRaw.status === "string"
+                ? placementRaw.status
+                : placementRaw.status === null
+                  ? null
+                  : undefined,
+            portfolioID:
+              typeof placementRaw.portfolioID === "string"
+                ? placementRaw.portfolioID
+                : placementRaw.portfolioID === null
+                  ? null
+                  : undefined,
+            onOptimizer:
+              typeof placementRaw.onOptimizer === "boolean"
+                ? placementRaw.onOptimizer
+                : undefined,
+            portfolioPriority:
+              typeof placementRaw.portfolioPriority === "number"
+                ? placementRaw.portfolioPriority
+                : placementRaw.portfolioPriority === null
+                  ? null
+                  : undefined,
+            normalized: Array.isArray(placementRaw.normalized)
+              ? placementRaw.normalized.filter(
+                  (item): item is string => typeof item === "string",
+                )
+              : undefined,
+            error:
+              typeof placementRaw.error === "string"
+                ? placementRaw.error
+                : undefined,
+          }
+        : undefined;
       return {
         ok: true,
         projectId,
@@ -186,6 +237,7 @@ export async function createWorkfrontProject(
         templateID:
           typeof data.templateID === "string" ? data.templateID : undefined,
         ...(workstart ? { workstart } : {}),
+        ...(placement ? { placement } : {}),
       };
     }
     return {

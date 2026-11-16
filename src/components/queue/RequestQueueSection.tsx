@@ -80,6 +80,9 @@ interface SentDialogState {
   topicName: string;
   uploadedDocuments?: Array<{ name: string; taskDocumentId?: string }>;
   documentError?: string;
+  placementStatus?: string | null;
+  placementOnOptimizer?: boolean;
+  placementError?: string;
 }
 
 /** Heroicons outline Trash (24) — https://heroicons.com/outline — inline to avoid a new dependency. */
@@ -604,7 +607,8 @@ export function RequestQueueSection() {
         [
           "Create a New Project in TEST PORTFOLIO - CHRIS?",
           "The project name comes from the intake summary. Overview Description will contain the intake information.",
-          "A Workstart Task will also be created and assigned to Pat Gaskin.",
+          "The project is created from the BIM | EMAIL CREATIVE DEVELOPMENT TEMPLATE.",
+          "A Workstart Task will also be created and assigned to Chris Calabrese.",
           "",
           ...enteredByLines,
           "",
@@ -667,6 +671,9 @@ export function RequestQueueSection() {
           topicName: routed.topic?.name ?? "",
           uploadedDocuments: result.uploadedDocuments,
           documentError: result.documentError,
+          placementStatus: result.placementStatus,
+          placementOnOptimizer: result.placementOnOptimizer,
+          placementError: result.placementError,
         });
         setStatus(
           `Marked Approved — transfer. "${result.issueName}" created in Workfront as Project ${result.issueId} in TEST PORTFOLIO - CHRIS.`,
@@ -1254,6 +1261,9 @@ export function RequestQueueSection() {
           topicName={sentDialog.topicName}
           uploadedDocuments={sentDialog.uploadedDocuments}
           documentError={sentDialog.documentError}
+          placementStatus={sentDialog.placementStatus}
+          placementOnOptimizer={sentDialog.placementOnOptimizer}
+          placementError={sentDialog.placementError}
           onClose={() => setSentDialog(null)}
           onViewQueue={() => setSentDialog(null)}
         />

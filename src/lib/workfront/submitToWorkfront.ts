@@ -78,11 +78,17 @@ export interface WorkfrontSubmitResult {
   uploadedDocuments?: WorkfrontUploadedDocumentRecord[];
   /** Non-fatal: Project was created but one or more document uploads failed. */
   documentError?: string;
-  /** Workstart Task created on the Communications effort project (Pat Gaskin). */
+  /** Workstart Task created on the Communications effort project (Chris Calabrese). */
   workstartTaskId?: string;
   workstartTaskUrl?: string;
   /** Non-fatal Workstart Task failure after a successful New Project create. */
   workstartError?: string;
+  /** Confirmed Projects-tab placement (CUR, not on Optimization) after create. */
+  placementStatus?: string | null;
+  placementOnOptimizer?: boolean;
+  placementNormalized?: string[];
+  /** Non-fatal placement check / normalize failure. */
+  placementError?: string;
 }
 
 const MAX_ISSUE_NAME = 140;
@@ -418,6 +424,18 @@ export async function submitToWorkfront(
       : {}),
     ...(created.workstart?.error
       ? { workstartError: created.workstart.error }
+      : {}),
+    ...(created.placement
+      ? {
+          placementStatus: created.placement.status,
+          placementOnOptimizer: created.placement.onOptimizer,
+          ...(created.placement.normalized?.length
+            ? { placementNormalized: created.placement.normalized }
+            : {}),
+          ...(created.placement.error
+            ? { placementError: created.placement.error }
+            : {}),
+        }
       : {}),
   };
 }
