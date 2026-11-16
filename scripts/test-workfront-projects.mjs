@@ -111,7 +111,7 @@ test("create posts name + description + portfolioID + Email Creative template", 
     assert.equal(result.body.workstart.taskId, "workstart-task");
     assert.equal(result.body.workstart.taskName, "Workstart");
     assert.equal(result.body.workstart.assignedToID, "690946b90001f53ab97763a1753be08f");
-    assert.equal(result.body.workstart.projectID, "6afa92ea025f5c90f681bf8ad1cc522a");
+    assert.equal(result.body.workstart.projectID, "6afaae95029356651c144f998b870ea4");
 
     const post = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/project"));
     assert.ok(post, "expected POST /project");
@@ -127,7 +127,7 @@ test("create posts name + description + portfolioID + Email Creative template", 
     assert.ok(taskPost, "expected POST /TASK for Workstart");
     const taskSent = JSON.parse(String(taskPost.body));
     assert.equal(taskSent.name, "Workstart");
-    assert.equal(taskSent.projectID, "6afa92ea025f5c90f681bf8ad1cc522a");
+    assert.equal(taskSent.projectID, "6afaae95029356651c144f998b870ea4");
     assert.equal(taskSent.assignedToID, "690946b90001f53ab97763a1753be08f");
     assert.match(taskSent.description, /ALAN-1 - Flyer/);
     assert.equal(JSON.stringify(result.body).includes("test-secret"), false);
@@ -323,6 +323,45 @@ test("health reports TEST PORTFOLIO reachable via project search", async () => {
     assert.equal(result.body.createPortfolio.id, "6aa167f4000304470fb9e879fb8bbd56");
     assert.equal(result.body.createPortfolio.projectCount, 3);
     assert.match(result.body.createPortfolio.probed, /portfolioID=6aa167f4000304470fb9e879fb8bbd56/);
+  } finally {
+    stub.restore();
+  }
+});
+
+test("health stays connected when the legacy queue project is gone but the portfolio works", async () => {
+  const stub = stubFetch((url) => {
+    if (url.includes("project/search")) {
+      return { status: 200, body: { data: [{ ID: "tp1", name: "One" }] } };
+    }
+    return {
+      status: 404,
+      body: { error: { message: 'Project with primary key value(s) "proj-queue" not found' } },
+    };
+  });
+  try {
+    const result = await runHealth(BASE_ENV);
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.body.connected, true);
+    assert.equal(result.body.project, undefined);
+    assert.equal(result.body.queueProject.reachable, false);
+    assert.match(result.body.queueProject.reason, /not found/i);
+    assert.equal(result.body.createPortfolio.reachable, true);
+    assert.equal(result.body.projectCreateConfigured, true);
+  } finally {
+    stub.restore();
+  }
+});
+
+test("health is disconnected when both the queue project and the portfolio fail", async () => {
+  const stub = stubFetch(() => ({
+    status: 403,
+    body: { error: { message: "You do not have sufficient access" } },
+  }));
+  try {
+    const result = await runHealth(BASE_ENV);
+    assert.equal(result.statusCode, 503);
+    assert.equal(result.body.connected, false);
+    assert.equal(result.body.liveSubmit, false);
   } finally {
     stub.restore();
   }

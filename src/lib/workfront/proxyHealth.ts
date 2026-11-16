@@ -116,7 +116,8 @@ export async function fetchWorkfrontHealth(
       parseCreatePortfolio(data.createPortfolio) ??
       parseCreatePortfolio(data.brandPortfolio);
 
-    const connected = data.connected === true && Boolean(project);
+    // The legacy queue project is optional (decision 061); proxy `connected` is authoritative.
+    const connected = data.connected === true;
     const projectCreateConfigured =
       data.projectCreateConfigured === true || data.brandCreateConfigured === true;
     return {

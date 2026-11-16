@@ -11,8 +11,8 @@ const DEFAULT_HOST = "https://aaalife.my.workfront.com";
 const DEFAULT_PROJECT_ID = "6abae2b600041e3ecb6a8da4dbe7b4a1";
 /** BIM | EMAIL CREATIVE DEVELOPMENT TEMPLATE (TMPL, not the pattern PROJ URL). Never VITE_*. */
 const DEFAULT_TEMPLATE_ID = "669e92cd00136878c607c40cf02e356c";
-/** Default Workstart task parent project (TEST PORTFOLIO Communications effort). Never VITE_*. */
-const DEFAULT_WORKSTART_PROJECT_ID = "6afa92ea025f5c90f681bf8ad1cc522a";
+/** Default Workstart task parent project: "Mission Control Main" in TEST PORTFOLIO. Never VITE_*. */
+const DEFAULT_WORKSTART_PROJECT_ID = "6afaae95029356651c144f998b870ea4";
 /** Default Workstart assignee: Chris Calabrese (ccalabrese@aaalife.com). Never VITE_*. */
 const DEFAULT_WORKSTART_ASSIGNEE_ID = "690946b90001f53ab97763a1753be08f";
 const DEFAULT_IMS_URL = "https://ims-na1.adobelogin.com/ims/token/v3";

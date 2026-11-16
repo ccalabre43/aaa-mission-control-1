@@ -1577,6 +1577,31 @@ ranks are not cleared by this change.
 Sample Project `6afaa46a0606c5d972a42ca25899c686` returned `placement.status: CUR`,
 `onOptimizer: false`, empty `normalized`. Safe to delete in Workfront.
 
+## 2026-11-16 - 061 - Mission Control Main is the Workstart parent; health no longer needs mission-control-v1
+
+**Status:** accepted
+
+The Communications effort project (`6afa92ea…`) and the legacy `mission-control-v1` project
+(`6abae2b6…`) were deleted in Workfront, so Workstart Task create and the health check both started
+failing. This supersedes the Workstart parent from **058** / **059**.
+
+| Piece | Behavior |
+| --- | --- |
+| Workstart parent | **Mission Control Main**, project `6afaae95029356651c144f998b870ea4` in TEST PORTFOLIO - CHRIS, created through the proxy (`status: CUR`, Email Creative template) |
+| Assignee | Unchanged: Chris Calabrese `690946b90001f53ab97763a1753be08f` |
+| Health `connected` | True when auth succeeds and either the TEST PORTFOLIO probe or the legacy queue project works |
+| Legacy `WORKFRONT_PROJECT_ID` | Optional. A missing project is reported as `queueProject: { reachable: false, reason }`, not as a disconnect |
+| Both probes fail | Still `connected: false` (HTTP 503) |
+
+Historical entries 058 and 059 keep their original IDs for auditability.
+
+### 061 live verify (same day)
+
+Health returned `connected: true` with `queueProject.reachable: false`. Sample create returned
+Project `6afaaecf02df06c284d23eee971e8b87` plus Workstart Task `6afaaed102df09472a4b61c08480f3d2`
+on **Mission Control Main** (`6afaae95…`), assigned to Chris. The sample project and task are safe
+to delete. **Mission Control Main** itself must be kept.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

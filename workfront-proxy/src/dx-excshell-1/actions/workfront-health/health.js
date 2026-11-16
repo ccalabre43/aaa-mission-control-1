@@ -104,15 +104,44 @@ async function runHealth(env = process.env, options = {}) {
     const { token, source } = await resolveAccessToken(config, {
       bearerToken: options.bearerToken,
     });
-    const project = await fetchProject(config, token);
+
+    /**
+     * Legacy queue project (WORKFRONT_PROJECT_ID, mission-control-v1) is optional — decision 061.
+     * A deleted queue project must not mark Workfront disconnected when auth + portfolio work.
+     * @type {{ ID: string, name: string } | undefined}
+     */
+    let project;
+    /** @type {string | undefined} */
+    let queueProjectError;
+    try {
+      project = await fetchProject(config, token);
+    } catch (projectError) {
+      queueProjectError =
+        projectError instanceof Error ? projectError.message : "Queue project check failed.";
+    }
+
     const createPortfolio = await probeCreatePortfolio(config, token);
+    if (!project && !createPortfolio.reachable) {
+      // Neither probe succeeded: surface the legacy project error (original behavior).
+      throw new Error(queueProjectError || createPortfolio.reason || "Workfront health failed.");
+    }
+
     const projectCreateConfigured = Boolean(config.portfolioId);
     return {
       statusCode: 200,
       headers,
       body: {
         connected: true,
-        project,
+        ...(project ? { project } : {}),
+        ...(queueProjectError
+          ? {
+              queueProject: {
+                id: config.projectId,
+                reachable: false,
+                reason: queueProjectError,
+              },
+            }
+          : {}),
         createPortfolio,
         /** @deprecated decision 057 — same as createPortfolio; kept for transitional clients */
         brandPortfolio: createPortfolio,

@@ -107,7 +107,7 @@ onto the Context dropzone:
 | Status | `CUR` (Current) so it appears under portfolio **Projects** (decision 060) |
 | Optimization | Not ranked on create; only Executive Apply order writes `portfolioPriority` |
 | Template | BIM \| EMAIL CREATIVE DEVELOPMENT TEMPLATE (`669e92cd…`; decision 059) |
-| Workstart Task | Created on project `6afa92ea…` named **Workstart**, assigned to **Chris Calabrese** |
+| Workstart Task | Created on project **Mission Control Main** (`6afaae95…`; decision 061) named **Workstart**, assigned to **Chris Calabrese** |
 | Object | Project (PROJ) from template in the portfolio, plus Workstart Task on the Communications effort project |
 | Entered By | Signed-in Adobe user when a bearer is present; otherwise S2S tech account |
 | Requester | Description audit lines in Overview Description |
