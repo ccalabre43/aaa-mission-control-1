@@ -1,8 +1,8 @@
-# Workfront proxy (health + Tasks + documents)
+# Workfront proxy (health + Brand projects + documents)
 
 Adobe App Builder Runtime actions that hold the Workfront OAuth Server-to-Server secret and expose
-health, Task create/list, and document upload for Mission Control. The Vite app never sees
-`client_secret`.
+health, Brand Team project create/list, and document upload for Mission Control. The Vite app never
+sees `client_secret`.
 
 ## Runtime setup (Developer Console)
 
@@ -13,7 +13,9 @@ health, Task create/list, and document upload for Mission Control. The Vite app 
    - `WORKFRONT_CLIENT_ID`
    - `WORKFRONT_CLIENT_SECRET`
    - `WORKFRONT_HOST` = `https://aaalife.my.workfront.com`
-   - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1`
+   - `WORKFRONT_PROJECT_ID` = `6abae2b600041e3ecb6a8da4dbe7b4a1` (health / legacy)
+   - `WORKFRONT_TEMPLATE_ID` = Email Creative Development TMPL id
+   - `WORKFRONT_BRAND_PORTFOLIO_ID` = Brand Team portfolio id
    - `WORKFRONT_LIVE_SUBMIT` = `1` only when dual-write create is approved (kill switch)
 
    **Rotate `WORKFRONT_CLIENT_SECRET` on first production publish** (and whenever a value has been pasted in chat): add a new secret in Developer Console, put only the new value in `.env.workfront.local` and in Runtime secrets, delete the old secret, then `npm run workfront:health`. Never paste secrets into chat. Never `VITE_*`.
@@ -38,24 +40,24 @@ npm run workfront:proxy
 # other terminal:
 curl -sS http://127.0.0.1:8787/health
 # expect connected + liveSubmit from WORKFRONT_LIVE_SUBMIT
-curl -sS http://127.0.0.1:8787/issues
-# list summary Tasks on mission-control-v1 (path name /issues; object type TASK)
+curl -sS http://127.0.0.1:8787/projects
+# list Brand Team portfolio projects (summary fields)
 ```
 
 One-shot without a long-running server:
 
 ```bash
 npm run workfront:health
-npm run workfront:sample-create
+npm run workfront:sample-project
 ```
 
-Local routes: `GET /health`, `GET /issues` (lists Tasks), `POST /issues` (creates a Task),
-`POST /documents` (uploads to Task Documents + project Documents → Tasks folder),
+Local routes: `GET /health`, `GET`/`POST /projects` (Brand create/list), `POST /documents`
+(uploads to Brand project Documents → Intake), `GET`/`POST /issues` (legacy Task path),
 `POST /priority` (Task urgency), `GET`/`POST /portfolio` (Portfolio Optimization order);
 live writes require kill switch + `confirmLive: true`.
 
-If sample-create fails with *insufficient access to add this Task*, raise the S2S tech account
-Access Level — see `docs/knowledge/workfront-add-tasks-acl.md`.
+If sample-project fails with *insufficient access*, share the Template and Brand portfolio with
+the S2S tech account — see `docs/knowledge/workfront-brand-project-acl.md`.
 
 If the request includes `Authorization: Bearer <IMS user token>`, that token is used for
 Workfront instead of S2S `client_credentials`. Responses include `auth: "bearer"` (or

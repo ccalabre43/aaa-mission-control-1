@@ -1,18 +1,18 @@
 /**
- * Success dialog after a live dual-write returns a real Workfront Task ID.
+ * Success dialog after a live dual-write returns a real Brand Team Project ID.
  * Layout from assets/mocks/sent-to-workfront-modal.png (Figma AAA Life proto).
  */
 import { useEffect, useRef } from "react";
 
 export interface WorkfrontSentDialogProps {
-  /** Workfront Task ID (stored on the brief as `workfront.issueId`). */
+  /** Workfront Project ID (stored on the brief as `workfront.issueId`). */
   issueId: string;
   issueUrl?: string;
   /** Queue topic name used for the route line (e.g. Corporate Communications). */
   topicName: string;
-  /** Documents attached to Task Documents and the project Tasks folder. */
+  /** Documents attached to the Brand project Documents → Intake folder. */
   uploadedDocuments?: Array<{ name: string; taskDocumentId?: string }>;
-  /** Non-fatal upload issue after Task create. */
+  /** Non-fatal upload issue after Brand project create. */
   documentError?: string;
   onClose: () => void;
   onViewQueue: () => void;
@@ -34,13 +34,13 @@ export function WorkfrontSentDialog({
   }, []);
 
   const routeLine = topicName.trim()
-    ? `Routed to ${topicName.trim()}.`
-    : "Routed on mission-control-v1.";
+    ? `Brand Team project created for ${topicName.trim()}.`
+    : "Brand Team project created from the Email Creative Development template.";
 
   const docCount = uploadedDocuments?.length ?? 0;
   const docLine =
     docCount > 0
-      ? `${docCount} document${docCount === 1 ? "" : "s"} attached to the Task Documents tab and the project Tasks folder.`
+      ? `${docCount} document${docCount === 1 ? "" : "s"} attached to the project Documents → Intake folder.`
       : null;
 
   return (
@@ -79,7 +79,8 @@ export function WorkfrontSentDialog({
             Sent to Workfront
           </h2>
           <p className="aaa-sent-dialog-copy">
-            {routeLine} Task {issueId} is on mission-control-v1 for kickoff.
+            {routeLine} Project {issueId} is in the Brand Team portfolio. Overview
+            Description carries the intake summary.
           </p>
           {docLine ? <p className="aaa-sent-dialog-copy">{docLine}</p> : null}
           {docCount > 0 ? (

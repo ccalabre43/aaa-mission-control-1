@@ -32,6 +32,10 @@ const {
   runListPortfolioProjects,
   runApplyPortfolioOrder,
 } = require("./src/dx-excshell-1/actions/workfront-portfolio/portfolio.js");
+const {
+  runCreateProject,
+  runListProjects,
+} = require("./src/dx-excshell-1/actions/workfront-projects/projects.js");
 
 const PORT = Number(process.env.WORKFRONT_PROXY_PORT || 8787);
 const ENV_FILE = join(__dirname, "..", ".env.workfront.local");
@@ -179,6 +183,26 @@ async function handleApplyPortfolioOrder(req, res) {
   }
 }
 
+async function handleListProjects(req, res) {
+  const result = await runListProjects(env, { bearerToken: bearerFromReq(req) });
+  sendJson(res, result.statusCode, result.body);
+}
+
+async function handleCreateProject(req, res) {
+  try {
+    const body = await readBody(req);
+    const result = await runCreateProject(env, body, {
+      bearerToken: bearerFromReq(req),
+    });
+    sendJson(res, result.statusCode, result.body);
+  } catch (error) {
+    sendJson(res, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Invalid project create.",
+    });
+  }
+}
+
 async function once() {
   const result = await runHealth(env);
   process.stdout.write(`${JSON.stringify(result.body, null, 2)}\n`);
@@ -267,10 +291,28 @@ if (process.argv.includes("--once")) {
       });
       return;
     }
+    if (req.method === "GET" && url.pathname === "/projects") {
+      handleListProjects(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/projects") {
+      handleCreateProject(req, res).catch((error) => {
+        sendJson(res, 500, {
+          ok: false,
+          error: error instanceof Error ? error.message : "Local proxy failure.",
+        });
+      });
+      return;
+    }
     sendJson(res, 404, {
       ok: false,
       error:
-        "Not found. Use GET /health, GET /issues|/portfolio, POST /issues|/documents|/priority|/portfolio.",
+        "Not found. Use GET /health, GET /issues|/portfolio|/projects, POST /issues|/documents|/priority|/portfolio|/projects.",
     });
   });
 

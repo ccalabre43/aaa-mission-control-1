@@ -1,10 +1,15 @@
 # Authenticating to Adobe Workfront
 
-**Status: Step 4 proxy health is built. Live submit (dual-write) is still off.**
+**Status: Step 4 proxy health is built. Live submit (dual-write) creates a Brand Team project from
+the Email Creative Development template (decision 055) when the kill switch is on and the S2S ACL
+is granted; otherwise it stays local.**
 
-The Request Queue assembles a complete, valid Workfront payload and still refuses to POST it. What
-changed in Step 4 is the connection path: Mission Control can ask **our** proxy whether Workfront is
-reachable, without ever holding `client_secret`.
+The Request Queue assembles a complete, valid Workfront payload. Live send posts it as a **Project**
+(name + Overview Description) into the Brand Team portfolio, superseding the earlier Task on
+`mission-control-v1`. Needed on the proxy: `WORKFRONT_TEMPLATE_ID`, `WORKFRONT_BRAND_PORTFOLIO_ID`,
+`WORKFRONT_LIVE_SUBMIT=1`. ACL steps: `docs/knowledge/workfront-brand-project-acl.md`. Health still
+proves reachability through `mission-control-v1` and reports `brandCreateConfigured`. Mission Control
+can ask **our** proxy whether Workfront is reachable, without ever holding `client_secret`.
 
 Adopting Adobe Developer Console + App Builder Runtime is a **Vendor Management Policy consideration
 under guardrail 8**. No live third-party write without explicit approval (Step 6).
@@ -92,18 +97,19 @@ Two ways out, and they are genuinely different products:
 
 That choice is not the developer's to make quietly. It changes what a Workfront record means.
 
-## Dual-write (Step 6 / decisions 035–036)
+## Dual-write (Step 6 / decisions 035–036, superseded by 055)
 
 - Ready to send stays local (`mode: "local"`).
-- Summary → **Submit to Workfront Que** dual-writes a **Task** on mission-control-v1 when the
-  proxy has `WORKFRONT_LIVE_SUBMIT=1`, the user confirms Entered By = integration account, and
-  Workfront returns a real Task ID (`mode: "workfront"` + stored `issueId` key holding the Task ID).
-- Request queue **Refresh from Workfront** lists summary Tasks on that project and upserts them
-  into this browser’s Request Queue (Workfront wins on Task ID / exact name match; local-only
-  rows without a match stay). Coverage names the project plus local briefs (never
-  organization-wide). See decision 037.
+- Summary **Accept — Send to Workfront** (or queue **Send to WF**) creates a **Brand Team Project**
+  from the Email Creative Development template when the proxy has `WORKFRONT_LIVE_SUBMIT=1`, the
+  user confirms Entered By, and Workfront returns a real Project ID (`mode: "workfront"` + stored
+  `issueId` key now holding the Project ID). Intake text lands in Overview Description.
+- Request queue **Refresh from Workfront** lists Brand Team portfolio projects (summary fields) and
+  upserts them into this browser’s Request Queue (Workfront wins on Project ID / exact name match;
+  local-only rows without a match stay). Coverage names the Brand portfolio plus local briefs
+  (never organization-wide). See decisions 037 and 055.
 - Copy-guard still bans bare **"Sent to Workfront: Yes"**; the UI may show
-  **(WF Aligned)** only after a successful create (Task ID on hover).
+  **(WF Aligned)** only after a successful create (Project ID on hover).
 
 ## Also unresolved
 

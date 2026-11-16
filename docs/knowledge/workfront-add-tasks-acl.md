@@ -10,14 +10,14 @@ Health and Task **list** worked. Task **create** failed until both of these were
 1. Tech account Access Level allowed Task create (not built-in **Contributor** alone).
 2. Project **Share** on **mission-control-v1** included **ADD_TASKS** (Access Level alone was not enough).
 
-| Field | Value (verified after fix) |
-| --- | --- |
-| Email / name | `e94e6b40-1d68-46a4-974d-af46af7cb631@techacct.adobe.com` |
-| Workfront User ID | `6abfd42f01507a7bcbe5e395960e3f9f` |
-| Access Level | **Standard** |
-| Project | **mission-control-v1** (`6abae2b600041e3ecb6a8da4dbe7b4a1`) |
-| Project owner | Chris Calabrese |
-| Effective project actions | includes **`ADD_TASKS`** (plus Manage-class actions) |
+| Field                     | Value (verified after fix)                                |
+| ------------------------- | --------------------------------------------------------- |
+| Email / name              | `e94e6b40-1d68-46a4-974d-af46af7cb631@techacct.adobe.com` |
+| Workfront User ID         | `6abfd42f01507a7bcbe5e395960e3f9f`                        |
+| Access Level              | **Standard**                                              |
+| Project                   | **mission-control-v1** (6aa167f4000304470fb9e879fb8bbd56) |
+| Project owner             | Chris Calabrese                                           |
+| Effective project actions | includes `ADD_TASKS` (plus Manage-class actions)          |
 
 S2S cannot be remapped to `CCalabrese@aaalife.com`. Entered By for S2S creates stays the tech account until Path A (ExC user Bearer) is live.
 

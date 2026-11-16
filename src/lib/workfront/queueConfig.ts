@@ -245,11 +245,12 @@ export function topicPath(config: QueueDef, topic: QueueTopic | null): string {
 }
 
 /**
- * A topic can only be submitted against when Workfront can actually receive it: the queue project
- * and the topic both need real IDs. Anything less would be a POST against a guess.
+ * Brand project create (decision 055) needs a resolved Path topic for the description audit line.
+ * Template and Brand portfolio IDs live on the proxy env, not on this client queue config, so
+ * mission-control queue topic / project Workfront IDs are no longer live-send gates.
  */
-export function topicIsSubmittable(config: QueueDef, topic: QueueTopic | null): boolean {
-  return Boolean(topic && topic.workfrontID.trim() && config.workfrontProjectID.trim());
+export function topicIsSubmittable(_config: QueueDef, topic: QueueTopic | null): boolean {
+  return Boolean(topic);
 }
 
 export interface ConfigProblem {

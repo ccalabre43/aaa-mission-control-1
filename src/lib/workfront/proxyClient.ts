@@ -1,6 +1,6 @@
 /**
- * Browser calls to the Workfront proxy (create / list Tasks, priority, portfolio).
- * Secrets stay on the proxy. HTTP path `/issues` remains for Task create/list (decision 036).
+ * Browser calls to the Workfront proxy (Brand project create/list, priority, portfolio).
+ * Secrets stay on the proxy. Legacy `/issues` helpers remain for older callers.
  */
 
 import { workfrontHealthUrl } from "./proxyHealth";
@@ -28,6 +28,16 @@ export interface WorkfrontCreatedIssue {
   projectID: string;
 }
 
+export interface WorkfrontCreatedProject {
+  ok: true;
+  projectId: string;
+  name: string;
+  projectUrl: string;
+  portfolioID?: string;
+  templateID?: string;
+}
+
+/** Summary row from Brand portfolio project list (or legacy Task list). */
 export interface WorkfrontRemoteIssue {
   ID: string;
   name: string;
@@ -42,6 +52,7 @@ export interface WorkfrontRemoteIssue {
 export interface WorkfrontIssueListResult {
   ok: boolean;
   projectID?: string;
+  portfolioId?: string;
   count?: number;
   issues: WorkfrontRemoteIssue[];
   coverage: string;
@@ -52,7 +63,7 @@ export interface WorkfrontIssueListResult {
 export async function fetchWorkfrontIssues(
   signal?: AbortSignal,
 ): Promise<WorkfrontIssueListResult> {
-  const endpoint = `${proxyBaseUrl()}/issues`;
+  const endpoint = `${proxyBaseUrl()}/projects`;
   try {
     const response = await fetch(endpoint, {
       method: "GET",
@@ -61,18 +72,19 @@ export async function fetchWorkfrontIssues(
       cache: "no-store",
     });
     const data = (await response.json()) as Record<string, unknown>;
-    const issues = Array.isArray(data.issues)
-      ? (data.issues as WorkfrontRemoteIssue[])
+    const projects = Array.isArray(data.projects)
+      ? (data.projects as WorkfrontRemoteIssue[])
       : [];
     return {
       ok: data.ok === true,
-      projectID: typeof data.projectID === "string" ? data.projectID : undefined,
-      count: typeof data.count === "number" ? data.count : issues.length,
-      issues,
+      portfolioId:
+        typeof data.portfolioId === "string" ? data.portfolioId : undefined,
+      count: typeof data.count === "number" ? data.count : projects.length,
+      issues: projects,
       coverage:
         typeof data.coverage === "string"
           ? data.coverage
-          : "Workfront Task search result.",
+          : "Workfront Brand Team portfolio project search result.",
       error: typeof data.error === "string" ? data.error : undefined,
       endpoint,
     };
@@ -81,18 +93,18 @@ export async function fetchWorkfrontIssues(
       ok: false,
       issues: [],
       coverage:
-        "Workfront Task search failed. Showing local Request Queue rows only.",
-      error: error instanceof Error ? error.message : "Task list failed.",
+        "Workfront Brand Team project search failed. Showing local Request Queue rows only.",
+      error: error instanceof Error ? error.message : "Project list failed.",
       endpoint,
     };
   }
 }
 
-export async function createWorkfrontIssue(
+export async function createWorkfrontProject(
   payload: WorkfrontIssuePayload,
   options: { confirmLive: true },
-): Promise<WorkfrontCreatedIssue | { ok: false; error: string }> {
-  const endpoint = `${proxyBaseUrl()}/issues`;
+): Promise<WorkfrontCreatedProject | { ok: false; error: string }> {
+  const endpoint = `${proxyBaseUrl()}/projects`;
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -101,19 +113,35 @@ export async function createWorkfrontIssue(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ...payload,
+        name: payload.name,
+        description: payload.description,
+        plannedCompletionDate: payload.plannedCompletionDate,
+        customForm: payload.customForm,
         confirmLive: options.confirmLive,
       }),
     });
     const data = (await response.json()) as Record<string, unknown>;
-    if (data.ok === true && typeof data.ID === "string" && data.ID) {
+    const projectId =
+      typeof data.projectId === "string"
+        ? data.projectId
+        : typeof data.ID === "string"
+          ? data.ID
+          : "";
+    if (data.ok === true && projectId) {
       return {
         ok: true,
-        ID: data.ID,
+        projectId,
         name: typeof data.name === "string" ? data.name : payload.name,
-        url: typeof data.url === "string" ? data.url : "",
-        projectID:
-          typeof data.projectID === "string" ? data.projectID : payload.projectID,
+        projectUrl:
+          typeof data.projectUrl === "string"
+            ? data.projectUrl
+            : typeof data.url === "string"
+              ? data.url
+              : "",
+        portfolioID:
+          typeof data.portfolioID === "string" ? data.portfolioID : undefined,
+        templateID:
+          typeof data.templateID === "string" ? data.templateID : undefined,
       };
     }
     return {
@@ -121,14 +149,31 @@ export async function createWorkfrontIssue(
       error:
         typeof data.error === "string"
           ? data.error
-          : `Task create failed (HTTP ${response.status}).`,
+          : `Brand project create failed (HTTP ${response.status}).`,
     };
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Task create failed.",
+      error:
+        error instanceof Error ? error.message : "Brand project create failed.",
     };
   }
+}
+
+/** @deprecated Prefer createWorkfrontProject (decision 055). Kept for transitional callers. */
+export async function createWorkfrontIssue(
+  payload: WorkfrontIssuePayload,
+  options: { confirmLive: true },
+): Promise<WorkfrontCreatedIssue | { ok: false; error: string }> {
+  const created = await createWorkfrontProject(payload, options);
+  if (!created.ok) return created;
+  return {
+    ok: true,
+    ID: created.projectId,
+    name: created.name,
+    url: created.projectUrl,
+    projectID: created.projectId,
+  };
 }
 
 export interface WorkfrontUploadedDocument {
@@ -263,14 +308,15 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Uploads one file to a Workfront Task and mirrors it into project Documents > Tasks.
+ * Uploads one file to a Brand Workfront Project Documents → Intake folder.
+ * Optional taskId still mirrors onto a Task when provided (legacy).
  * Secrets stay on the proxy; the browser only sends base64 over the same-origin/local proxy.
  */
 export async function uploadWorkfrontDocument(input: {
-  taskId: string;
   projectId: string;
   file: File;
   confirmLive: true;
+  taskId?: string;
 }): Promise<WorkfrontUploadedDocument | { ok: false; error: string }> {
   const endpoint = `${proxyBaseUrl()}/documents`;
   if (input.file.size > WORKFRONT_DOC_MAX_BYTES) {
@@ -288,7 +334,7 @@ export async function uploadWorkfrontDocument(input: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        taskId: input.taskId,
+        ...(input.taskId ? { taskId: input.taskId } : {}),
         projectId: input.projectId,
         fileName: input.file.name,
         mimeType: input.file.type || "application/octet-stream",

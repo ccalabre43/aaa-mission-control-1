@@ -1,8 +1,9 @@
 /**
- * Upsert Workfront Task summaries into local Request Queue briefs.
+ * Upsert Workfront Brand Team project summaries into local Request Queue briefs.
  *
- * Match by Task ID, then exact Task name. On conflict Workfront wins for surface fields.
- * Local briefs with no matching Task are kept. Never stores requester email.
+ * Match by Project ID (stored as `workfront.issueId`), then exact name. On conflict Workfront
+ * wins for surface fields. Local briefs with no matching project are kept. Never stores
+ * requester email. Coverage must name the Brand portfolio corpus — never organization-wide.
  */
 
 import { ALAN_SEARCH_PATTERN } from "../intake/alanNumber";
@@ -28,9 +29,9 @@ function normalizeName(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function taskUrl(taskId: string, host = DEFAULT_HOST): string {
+function projectUrl(projectId: string, host = DEFAULT_HOST): string {
   const base = host.replace(/\/+$/, "");
-  return `${base}/task/view?ID=${encodeURIComponent(taskId)}`;
+  return `${base}/project/view?ID=${encodeURIComponent(projectId)}`;
 }
 
 /** Leading ALAN from a Task name (e.g. `ALAN-29541-624-00 - Flyer`). */
@@ -189,16 +190,16 @@ function applyWorkfrontSurface(
     },
     workfront: {
       mode: "workfront",
-      issueName: name || "Untitled task",
+      issueName: name || "Untitled project",
       submittedAt: entry,
       issueId: task.ID.trim(),
-      issueUrl: taskUrl(task.ID.trim()),
+      issueUrl: projectUrl(task.ID.trim()),
     },
   };
 }
 
 function createBriefFromTask(task: WorkfrontRemoteIssue, now: string): IntakeBrief {
-  const name = (task.name || "").trim() || "Untitled task";
+  const name = (task.name || "").trim() || "Untitled project";
   const alan = parseAlanFromTaskName(name);
   const summary = summaryFromTaskName(name, alan);
   const entry = task.entryDate?.trim() || now;
@@ -217,12 +218,12 @@ function createBriefFromTask(task: WorkfrontRemoteIssue, now: string): IntakeBri
       corpusSize: 1,
       sources: [
         {
-          label: "Workfront Tasks on mission-control-v1 (summary fields)",
+          label: "Workfront Brand Team portfolio projects (summary fields)",
           count: 1,
         },
       ],
       limitations: [
-        "Created from a Workfront Task list refresh (summary fields only). Not a full A3 intake and not organization-wide.",
+        "Created from a Brand Team portfolio project list refresh (summary fields only). Not a full A3 intake and not organization-wide.",
       ],
       searchedAt: now,
     },
@@ -240,7 +241,7 @@ function createBriefFromTask(task: WorkfrontRemoteIssue, now: string): IntakeBri
       issueName: name,
       submittedAt: entry,
       issueId: task.ID.trim(),
-      issueUrl: taskUrl(task.ID.trim()),
+      issueUrl: projectUrl(task.ID.trim()),
     },
   });
 }

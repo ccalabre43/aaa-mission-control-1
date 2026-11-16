@@ -26,6 +26,16 @@ function readConfig(env) {
     projectId: (env.WORKFRONT_PROJECT_ID || DEFAULT_PROJECT_ID).trim(),
     /** Portfolio ID for TEST PORTFOLIO - CHRIS (Portfolio Optimization ranks). Never VITE_*. */
     portfolioId: (env.WORKFRONT_PORTFOLIO_ID || "").trim(),
+    /**
+     * Brand Team portfolio for project-from-template create + Refresh.
+     * Separate from WORKFRONT_PORTFOLIO_ID (Executive TEST PORTFOLIO). Never VITE_*.
+     */
+    brandPortfolioId: (env.WORKFRONT_BRAND_PORTFOLIO_ID || "").trim(),
+    /**
+     * Workfront Template (TMPL) id for BIM Email Creative Development.
+     * Not the Project URL id that looks like a template. Never VITE_*.
+     */
+    templateId: (env.WORKFRONT_TEMPLATE_ID || "").trim(),
     imsUrl: (env.WORKFRONT_IMS_URL || DEFAULT_IMS_URL).trim(),
     scope: (env.WORKFRONT_IMS_SCOPE || DEFAULT_SCOPE).trim(),
     liveSubmit: /^(1|true|yes)$/i.test((env.WORKFRONT_LIVE_SUBMIT || "").trim()),

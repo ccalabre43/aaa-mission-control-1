@@ -2,9 +2,10 @@
  * Workfront submission adapter.
  *
  * Default path is local-only (Ready to send). Live dual-write requires the proxy kill switch
- * `WORKFRONT_LIVE_SUBMIT=1`, an explicit UI confirm (`confirmLive`), and a real Task ID back from
- * Workfront before `mode` becomes `"workfront"`. Secrets stay on the proxy — never in Vite.
- * Stored keys remain `issueId` / `issueUrl` (Task ID/URL) — decision 036.
+ * `WORKFRONT_LIVE_SUBMIT=1`, an explicit UI confirm (`confirmLive`), and a real Brand Project ID
+ * back from Workfront before `mode` becomes `"workfront"`. Secrets stay on the proxy — never in Vite.
+ * Stored keys remain `issueId` / `issueUrl` (now Project ID/URL) to avoid a localStorage migration
+ * — decision 055 superseding Task dual-write on mission-control-v1.
  */
 import {
   A3_SUBMITTED_FIELDS,
@@ -16,7 +17,7 @@ import {
 } from "../intake/a3Schema";
 import { briefTitle, type IntakeBrief } from "../intake/types";
 import { describeCoverageForAudit } from "../related/coverage";
-import { createWorkfrontIssue, uploadWorkfrontDocument } from "./proxyClient";
+import { createWorkfrontProject, uploadWorkfrontDocument } from "./proxyClient";
 import { pathLabel, routeExplanation, routeFor } from "./routing";
 import { topicIsSubmittable, type QueueDef } from "./queueConfig";
 
@@ -73,9 +74,9 @@ export interface WorkfrontSubmitResult {
   blockers: string[];
   /** Set when a live attempt was made and the proxy or Workfront refused it. */
   liveError?: string;
-  /** Documents uploaded after a successful live Task create. */
+  /** Documents uploaded after a successful live Brand project create. */
   uploadedDocuments?: WorkfrontUploadedDocumentRecord[];
-  /** Non-fatal: Task was created but one or more document uploads failed. */
+  /** Non-fatal: Project was created but one or more document uploads failed. */
   documentError?: string;
 }
 
@@ -224,10 +225,12 @@ export function buildWorkfrontPayload(
 }
 
 /**
- * Why this payload could not be transmitted. Empty means queue config alone would allow a send.
+ * Why this payload could not be transmitted. Empty means local routing alone would allow a send.
  *
- * Live kill-switch and confirm are checked at submit time when `options.live` is set — they are not
- * listed here so Ready-to-send saves are not punished for an administrator's off switch.
+ * Brand project create (decision 055) does not require mission-control queue topic or project IDs;
+ * those stay in the description Path audit line. Live kill-switch, confirm, and the proxy's
+ * Template / Brand portfolio config are checked at submit time when `options.live` is set. They are
+ * not listed here so Ready-to-send saves are not punished for an administrator's off switch.
  */
 export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
   const blockers: string[] = [];
@@ -235,17 +238,7 @@ export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
 
   if (!route.topic) {
     blockers.push(
-      "No queue topic matches this request's Communication Type, so nothing would route it.",
-    );
-  } else if (!route.topic.workfrontID.trim()) {
-    blockers.push(
-      `The queue topic "${route.topic.name}" has no Workfront queue topic ID yet.`,
-    );
-  }
-
-  if (!config.workfrontProjectID.trim()) {
-    blockers.push(
-      `The queue "${config.name}" has no Workfront project ID yet. A request queue is a project in Workfront.`,
+      "No queue topic matches this request's Communication Type, so the Path audit line cannot be set.",
     );
   }
 
@@ -254,8 +247,8 @@ export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
 
 /**
  * Display value under the Sent to Workfront label.
- * Affirmative " (WF Aligned)" is only returned with a real Task ID (copy-guard / decisions 035–036).
- * Storage key remains `issueId` for one release. Hover tooltips may still show the Task ID.
+ * Affirmative " (WF Aligned)" is only returned with a real Brand Project ID
+ * (copy-guard / decisions 035–036, 055). Storage key remains `issueId`.
  */
 export function workfrontSentDisplay(
   workfront: IntakeBrief["workfront"],
@@ -285,14 +278,15 @@ export type WorkfrontSubmitOutcome =
 
 export interface WorkfrontSubmitOptions {
   /**
-   * When true, attempt proxy POST /issues after validation. Requires kill switch on the proxy and
+   * When true, attempt proxy POST /projects after validation. Requires kill switch on the proxy and
    * `confirmLive: true`. Ready-to-send flows leave this false.
    */
   live?: boolean;
-  /** Must be true for a live create. UI shows Entered By disclosure first. */
+  /** Must be true for a live create. UI shows Brand project + Entered By disclosure first. */
   confirmLive?: boolean;
   /**
-   * Session File binaries from `attachmentFileStore`. Uploaded after Task create via POST /documents.
+   * Session File binaries from `attachmentFileStore`. Uploaded after Brand project create via
+   * POST /documents onto the new Project Documents → Intake folder.
    * Names-only still ride on the payload when binaries are missing (reloaded session).
    */
   attachmentFiles?: File[];
@@ -305,7 +299,7 @@ export interface WorkfrontSubmitOptions {
  * and never produces `ok: false`: the request is saved and marked Ready to send, and `blockers`
  * carries what an administrator has to supply before anything could be transmitted.
  *
- * `mode: "workfront"` only when Workfront returns a real Task ID.
+ * `mode: "workfront"` only when Workfront returns a real Brand Project ID.
  */
 export async function submitToWorkfront(
   brief: IntakeBrief,
@@ -364,7 +358,7 @@ export async function submitToWorkfront(
     };
   }
 
-  const created = await createWorkfrontIssue(payload, { confirmLive: true });
+  const created = await createWorkfrontProject(payload, { confirmLive: true });
   if (!created.ok) {
     return {
       ok: true,
@@ -382,8 +376,7 @@ export async function submitToWorkfront(
   const files = options.attachmentFiles ?? [];
   for (const file of files) {
     const uploaded = await uploadWorkfrontDocument({
-      taskId: created.ID,
-      projectId: created.projectID || payload.projectID,
+      projectId: created.projectId,
       file,
       confirmLive: true,
     });
@@ -402,8 +395,8 @@ export async function submitToWorkfront(
     ok: true,
     mode: "workfront",
     issueName: created.name || payload.name,
-    issueId: created.ID,
-    issueUrl: created.url || undefined,
+    issueId: created.projectId,
+    issueUrl: created.projectUrl || undefined,
     payload,
     readyToSend: true,
     blockers: [],

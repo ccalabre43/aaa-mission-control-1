@@ -206,7 +206,7 @@ export default function RequestSummaryView() {
       approved.workfront?.mode === "workfront" && approved.workfront.issueId;
     if (alreadySent) {
       setStatusMessage(
-        `Marked Accepted (Approved — transfer). Already linked to Workfront Task ${approved.workfront?.issueId}.`,
+        `Marked Accepted (Approved — transfer). Already linked to Workfront Project ${approved.workfront?.issueId}.`,
       );
       return;
     }
@@ -223,7 +223,7 @@ export default function RequestSummaryView() {
       current.workfront?.mode === "workfront" && current.workfront.issueId;
     if (alreadySent) {
       setStatusMessage(
-        `Already linked to Workfront Task ${current.workfront?.issueId}.`,
+        `Already linked to Workfront Project ${current.workfront?.issueId}.`,
       );
       return;
     }
@@ -249,11 +249,12 @@ export default function RequestSummaryView() {
         attachmentCount === 0
           ? "No supporting files are attached."
           : filesReady === attachmentCount
-            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Task Documents tab and the project Tasks folder.`
+            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Brand project Documents → Intake folder.`
             : `${filesReady} of ${attachmentCount} file${attachmentCount === 1 ? "" : "s"} ready in this browser session. Re-attach missing files below before sending, or names-only will be recorded.`;
       const confirmed = window.confirm(
         [
-          "Create this request as a Workfront Task on mission-control-v1?",
+          "Create a Brand Team project from the Email Creative Development template?",
+          "It will land in the Brand Team portfolio. Overview Description will contain the intake summary.",
           "",
           ...enteredByLines,
           "",
@@ -322,12 +323,12 @@ export default function RequestSummaryView() {
           documentError: result.documentError,
         });
         const docNote = result.uploadedDocuments?.length
-          ? ` Uploaded ${result.uploadedDocuments.length} document${result.uploadedDocuments.length === 1 ? "" : "s"} to Task Documents and the project Tasks folder.`
+          ? ` Uploaded ${result.uploadedDocuments.length} document${result.uploadedDocuments.length === 1 ? "" : "s"} to the Brand project Documents → Intake folder.`
           : result.documentError
             ? ` Document upload issue: ${result.documentError}`
             : "";
         setStatusMessage(
-          `Marked Accepted. "${result.issueName}" created in Workfront as Task ${result.issueId}. Saved in this browser with that ID.${docNote}`,
+          `Marked Accepted. "${result.issueName}" created in Workfront as Brand Project ${result.issueId}. Saved in this browser with that ID.${docNote}`,
         );
       } else if (wantLive && result.liveError) {
         setStatusMessage(
@@ -662,11 +663,11 @@ export default function RequestSummaryView() {
           className="aaa-summary-payload"
         >
           <p className="aaa-panel-reason">
-            This is the A3 / Workfront Task payload. Local reviewer Status, Priority, Size, and
-            Impact / Effort / Risk are not included.
+            This is the A3 / Workfront Brand project payload (name + Overview Description). Local
+            reviewer Status, Priority, Size, and Impact / Effort / Risk are not included.
             {sentDisplay.sent
-              ? ` Linked Workfront Task: ${brief.workfront?.issueId}.`
-              : " It has not been posted until Accept — Send to Workfront succeeds with a Task ID."}
+              ? ` Linked Workfront Project: ${brief.workfront?.issueId}.`
+              : " It has not been posted until Accept — Send to Workfront succeeds with a Project ID."}
           </p>
           <dl className="aaa-panel-list aaa-summary-payload-meta">
             <div>

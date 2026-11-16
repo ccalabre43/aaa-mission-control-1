@@ -111,8 +111,9 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | --- | --- | --- | --- |
 | `docs/deployment.md` | 2026-09-16; Vercel `/api/workfront` 2026-10-30 | How to build and host: `APP_BASE_PATH`, per-host history fallback, security headers, Vercel Workfront env, what hosting does **not** solve | active |
 | `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04; dual-write 2026-10-07; Refresh upsert 2026-10-07 | S2S + App Builder proxy; Task create/list; Refresh upserts into local queue (035–037) | active — Task dual-write; S2S Add Task ACL pending |
-| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; upsert 2026-10-07; ACL gate 2026-10-09; docs + Priority local 053 2026-10-30 | Local Ready-to-send; dual-write Task + docs; Priority local-only; Portfolio Apply order; Refresh upsert | active |
-| `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039) | active — create verified |
+| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; Brand project cutover 055 2026-11-15 | Local Ready-to-send; Brand project-from-template; Priority local-only; Portfolio Apply order; Refresh Brand portfolio | active |
+| `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039; superseded for send path by 055) | historical — Task path |
+| `docs/knowledge/workfront-brand-project-acl.md` | 2026-11-15 | S2S Template + Brand portfolio ACL for project create (decision 055) | active — ACL pending admin |
 | `workfront-proxy/README.md` | 2026-10-04 | How to set Runtime secrets, deploy the health action, and run the local stand-in | active |
 | `.env.example` | 2026-09-16; proxy URL 2026-10-04 | `APP_BASE_PATH`, public `WORKFRONT_PROXY_URL`, and the standing warning about `VITE_`-prefixed secrets | active |
 | `vercel.json` | 2026-09-16 | Vercel rewrite, headers, caching. Repo root because that is where Vercel reads it | active |
@@ -126,6 +127,8 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | `scripts/lib/copy-guard.mjs` | 2026-09-16 | The banned-phrase and coverage-disclosure checks, taking a directory so they can be tested | active |
 | `scripts/test-copy-guard.mjs` | 2026-09-16 | Proves the guard fails on known-bad fixtures. A guard never seen failing is not a guard | active |
 | `scripts/test-snapshot.mjs` | 2026-09-23 | Round-trips a queue snapshot export, import, and undo; proves four kinds of bad file are refused rather than partially applied; asserts requester identity is absent from the file and named in its omitted list | active |
+| `scripts/test-workfront-projects.mjs` | 2026-11-15 | Brand project create/list/health unit tests, fetch stubbed (`npm run test:workfront-projects`, decision 055) | active |
+| `scripts/workfront-sample-project.mjs` | 2026-11-15 | Live Brand project create probe against the local proxy (`npm run workfront:sample-project`) | active |
 | `scripts/test-workfront-priority.mjs` | 2026-10-30 | Priority map round-trip + proxy reject paths for `/priority` and `/portfolio` (`npm run test:workfront-priority`) | active |
 
 ## Rules and skills

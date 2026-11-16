@@ -1,9 +1,9 @@
 /**
  * Reviewer Request Queue (Concept v1 Figma node 666:5155).
  *
- * Local Ready-to-send rows stay in this browser. Refresh upserts summary Tasks from
- * mission-control-v1 into local briefs (Workfront wins on match); coverage names that corpus
- * (guardrail 7). Local-only briefs without a matching Task are kept.
+ * Local Ready-to-send rows stay in this browser. Refresh upserts summary Brand Team projects
+ * into local briefs (Workfront wins on match); coverage names that portfolio corpus
+ * (guardrail 7). Local-only briefs without a matching project are kept.
  */
 import {
   useCallback,
@@ -294,7 +294,7 @@ export function RequestQueueSection() {
       if (!result.ok) {
         setRemoteError(
           result.error ??
-            "Workfront Task search failed. Local Request Queue rows were not changed.",
+            "Workfront Brand Team project search failed. Local Request Queue rows were not changed.",
         );
         return;
       }
@@ -306,7 +306,7 @@ export function RequestQueueSection() {
       if (!saved.ok) {
         setError(
           saved.reason ??
-            "Workfront Tasks were fetched but could not be saved into this browser's Request Queue.",
+            "Workfront Brand projects were fetched but could not be saved into this browser's Request Queue.",
         );
         setStatus("");
         return;
@@ -329,7 +329,7 @@ export function RequestQueueSection() {
   const refreshLiveAnnouncement = useMemo(() => {
     if (!refreshDialog) return "";
     const { added, updated, linked, coverage } = refreshDialog;
-    const summary = `Workfront refresh (mission-control-v1): added ${added}, updated ${updated} in this browser's Request Queue (${linked} Task${linked === 1 ? "" : "s"} linked). Local-only rows without a matching Task were kept.`;
+    const summary = `Workfront refresh (Brand Team portfolio): added ${added}, updated ${updated} in this browser's Request Queue (${linked} project${linked === 1 ? "" : "s"} linked). Local-only rows without a matching project were kept.`;
     return coverage.trim() ? `${summary} ${coverage.trim()}` : summary;
   }, [refreshDialog]);
 
@@ -374,9 +374,9 @@ export function RequestQueueSection() {
   const coverageLine = useMemo(() => {
     const localPart = `${localReadyCount} ready-to-send brief${localReadyCount === 1 ? "" : "s"} in this browser`;
     if (remoteCoverage) {
-      return `${remoteCoverage} Refresh upserts those Tasks into this browser's Request Queue (Workfront wins on match). Showing ${localPart}. Not organization-wide.`;
+      return `${remoteCoverage} Refresh upserts those projects into this browser's Request Queue (Workfront wins on match). Showing ${localPart}. Not organization-wide.`;
     }
-    return `Showing ${localPart}. Use Refresh from Workfront to add or update Tasks from mission-control-v1 into this queue.`;
+    return `Showing ${localPart}. Use Refresh from Workfront to add or update Brand Team portfolio projects into this queue.`;
   }, [localReadyCount, remoteCoverage]);
 
   function toggleSort(column: QueueColumn) {
@@ -435,7 +435,7 @@ export function RequestQueueSection() {
 
   function removeLocalBrief(briefId: string, subject: string) {
     const confirmed = window.confirm(
-      `Remove "${subject}" from this browser's Request Queue? Workfront Tasks are not deleted.`,
+      `Remove "${subject}" from this browser's Request Queue? Workfront projects are not deleted.`,
     );
     if (!confirmed) return;
     const saved = deleteBrief(briefId);
@@ -529,7 +529,7 @@ export function RequestQueueSection() {
       approved.workfront?.mode === "workfront" && approved.workfront.issueId;
     if (alreadySent) {
       setStatus(
-        `Marked Approved — transfer. Already linked to Workfront Task ${approved.workfront?.issueId}.`,
+        `Marked Approved — transfer. Already linked to Workfront Project ${approved.workfront?.issueId}.`,
       );
       return;
     }
@@ -555,11 +555,12 @@ export function RequestQueueSection() {
         attachmentCount === 0
           ? "No supporting files are attached."
           : filesReady === attachmentCount
-            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Task Documents tab and the project Tasks folder.`
+            ? `${filesReady} supporting file${filesReady === 1 ? "" : "s"} will upload to the Brand project Documents → Intake folder.`
             : `${filesReady} of ${attachmentCount} file${attachmentCount === 1 ? "" : "s"} ready in this browser session. Re-attach missing files on Summary before sending, or names-only will be recorded.`;
       const confirmed = window.confirm(
         [
-          "Create this request as a Workfront Task on mission-control-v1?",
+          "Create a Brand Team project from the Email Creative Development template?",
+          "It will land in the Brand Team portfolio. Overview Description will contain the intake summary.",
           "",
           ...enteredByLines,
           "",
@@ -624,7 +625,7 @@ export function RequestQueueSection() {
           documentError: result.documentError,
         });
         setStatus(
-          `Marked Approved — transfer. "${result.issueName}" created in Workfront as Task ${result.issueId}.`,
+          `Marked Approved — transfer. "${result.issueName}" created in Workfront as Brand Project ${result.issueId}.`,
         );
       } else if (wantLive && result.liveError) {
         setStatus(
@@ -805,18 +806,20 @@ export function RequestQueueSection() {
             title={
               health?.connected
                 ? `Proxy health OK via ${health.endpoint}${
-                    health.liveSubmit ? "; live submit on" : "; live submit off"
-                  }`
+                    health.brandCreateConfigured
+                      ? "; Brand template + portfolio configured"
+                      : "; Brand template/portfolio env not set on proxy"
+                  }${health.liveSubmit ? "; live submit on" : "; live submit off"}`
                 : health?.error
                   ? `${health.error} (checked ${health.endpoint})`
                   : "Checking the Workfront proxy…"
             }
           >
             <span className="aaa-queue-connection-dot" aria-hidden="true" />
-            {health?.connected && health.project
-              ? `Workfront: connected (${health.project.name}${
-                  health.liveSubmit ? "; live submit on" : ""
-                })`
+            {health?.connected
+              ? `Workfront: connected (${
+                  health.brandCreateConfigured ? "Brand project create" : "proxy only"
+                }${health.liveSubmit ? "; live submit on" : ""})`
               : health === null
                 ? "Workfront: checking…"
                 : "Workfront: not connected"}
@@ -1037,7 +1040,7 @@ export function RequestQueueSection() {
                             className="aaa-queue-sent"
                             title={
                               row.workfrontIssueId
-                                ? `Workfront Task ${row.workfrontIssueId}`
+                                ? `Workfront Project ${row.workfrontIssueId}`
                                 : row.sentToWorkfrontLabel
                             }
                           >
@@ -1173,10 +1176,10 @@ export function RequestQueueSection() {
       <p className="aaa-queue-footnote">
         Reviewer Status and Priority are saved in this browser only. Parking Lot marks a request
         Deferred locally and does not send it to Workfront. Ready to send stays local until Summary
-        or Send to WF succeeds with a real Task ID. Sent to Workfront: No is the default; (WF
-        Aligned) appears only with that ID. Refresh loads Tasks on mission-control-v1 via the proxy
-        — not the whole organization. Select rows to reorder locally or delete the local copy
-        (Workfront Tasks are not deleted).
+        or Send to WF succeeds with a real Brand Project ID. Sent to Workfront: No is the default;
+        (WF Aligned) appears only with that ID. Refresh loads Brand Team portfolio projects via the
+        proxy — not the whole organization. Select rows to reorder locally or delete the local copy
+        (Workfront projects are not deleted).
       </p>
 
       {refreshDialog ? (

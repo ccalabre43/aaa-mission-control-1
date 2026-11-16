@@ -1,6 +1,6 @@
 /**
- * Refresh-from-Workfront result dialog: Task inventory from mission-control-v1.
- * Layout from assets/mocks/workfront-refresh-modal.jpg (success title + centered Task blocks).
+ * Refresh-from-Workfront result dialog: Brand Team portfolio project inventory.
+ * Layout from assets/mocks/workfront-refresh-modal.jpg (success title + centered blocks).
  */
 import { useEffect, useRef } from "react";
 import type { WorkfrontRemoteIssue } from "../../lib/workfront/proxyClient";
@@ -79,11 +79,11 @@ export function WorkfrontRefreshDialog({
             Refresh from Workfront: Complete
           </h2>
           <p className="aaa-refresh-dialog-section">
-            Workfront Tasks (mission-control-v1)
+            Workfront Brand Team portfolio projects
           </p>
           {issues.length === 0 ? (
             <p className="aaa-sent-dialog-copy">
-              No Tasks were returned from mission-control-v1.
+              No projects were returned from the Brand Team portfolio.
             </p>
           ) : (
             <ul className="aaa-refresh-dialog-list" role="list">

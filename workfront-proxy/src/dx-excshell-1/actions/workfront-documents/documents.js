@@ -1,5 +1,6 @@
 /**
- * Upload a document to a Workfront Task and mirror it into the project Tasks folder.
+ * Upload a document to a Workfront Project (Brand create) Documents folder.
+ * Optional taskId still mirrors onto a Task when provided (legacy path).
  * Requires WORKFRONT_LIVE_SUBMIT=1 and confirmLive: true.
  */
 
@@ -59,33 +60,17 @@ async function runUploadDocument(env, body, options = {}) {
   }
 
   const taskId = text(body.taskId);
-  const projectId = text(body.projectId) || config.projectId;
+  const projectId = text(body.projectId);
   const fileName = text(body.fileName) || "attachment.bin";
   const mimeType = text(body.mimeType) || "application/octet-stream";
   const base64Data = text(body.base64Data);
+  const folderName = text(body.folderName) || (taskId ? "Tasks" : "Intake");
 
-  if (!taskId) {
-    return {
-      statusCode: 400,
-      headers,
-      body: { ok: false, error: "taskId is required." },
-    };
-  }
   if (!projectId) {
     return {
       statusCode: 400,
       headers,
       body: { ok: false, error: "projectId is required." },
-    };
-  }
-  if (projectId !== config.projectId) {
-    return {
-      statusCode: 400,
-      headers,
-      body: {
-        ok: false,
-        error: `projectId must match the configured queue project (${config.projectId}).`,
-      },
     };
   }
   if (!base64Data) {
@@ -129,21 +114,26 @@ async function runUploadDocument(env, body, options = {}) {
       bearerToken: options.bearerToken,
     });
 
-    const { handle: taskHandle } = await uploadMultipartToWorkfront(
-      config,
-      token,
-      fileName,
-      mimeType,
-      buffer,
-    );
-    const taskDoc = await attachWorkfrontDocument(config, token, {
-      name: fileName,
-      handle: taskHandle,
-      docObjCode: "TASK",
-      objID: taskId,
-    });
+    /** @type {string | undefined} */
+    let taskDocumentId;
+    if (taskId) {
+      const { handle: taskHandle } = await uploadMultipartToWorkfront(
+        config,
+        token,
+        fileName,
+        mimeType,
+        buffer,
+      );
+      const taskDoc = await attachWorkfrontDocument(config, token, {
+        name: fileName,
+        handle: taskHandle,
+        docObjCode: "TASK",
+        objID: taskId,
+      });
+      taskDocumentId = taskDoc.ID;
+    }
 
-    const folderID = await ensureProjectFolder(config, token, projectId, "Tasks");
+    const folderID = await ensureProjectFolder(config, token, projectId, folderName);
     const { handle: projectHandle } = await uploadMultipartToWorkfront(
       config,
       token,
@@ -165,14 +155,15 @@ async function runUploadDocument(env, body, options = {}) {
       body: {
         ok: true,
         fileName,
-        taskId,
+        ...(taskId ? { taskId } : {}),
         projectId,
         folderID,
-        taskDocumentId: taskDoc.ID,
+        ...(taskDocumentId ? { taskDocumentId } : {}),
         projectDocumentId: projectDoc.ID,
         auth: authLabel(source),
-        coverage:
-          `Document attached to Task ${taskId} and project ${projectId} folder "Tasks" on mission-control-v1.`,
+        coverage: taskId
+          ? `Document attached to Task ${taskId} and project ${projectId} folder "${folderName}".`
+          : `Document attached to Brand project ${projectId} Documents folder "${folderName}".`,
       },
     };
   } catch (error) {

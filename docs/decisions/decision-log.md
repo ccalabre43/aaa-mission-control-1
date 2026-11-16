@@ -1419,6 +1419,41 @@ route), Send to WF (same confirm-and-dual-write path as Accept — Send to Workf
 Lot. Table columns are Project, Owner, Description, Entry Date, Due Date, Priority, Status, Summary,
 and kebab. Status and Priority remain local-only until a later dual-write decision.
 
+## 2026-11-15 - 055 - Brand Team project create supersedes Task dual-write
+
+**Status:** accepted (architecture ships; live template create gated by S2S ACL + kill switch)
+
+Send / Accept / Submit no longer create a **Task** on **mission-control-v1**. They create a **Brand
+Team Project** from the Email Creative Development **Template** into the Brand Team portfolio, with
+intake text in Overview **Description**.
+
+| Piece | Detail |
+| --- | --- |
+| Pattern URL `6ae251e2…` | Confirmed **PROJ**, not TMPL; real TMPL is `669e92cd00136878c607c40cf02e356c` |
+| Brand portfolio | `63fe29510080e44cc362ace791da828a` via `WORKFRONT_BRAND_PORTFOLIO_ID` |
+| Executive portfolio | Unchanged: `WORKFRONT_PORTFOLIO_ID` for TEST PORTFOLIO - CHRIS Apply order |
+| Proxy | `GET`/`POST /projects` (+ Vercel `/api/workfront/projects`); kill switch + `confirmLive` |
+| Client | `createWorkfrontProject`; Refresh lists Brand portfolio projects; docs → Intake folder |
+| Storage | `workfront.issueId` / `issueUrl` retained (now Project ID/URL) — no localStorage migration |
+| HITL | Confirm names Brand project, portfolio, Entered By, and Description contents |
+| ACL | Template View/Use + Brand portfolio Manage still required — see `workfront-brand-project-acl.md` |
+
+Supersedes Task-on-mission-control-v1 framing in **036** / **039** / **051** for the reviewer send
+path. Sample probe: `npm run workfront:sample-project`.
+
+### 055 follow-up (same day): readiness and tests
+
+- `sendBlockers` / `topicIsSubmittable` no longer gate on the mission-control queue topic or project
+  Workfront IDs; Brand create needs only a resolved Path topic (audit line). Template + Brand
+  portfolio IDs are proxy env, not client queue config.
+- Health adds `brandCreateConfigured` (both env ids set). The queue badge says `Brand project
+  create` only when true, otherwise `proxy only`. It does not prove S2S ACL.
+- Tests: `npm run test:workfront-projects` (`node --test`, `fetch` stubbed, no network). Chose the
+  repo's existing `node --test` pattern over adding Jest to `workfront-proxy`, which has no installed
+  dependencies; a new dev dependency would be a Vendor Management consideration (guardrail 8).
+- Hosts: Vercel needs `WORKFRONT_TEMPLATE_ID` and `WORKFRONT_BRAND_PORTFOLIO_ID` (documented in
+  `docs/deployment.md`); Runtime inputs already listed in `ext.config.yaml`.
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

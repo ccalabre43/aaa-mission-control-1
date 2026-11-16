@@ -41,3 +41,19 @@ runtimeManifest:
           annotations:
             require-adobe-auth: false
             final: true
+        workfront-projects:
+          function: actions/workfront-projects/index.js
+          web: "yes"
+          runtime: nodejs:22
+          inputs:
+            LOG_LEVEL: info
+            WORKFRONT_CLIENT_ID: $WORKFRONT_CLIENT_ID
+            WORKFRONT_CLIENT_SECRET: $WORKFRONT_CLIENT_SECRET
+            WORKFRONT_HOST: $WORKFRONT_HOST
+            WORKFRONT_PROJECT_ID: $WORKFRONT_PROJECT_ID
+            WORKFRONT_BRAND_PORTFOLIO_ID: $WORKFRONT_BRAND_PORTFOLIO_ID
+            WORKFRONT_TEMPLATE_ID: $WORKFRONT_TEMPLATE_ID
+            WORKFRONT_LIVE_SUBMIT: $WORKFRONT_LIVE_SUBMIT
+          annotations:
+            require-adobe-auth: false
+            final: true

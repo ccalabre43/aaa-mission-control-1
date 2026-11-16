@@ -57,6 +57,7 @@ async function runHealth(env = process.env, options = {}) {
         auth: authLabel(source),
         host: config.host,
         liveSubmit: config.liveSubmit,
+        brandCreateConfigured: Boolean(config.templateId && config.brandPortfolioId),
       },
     };
   } catch (error) {
@@ -67,6 +68,7 @@ async function runHealth(env = process.env, options = {}) {
       body: {
         connected: false,
         liveSubmit: false,
+        brandCreateConfigured: false,
         error: message,
       },
     };

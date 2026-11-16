@@ -24,6 +24,11 @@ export interface WorkfrontProxyHealth {
    * Proxy kill switch (`WORKFRONT_LIVE_SUBMIT=1`). Connected health can be true while this is false.
    */
   liveSubmit: boolean;
+  /**
+   * Proxy has both WORKFRONT_TEMPLATE_ID and WORKFRONT_BRAND_PORTFOLIO_ID set.
+   * Says nothing about S2S ACL; only that Brand create is configured.
+   */
+  brandCreateConfigured: boolean;
   /** Where the client called. Named so a negative result is auditable (guardrail 7). */
   endpoint: string;
 }
@@ -70,6 +75,7 @@ export async function fetchWorkfrontHealth(
       return {
         connected: false,
         liveSubmit: false,
+        brandCreateConfigured: false,
         endpoint,
         error: `Proxy returned non-JSON (HTTP ${response.status}).`,
       };
@@ -96,6 +102,7 @@ export async function fetchWorkfrontHealth(
           : undefined,
       host: typeof data.host === "string" ? data.host : undefined,
       liveSubmit: data.liveSubmit === true,
+      brandCreateConfigured: data.brandCreateConfigured === true,
       error:
         typeof data.error === "string"
           ? data.error
@@ -114,6 +121,7 @@ export async function fetchWorkfrontHealth(
     return {
       connected: false,
       liveSubmit: false,
+      brandCreateConfigured: false,
       endpoint,
       error: message,
     };
