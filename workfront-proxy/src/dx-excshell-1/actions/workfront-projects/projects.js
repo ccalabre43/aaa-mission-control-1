@@ -6,13 +6,13 @@
  * List scopes to WORKFRONT_PORTFOLIO_ID (never organization-wide).
  */
 
+"use strict";
+
 /** Workfront project status: Current — required for the portfolio Projects folder listing. */
 const PROJECT_STATUS_CURRENT = "CUR";
 
 /** Default Workstart Task name (Assignments default to Chris Calabrese via config). */
 const WORKSTART_TASK_NAME = "Workstart";
-
-"use strict";
 
 const {
   readConfig,
