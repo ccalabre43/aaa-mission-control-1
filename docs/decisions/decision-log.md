@@ -1630,6 +1630,24 @@ Applies to new requests only. Existing projects are not changed. This is a Workf
 a project, still behind `WORKFRONT_LIVE_SUBMIT` and `confirmLive`. It supersedes the Pat Gaskin
 default from **058** only for stakeholders; the Workstart assignee was already moved to Chris in 059.
 
+## 2026-11-18 - 063 - Summary page Concept v1 layout + editable field bodies
+
+**Status:** accepted
+
+Figma Spec: [Mission Control Summary Page Spec](https://www.figma.com/spec/hgaCxQumjMba0vKvFYM2IT)
+(design source Concept v1 node `956:5229`).
+
+| Change | Detail |
+| --- | --- |
+| Layout | Actions row under meta (not sticky footer); Size / Impact / **Effort** / Risk above Project Summary; Figma “Refuse” ships as Effort (041) |
+| Project Summary title | Not editable |
+| Field bodies | Edit/Done on Business context, Timing, Approvals, Channels, build-from, brand, Audience, Success metric, Compliance Yes/No, key message, support |
+| A3 maps | BackgroundPurpose, TimingNotes, Deliverables, AdditionalInformation, GoalsExpectations, SuccessMeasurement, ProjectSummary |
+| Non-A3 | Approvals / Audience / Support → `brief.answers` keys + Overview Description audit lines (Workfront config request) |
+| Compliance | Yes/No drives `complianceFlags` review state (+ `summary-compliance-review` answer) |
+| Send | Unchanged: New Project in TEST PORTFOLIO - CHRIS; attachments → Documents → Intake via `/documents` |
+| Primary CTA | **Accept — Send to Adobe Workfront** |
+
 ## Flagged for the user, not applied
 
 - `.cursor/rules/uxui-architect.mdc` describes the persona as serving "AAA Life of Michigan." The

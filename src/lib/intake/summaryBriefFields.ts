@@ -1,20 +1,49 @@
 /**
- * Concept v1 Summary brief-card values. Display-only: A3 first, then guided answers /
- * contextText when assemble never ran or optional fields were skipped.
+ * Concept v1 Summary brief-card values and edit targets.
  *
- * Does not invent A3 fields or change the Workfront payload.
+ * Display prefers A3, then guided answers / contextText / summary-* answer keys.
+ * Non-schema rows (Approvals, Audience, Support) persist in `brief.answers` and ride
+ * Overview Description audit lines on send — never invent Workfront fields.
  */
+import type { A3FieldName } from "./a3Schema";
 import type { IntakeBrief } from "./types";
 import { parseChannels } from "../workfront/queueList";
 
+export const SUMMARY_APPROVALS_KEY = "summary-approvals";
+export const SUMMARY_AUDIENCE_KEY = "summary-audience";
+export const SUMMARY_SUPPORT_KEY = "summary-support";
+export const SUMMARY_COMPLIANCE_KEY = "summary-compliance-review";
+
+export type SummaryFieldId =
+  | "business-context"
+  | "timing"
+  | "approvals"
+  | "channels"
+  | "build-from"
+  | "brand"
+  | "audience"
+  | "success"
+  | "compliance"
+  | "key-message"
+  | "support";
+
+export type SummaryEditKind = "textarea" | "yesno";
+
+export type SummaryPersistTarget =
+  | { kind: "a3"; field: A3FieldName }
+  | { kind: "answer"; key: string }
+  | { kind: "compliance" };
+
 export interface SummaryBriefField {
+  id: SummaryFieldId;
   label: string;
   value: string;
-}
-
-export interface SummaryBriefFields {
-  left: SummaryBriefField[];
-  right: SummaryBriefField[];
+  editKind: SummaryEditKind;
+  persist: SummaryPersistTarget;
+  /** Left column vs right column in the Concept v1 two-column card. */
+  column: "left" | "right";
+  /** Brand requirements spans full width under the two columns. */
+  fullWidth?: boolean;
 }
 
 function trim(value: string | undefined | null): string {
@@ -60,73 +89,236 @@ function channelsValue(brief: IntakeBrief): string {
 }
 
 function approvalsValue(brief: IntakeBrief): string {
+  const edited = answerFor(brief, SUMMARY_APPROVALS_KEY);
+  if (edited) return edited;
   const reviewFlags = brief.complianceFlags.filter((flag) => flag.severity === "review");
   if (reviewFlags.length === 0) return "Not specified in intake";
   return `Compliance review flagged: ${reviewFlags.map((flag) => flag.message).join("; ")}`;
 }
 
 function complianceNeedsReview(brief: IntakeBrief): string {
+  const override = answerFor(brief, SUMMARY_COMPLIANCE_KEY);
+  if (override === "Yes" || override === "No") return override;
   return brief.complianceFlags.some((flag) => flag.severity === "review") ? "Yes" : "No";
 }
 
-/** Left / right columns for the Summary Concept v1 brief card. */
-export function buildSummaryBriefFields(brief: IntakeBrief): SummaryBriefFields {
+/** Ordered rows for the Summary Concept v1 Project Summary card. */
+export function buildSummaryBriefFields(brief: IntakeBrief): SummaryBriefField[] {
+  return [
+    {
+      id: "business-context",
+      label: "Business context",
+      column: "left",
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeBackgroundPurpose" },
+      value: firstNonEmpty(
+        brief.a3.A3IntakeBackgroundPurpose,
+        answerFor(brief, "q-background"),
+        brief.contextText,
+      ),
+    },
+    {
+      id: "audience",
+      label: "Audience",
+      column: "right",
+      editKind: "textarea",
+      persist: { kind: "answer", key: SUMMARY_AUDIENCE_KEY },
+      value: firstNonEmpty(answerFor(brief, SUMMARY_AUDIENCE_KEY)),
+    },
+    {
+      id: "timing",
+      label: "Timing",
+      column: "left",
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeTimingNotes" },
+      value: timingValue(brief),
+    },
+    {
+      id: "success",
+      label: "Success metric",
+      column: "right",
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeSuccessMeasurement" },
+      value: firstNonEmpty(
+        brief.a3.A3IntakeSuccessMeasurement,
+        answerFor(brief, "q-success"),
+      ),
+    },
+    {
+      id: "approvals",
+      label: "Approvals",
+      column: "left",
+      editKind: "textarea",
+      persist: { kind: "answer", key: SUMMARY_APPROVALS_KEY },
+      value: approvalsValue(brief),
+    },
+    {
+      id: "compliance",
+      label: "Compliance needs to review",
+      column: "right",
+      editKind: "yesno",
+      persist: { kind: "compliance" },
+      value: complianceNeedsReview(brief),
+    },
+    {
+      id: "channels",
+      label: "Channels / deliverable",
+      column: "left",
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeDeliverables" },
+      value: channelsValue(brief),
+    },
+    {
+      id: "key-message",
+      label: "What's the key message?",
+      column: "right",
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeProjectSummary" },
+      value: firstNonEmpty(
+        brief.a3.A3IntakeProjectSummary,
+        answerFor(brief, "q-summary"),
+      ),
+    },
+    {
+      id: "build-from",
+      label: "What can we build from?",
+      column: "left",
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeAdditionalInformation" },
+      value: firstNonEmpty(
+        brief.a3.A3IntakeAdditionalInformation,
+        answerFor(brief, "q-anything-else"),
+      ),
+    },
+    {
+      id: "support",
+      label: "What support do you need?",
+      column: "right",
+      editKind: "textarea",
+      persist: { kind: "answer", key: SUMMARY_SUPPORT_KEY },
+      value: firstNonEmpty(
+        answerFor(brief, SUMMARY_SUPPORT_KEY),
+        "Not captured in intake",
+      ),
+    },
+    {
+      id: "brand",
+      label: "Any brand requirements?",
+      column: "left",
+      fullWidth: true,
+      editKind: "textarea",
+      persist: { kind: "a3", field: "A3IntakeGoalsExpectations" },
+      value: firstNonEmpty(
+        brief.a3.A3IntakeGoalsExpectations,
+        answerFor(brief, "q-goals"),
+      ),
+    },
+  ];
+}
+
+/** Left / right column split for layout (excludes fullWidth rows). */
+export function partitionSummaryFields(fields: SummaryBriefField[]): {
+  left: SummaryBriefField[];
+  right: SummaryBriefField[];
+  fullWidth: SummaryBriefField[];
+} {
   return {
-    left: [
-      {
-        label: "Business context",
-        value: firstNonEmpty(
-          brief.a3.A3IntakeBackgroundPurpose,
-          answerFor(brief, "q-background"),
-          brief.contextText,
-        ),
-      },
-      { label: "Timing", value: timingValue(brief) },
-      { label: "Approvals", value: approvalsValue(brief) },
-      { label: "Channels / deliverable", value: channelsValue(brief) },
-      {
-        label: "What can we build from?",
-        value: firstNonEmpty(
-          brief.a3.A3IntakeAdditionalInformation,
-          answerFor(brief, "q-anything-else"),
-        ),
-      },
-      {
-        label: "Any brand requirements?",
-        value: firstNonEmpty(
-          brief.a3.A3IntakeGoalsExpectations,
-          answerFor(brief, "q-goals"),
-        ),
-      },
-    ],
-    right: [
-      {
-        label: "Audience",
-        // No intake question or A3 audience field; do not misuse SupplementalDescription.
-        value: "—",
-      },
-      {
-        label: "Success metric",
-        value: firstNonEmpty(
-          brief.a3.A3IntakeSuccessMeasurement,
-          answerFor(brief, "q-success"),
-        ),
-      },
-      {
-        label: "Compliance needs to review",
-        value: complianceNeedsReview(brief),
-      },
-      {
-        label: "What's the key message?",
-        value: firstNonEmpty(
-          brief.a3.A3IntakeProjectSummary,
-          answerFor(brief, "q-summary"),
-        ),
-      },
-      {
-        label: "What support do you need?",
-        value: "Not captured in intake",
-      },
-    ],
+    left: fields.filter((field) => field.column === "left" && !field.fullWidth),
+    right: fields.filter((field) => field.column === "right" && !field.fullWidth),
+    fullWidth: fields.filter((field) => field.fullWidth),
   };
+}
+
+/**
+ * Apply an edited summary value onto a brief. Returns a new brief object.
+ * Display placeholders like "—" are stored as empty strings.
+ */
+export function applySummaryFieldEdit(
+  brief: IntakeBrief,
+  field: SummaryBriefField,
+  rawValue: string,
+): IntakeBrief {
+  const value = rawValue.trim() === "—" ? "" : rawValue.trim();
+  const updatedAt = new Date().toISOString();
+
+  if (field.persist.kind === "a3") {
+    return {
+      ...brief,
+      updatedAt,
+      a3: {
+        ...brief.a3,
+        [field.persist.field]: value,
+      },
+    };
+  }
+
+  if (field.persist.kind === "answer") {
+    return {
+      ...brief,
+      updatedAt,
+      answers: {
+        ...brief.answers,
+        [field.persist.key]: value,
+      },
+    };
+  }
+
+  // Compliance Yes/No
+  const wantsReview = value === "Yes";
+  let complianceFlags = brief.complianceFlags.filter(
+    (flag) => flag.rule !== "summary-compliance-review",
+  );
+  if (wantsReview) {
+    const hasReview = complianceFlags.some((flag) => flag.severity === "review");
+    if (!hasReview) {
+      complianceFlags = [
+        ...complianceFlags,
+        {
+          id: crypto.randomUUID(),
+          rule: "summary-compliance-review",
+          message: "Compliance review requested from the request summary.",
+          severity: "review" as const,
+          sourceField: "summary-compliance-review",
+          raisedAt: updatedAt,
+          acknowledged: true,
+        },
+      ];
+    }
+  } else {
+    complianceFlags = complianceFlags.filter((flag) => flag.severity !== "review");
+  }
+
+  return {
+    ...brief,
+    updatedAt,
+    complianceFlags,
+    answers: {
+      ...brief.answers,
+      [SUMMARY_COMPLIANCE_KEY]: wantsReview ? "Yes" : "No",
+    },
+  };
+}
+
+/** Labeled Overview Description lines for non-A3 summary edits (Workfront config requests). */
+export function summaryAuditLines(brief: IntakeBrief): string[] {
+  const lines: string[] = [];
+  const approvals = answerFor(brief, SUMMARY_APPROVALS_KEY);
+  if (approvals) {
+    lines.push(
+      `Approvals (summary; no A3 field — Workfront configuration request): ${approvals}`,
+    );
+  }
+  const audience = answerFor(brief, SUMMARY_AUDIENCE_KEY);
+  if (audience) {
+    lines.push(
+      `Audience (summary; no A3 field — Workfront configuration request): ${audience}`,
+    );
+  }
+  const support = answerFor(brief, SUMMARY_SUPPORT_KEY);
+  if (support) {
+    lines.push(
+      `What support do you need? (summary; no A3 field — Workfront configuration request): ${support}`,
+    );
+  }
+  return lines;
 }

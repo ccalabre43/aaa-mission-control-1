@@ -1,9 +1,8 @@
 /**
- * Full-page request summary (mock: assets/mocks/request-summary-page.png).
- * Concept v1 Figma node 369-5482: Size + Impact + Effort + Risk; Accept — Send to Workfront.
- *
- * Summary tab shows the reviewer layout; Workfront payload tab keeps the A3 payload and blockers.
- * Accept — Send dual-writes only when the proxy kill switch is on and the user confirms.
+ * Full-page request summary (Concept v1 Figma node 956:5229).
+ * Actions above assessments; Project Summary field bodies are Edit/Done;
+ * Accept — Send creates a New Project in TEST PORTFOLIO - CHRIS and uploads
+ * session attachments to Documents → Intake.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -16,7 +15,16 @@ import {
   storeAttachmentFiles,
 } from "../lib/intake/attachmentFileStore";
 import { loadBriefs, upsertBrief } from "../lib/intake/storage";
-import { buildSummaryBriefFields } from "../lib/intake/summaryBriefFields";
+import {
+  SUMMARY_APPROVALS_KEY,
+  SUMMARY_AUDIENCE_KEY,
+  SUMMARY_SUPPORT_KEY,
+  applySummaryFieldEdit,
+  buildSummaryBriefFields,
+  partitionSummaryFields,
+  type SummaryBriefField,
+  type SummaryFieldId,
+} from "../lib/intake/summaryBriefFields";
 import {
   REVIEWER_ASSESSMENT_LEVELS,
   REVIEWER_PRIORITIES,
@@ -72,6 +80,85 @@ function cyclePriority(current: ReviewerPriority): ReviewerPriority {
   return REVIEWER_PRIORITIES[(index + 1) % REVIEWER_PRIORITIES.length] ?? "P2";
 }
 
+/** Raw value for the edit control (not display placeholders). */
+function editDraftFor(brief: IntakeBrief, field: SummaryBriefField): string {
+  if (field.persist.kind === "a3") {
+    return (brief.a3[field.persist.field] ?? "").trim();
+  }
+  if (field.persist.kind === "answer") {
+    return (brief.answers[field.persist.key] ?? "").trim();
+  }
+  return field.value === "Yes" || field.value === "No" ? field.value : "No";
+}
+
+function SummaryFieldRow({
+  field,
+  editingId,
+  draft,
+  onStartEdit,
+  onDraftChange,
+  onDone,
+}: {
+  field: SummaryBriefField;
+  editingId: SummaryFieldId | null;
+  draft: string;
+  onStartEdit: (field: SummaryBriefField) => void;
+  onDraftChange: (value: string) => void;
+  onDone: () => void;
+}) {
+  const editing = editingId === field.id;
+  const controlId = `summary-edit-${field.id}`;
+
+  return (
+    <div className="aaa-summary-field">
+      <div className="aaa-summary-field-label" id={`${controlId}-label`}>
+        {field.label}
+      </div>
+      {editing ? (
+        <div className="aaa-summary-field-edit">
+          {field.editKind === "yesno" ? (
+            <select
+              id={controlId}
+              className="aaa-input"
+              aria-labelledby={`${controlId}-label`}
+              value={draft === "Yes" ? "Yes" : "No"}
+              onChange={(event) => onDraftChange(event.target.value)}
+            >
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          ) : (
+            <textarea
+              id={controlId}
+              className="aaa-textarea"
+              rows={4}
+              aria-labelledby={`${controlId}-label`}
+              value={draft}
+              onChange={(event) => onDraftChange(event.target.value)}
+            />
+          )}
+          <button type="button" className="aaa-btn-text" onClick={onDone}>
+            Done
+            <span className="sr-only"> editing {field.label}</span>
+          </button>
+        </div>
+      ) : (
+        <div className="aaa-summary-field-value">
+          <p className="aaa-summary-field-text">{field.value}</p>
+          <button
+            type="button"
+            className="aaa-btn-text"
+            onClick={() => onStartEdit(field)}
+          >
+            Edit
+            <span className="sr-only"> {field.label}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RequestSummaryView() {
   const { briefId = "" } = useParams<{ briefId: string }>();
   const navigate = useNavigate();
@@ -85,6 +172,8 @@ export default function RequestSummaryView() {
   const [submitting, setSubmitting] = useState(false);
   const [sentDialog, setSentDialog] = useState<SentDialogState | null>(null);
   const [attachmentEpoch, setAttachmentEpoch] = useState(0);
+  const [editingId, setEditingId] = useState<SummaryFieldId | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const reattachInputRef = useRef<HTMLInputElement | null>(null);
   const reattachTargetId = useRef<string | null>(null);
 
@@ -180,10 +269,29 @@ export default function RequestSummaryView() {
     patchReviewer({ status }, message);
   }
 
-  /**
-   * Concept v1 primary: mark Approved — transfer, then run the existing dual-write path.
-   * Cancelled or failed send still keeps Accept; messaging stays honest about Workfront.
-   */
+  function startEdit(field: SummaryBriefField) {
+    if (!brief) return;
+    setEditingId(field.id);
+    setEditDraft(editDraftFor(brief, field));
+  }
+
+  function finishEdit() {
+    if (!brief || !editingId) {
+      setEditingId(null);
+      return;
+    }
+    const fields = buildSummaryBriefFields(brief);
+    const field = fields.find((item) => item.id === editingId);
+    if (!field) {
+      setEditingId(null);
+      return;
+    }
+    const next = applySummaryFieldEdit(brief, field, editDraft);
+    persist(next, `${field.label} updated.`);
+    setEditingId(null);
+    setEditDraft("");
+  }
+
   async function acceptAndSendToWorkfront() {
     if (!brief || submitting) return;
 
@@ -382,7 +490,9 @@ export default function RequestSummaryView() {
     );
   }
 
-  const { left: fieldsLeft, right: fieldsRight } = buildSummaryBriefFields(brief);
+  const summaryFields = buildSummaryBriefFields(brief);
+  const { left: fieldsLeft, right: fieldsRight, fullWidth: fieldsFull } =
+    partitionSummaryFields(summaryFields);
   const channels = parseChannels(
     brief.a3.A3IntakeDeliverables?.trim() || brief.answers["q-deliverables"],
   );
@@ -390,8 +500,16 @@ export default function RequestSummaryView() {
   const requestor = identityFullName(brief.identity) || "Unknown requestor";
   const sentDisplay = workfrontSentDisplay(brief.workfront);
 
+  const fieldRowProps = {
+    editingId,
+    draft: editDraft,
+    onStartEdit: startEdit,
+    onDraftChange: setEditDraft,
+    onDone: finishEdit,
+  };
+
   return (
-    <main id="main" className="aaa-summary-page mx-auto max-w-5xl px-4 py-6 sm:px-6 pb-28">
+    <main id="main" className="aaa-summary-page mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <Link to="/deliverables" className="aaa-summary-back">
         ← Back to request queue
       </Link>
@@ -456,152 +574,49 @@ export default function RequestSummaryView() {
           role="tabpanel"
           aria-labelledby="summary-tab-summary"
         >
-          <div className="aaa-summary-card">
-            <div className="aaa-summary-columns">
-              <dl className="aaa-summary-fields">
-                {fieldsLeft.map((field) => (
-                  <div key={field.label}>
-                    <dt>{field.label}</dt>
-                    <dd>{field.value}</dd>
-                  </div>
-                ))}
-              </dl>
-              <dl className="aaa-summary-fields">
-                {fieldsRight.map((field) => (
-                  <div key={field.label}>
-                    <dt>{field.label}</dt>
-                    <dd>{field.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-
-          <section
-              className="aaa-summary-card aaa-summary-attachments"
-              aria-labelledby="summary-attachments-heading"
+          <div className="aaa-summary-actions" role="group" aria-label="Reviewer actions">
+            <button
+              type="button"
+              className="aaa-summary-btn aaa-summary-btn-primary"
+              onClick={() => void acceptAndSendToWorkfront()}
+              disabled={submitting}
             >
-              <h2 id="summary-attachments-heading" className="aaa-panel-section-heading">
-                Supporting files for Workfront
-              </h2>
-              <p className="aaa-panel-reason">
-                Files stay in this browser session until submit. If you reloaded the page,
-                re-attach each file so Workfront receives the original document.
-              </p>
-              {brief.attachments.length === 0 ? (
-                <p className="aaa-field-hint">No files were attached during intake.</p>
-              ) : (
-                <ul role="list" className="aaa-attachment-list">
-                  {brief.attachments.map((attachment) => {
-                    const ready = hasAttachmentFile(brief.id, attachment.id);
-                    // Force re-read when epoch bumps after re-attach.
-                    void attachmentEpoch;
-                    return (
-                      <li key={attachment.id} className="aaa-attachment">
-                        <span
-                          className={
-                            ready
-                              ? "aaa-attachment-ready is-ready"
-                              : "aaa-attachment-ready"
-                          }
-                          aria-hidden="true"
-                          title={ready ? "Ready to upload" : "Missing binary in this session"}
-                        />
-                        <span className="aaa-attachment-name">{attachment.fileName}</span>
-                        <span className="aaa-attachment-size">
-                          {ready ? "Ready to upload" : "Re-attach required"}
-                        </span>
-                        {!ready ? (
-                          <button
-                            type="button"
-                            className="aaa-btn-text"
-                            onClick={() => {
-                              reattachTargetId.current = attachment.id;
-                              reattachInputRef.current?.click();
-                            }}
-                          >
-                            Attach file to upload
-                          </button>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              <input
-                ref={reattachInputRef}
-                type="file"
-                multiple
-                className="sr-only"
-                aria-label="Re-attach supporting files for Workfront upload"
-                onChange={(event) => {
-                  const chosen = Array.from(event.target.files ?? []);
-                  if (!brief || chosen.length === 0) return;
-                  const targetId = reattachTargetId.current;
-                  if (targetId && chosen[0]) {
-                    storeAttachmentFile(brief.id, targetId, chosen[0]);
-                    reattachTargetId.current = null;
-                    const remaining = chosen.slice(1);
-                    if (remaining.length > 0) {
-                      const missing = brief.attachments.filter(
-                        (item) =>
-                          item.id !== targetId && !hasAttachmentFile(brief.id, item.id),
-                      );
-                      storeAttachmentFiles(
-                        brief.id,
-                        remaining.map((file, index) => ({
-                          attachmentId: missing[index]?.id ?? `extra-${crypto.randomUUID()}`,
-                          file,
-                        })),
-                      );
-                      if (remaining.length > missing.length) {
-                        const extras: AttachmentRef[] = remaining
-                          .slice(missing.length)
-                          .map((file) => ({
-                            id: crypto.randomUUID(),
-                            fileName: file.name,
-                            size: file.size,
-                            mimeType: file.type,
-                            addedAt: new Date().toISOString(),
-                          }));
-                        const withExtras: IntakeBrief = {
-                          ...brief,
-                          attachments: [...brief.attachments, ...extras],
-                          updatedAt: new Date().toISOString(),
-                        };
-                        storeAttachmentFiles(
-                          brief.id,
-                          extras.map((ref, index) => ({
-                            attachmentId: ref.id,
-                            file: remaining[missing.length + index],
-                          })),
-                        );
-                        persist(withExtras, `Attached ${chosen.length} file(s) for Workfront upload.`);
-                        setAttachmentEpoch((value) => value + 1);
-                        event.target.value = "";
-                        return;
-                      }
-                    }
-                  } else {
-                    const missing = brief.attachments.filter(
-                      (item) => !hasAttachmentFile(brief.id, item.id),
-                    );
-                    storeAttachmentFiles(
-                      brief.id,
-                      chosen.map((file, index) => ({
-                        attachmentId: missing[index]?.id ?? `extra-${crypto.randomUUID()}`,
-                        file,
-                      })),
-                    );
-                  }
-                  setAttachmentEpoch((value) => value + 1);
-                  setStatusMessage(
-                    `Attached ${chosen.length} file${chosen.length === 1 ? "" : "s"} for Workfront upload.`,
-                  );
-                  event.target.value = "";
-                }}
-              />
-          </section>
+              {submitting ? "Sending…" : "Accept — Send to Adobe Workfront"}
+            </button>
+            <button
+              type="button"
+              className="aaa-summary-btn aaa-summary-btn-ghost"
+              onClick={() => {
+                const next = cyclePriority(brief.reviewer.priority);
+                patchReviewer({ priority: next }, `Priority overridden to ${next}.`);
+              }}
+            >
+              Override priority
+            </button>
+            <button
+              type="button"
+              className="aaa-summary-btn aaa-summary-btn-ghost"
+              onClick={() =>
+                setStatus("needs_clarification", "Returned for clarification.")
+              }
+            >
+              Return for clarification
+            </button>
+            <button
+              type="button"
+              className="aaa-summary-btn aaa-summary-btn-ghost"
+              onClick={() => setStatus("deferred", "Deferred to backlog.")}
+            >
+              Defer
+            </button>
+            <button
+              type="button"
+              className="aaa-summary-btn aaa-summary-btn-danger-text"
+              onClick={() => setStatus("escalated", "Escalated.")}
+            >
+              Escalate
+            </button>
+          </div>
 
           <div className="aaa-summary-assessments" role="group" aria-label="Assessment">
             <label className="aaa-summary-assessment aaa-summary-assessment-size">
@@ -662,6 +677,156 @@ export default function RequestSummaryView() {
               </label>
             ))}
           </div>
+
+          <h2 className="aaa-summary-section-heading">Project Summary</h2>
+          <div className="aaa-summary-card">
+            <div className="aaa-summary-columns">
+              <div className="aaa-summary-fields">
+                {fieldsLeft.map((field) => (
+                  <SummaryFieldRow key={field.id} field={field} {...fieldRowProps} />
+                ))}
+              </div>
+              <div className="aaa-summary-fields">
+                {fieldsRight.map((field) => (
+                  <SummaryFieldRow key={field.id} field={field} {...fieldRowProps} />
+                ))}
+              </div>
+            </div>
+            {fieldsFull.length > 0 ? (
+              <div className="aaa-summary-fields aaa-summary-fields-full">
+                {fieldsFull.map((field) => (
+                  <SummaryFieldRow key={field.id} field={field} {...fieldRowProps} />
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <section
+            className="aaa-summary-card aaa-summary-attachments"
+            aria-labelledby="summary-attachments-heading"
+          >
+            <h2 id="summary-attachments-heading" className="aaa-panel-section-heading">
+              Supporting files for Workfront
+            </h2>
+            <p className="aaa-panel-reason">
+              Files attached during intake upload to the new project Documents → Intake
+              folder on Accept. They stay in this browser session until submit. If you
+              reloaded the page, re-attach each file so Workfront receives the original
+              document.
+            </p>
+            {brief.attachments.length === 0 ? (
+              <p className="aaa-field-hint">No files were attached during intake.</p>
+            ) : (
+              <ul role="list" className="aaa-attachment-list">
+                {brief.attachments.map((attachment) => {
+                  const ready = hasAttachmentFile(brief.id, attachment.id);
+                  void attachmentEpoch;
+                  return (
+                    <li key={attachment.id} className="aaa-attachment">
+                      <span
+                        className={
+                          ready
+                            ? "aaa-attachment-ready is-ready"
+                            : "aaa-attachment-ready"
+                        }
+                        aria-hidden="true"
+                        title={ready ? "Ready to upload" : "Missing binary in this session"}
+                      />
+                      <span className="aaa-attachment-name">{attachment.fileName}</span>
+                      <span className="aaa-attachment-size">
+                        {ready ? "Ready to upload" : "Re-attach required"}
+                      </span>
+                      {!ready ? (
+                        <button
+                          type="button"
+                          className="aaa-btn-text"
+                          onClick={() => {
+                            reattachTargetId.current = attachment.id;
+                            reattachInputRef.current?.click();
+                          }}
+                        >
+                          Attach file to upload
+                        </button>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <input
+              ref={reattachInputRef}
+              type="file"
+              multiple
+              className="sr-only"
+              aria-label="Re-attach supporting files for Workfront upload"
+              onChange={(event) => {
+                const chosen = Array.from(event.target.files ?? []);
+                if (!brief || chosen.length === 0) return;
+                const targetId = reattachTargetId.current;
+                if (targetId && chosen[0]) {
+                  storeAttachmentFile(brief.id, targetId, chosen[0]);
+                  reattachTargetId.current = null;
+                  const remaining = chosen.slice(1);
+                  if (remaining.length > 0) {
+                    const missingFiles = brief.attachments.filter(
+                      (item) =>
+                        item.id !== targetId && !hasAttachmentFile(brief.id, item.id),
+                    );
+                    storeAttachmentFiles(
+                      brief.id,
+                      remaining.map((file, index) => ({
+                        attachmentId: missingFiles[index]?.id ?? `extra-${crypto.randomUUID()}`,
+                        file,
+                      })),
+                    );
+                    if (remaining.length > missingFiles.length) {
+                      const extras: AttachmentRef[] = remaining
+                        .slice(missingFiles.length)
+                        .map((file) => ({
+                          id: crypto.randomUUID(),
+                          fileName: file.name,
+                          size: file.size,
+                          mimeType: file.type,
+                          addedAt: new Date().toISOString(),
+                        }));
+                      const withExtras: IntakeBrief = {
+                        ...brief,
+                        attachments: [...brief.attachments, ...extras],
+                        updatedAt: new Date().toISOString(),
+                      };
+                      storeAttachmentFiles(
+                        brief.id,
+                        extras.map((ref, index) => ({
+                          attachmentId: ref.id,
+                          file: remaining[missingFiles.length + index],
+                        })),
+                      );
+                      persist(withExtras, `Attached ${chosen.length} file(s) for Workfront upload.`);
+                      setAttachmentEpoch((value) => value + 1);
+                      event.target.value = "";
+                      return;
+                    }
+                  }
+                } else {
+                  const missingFiles = brief.attachments.filter(
+                    (item) => !hasAttachmentFile(brief.id, item.id),
+                  );
+                  storeAttachmentFiles(
+                    brief.id,
+                    chosen.map((file, index) => ({
+                      attachmentId: missingFiles[index]?.id ?? `extra-${crypto.randomUUID()}`,
+                      file,
+                    })),
+                  );
+                }
+                setAttachmentEpoch((value) => value + 1);
+                setStatusMessage(
+                  `Attached ${chosen.length} file${chosen.length === 1 ? "" : "s"} for Workfront upload.`,
+                );
+                event.target.value = "";
+              }}
+            />
+          </section>
         </div>
       ) : (
         <div
@@ -671,12 +836,22 @@ export default function RequestSummaryView() {
           className="aaa-summary-payload"
         >
           <p className="aaa-panel-reason">
-            This is the A3 / Workfront New Project payload (name + Overview Description). Local
-            reviewer Status, Priority, Size, and Impact / Effort / Risk are not included.
+            This is the A3 / Workfront New Project payload (name + Overview Description).
+            Summary-only Approvals, Audience, and Support lines appear as labeled audit
+            lines when set. Local reviewer Status, Priority, Size, and Impact / Effort /
+            Risk are not included.
             {sentDisplay.sent
               ? ` Linked Workfront Project: ${brief.workfront?.issueId}.`
-              : " It has not been posted until Accept — Send to Workfront succeeds with a Project ID."}
+              : " It has not been posted until Accept — Send to Adobe Workfront succeeds with a Project ID."}
           </p>
+          {(brief.answers[SUMMARY_APPROVALS_KEY] ||
+            brief.answers[SUMMARY_AUDIENCE_KEY] ||
+            brief.answers[SUMMARY_SUPPORT_KEY]) && (
+            <p className="aaa-panel-reason">
+              Non-A3 summary edits ride Overview Description audit lines (Workfront
+              configuration request for real custom fields).
+            </p>
+          )}
           <dl className="aaa-panel-list aaa-summary-payload-meta">
             <div>
               <dt>Path</dt>
@@ -727,50 +902,6 @@ export default function RequestSummaryView() {
           ) : null}
         </div>
       )}
-
-      <div className="aaa-summary-actions" role="group" aria-label="Reviewer actions">
-        <button
-          type="button"
-          className="aaa-summary-btn aaa-summary-btn-primary"
-          onClick={() => void acceptAndSendToWorkfront()}
-          disabled={submitting}
-        >
-          {submitting ? "Sending…" : "Accept — Send to Workfront"}
-        </button>
-        <button
-          type="button"
-          className="aaa-summary-btn aaa-summary-btn-ghost"
-          onClick={() => {
-            const next = cyclePriority(brief.reviewer.priority);
-            patchReviewer({ priority: next }, `Priority overridden to ${next}.`);
-          }}
-        >
-          Override priority
-        </button>
-        <button
-          type="button"
-          className="aaa-summary-btn aaa-summary-btn-ghost"
-          onClick={() =>
-            setStatus("needs_clarification", "Returned for clarification.")
-          }
-        >
-          Return for clarification
-        </button>
-        <button
-          type="button"
-          className="aaa-summary-btn aaa-summary-btn-ghost"
-          onClick={() => setStatus("deferred", "Deferred to backlog.")}
-        >
-          Defer
-        </button>
-        <button
-          type="button"
-          className="aaa-summary-btn aaa-summary-btn-danger-text"
-          onClick={() => setStatus("escalated", "Escalated.")}
-        >
-          Escalate
-        </button>
-      </div>
 
       {sentDialog ? (
         <WorkfrontSentDialog

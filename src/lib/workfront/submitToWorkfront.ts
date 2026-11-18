@@ -15,6 +15,7 @@ import {
   validateA3,
   type A3Values,
 } from "../intake/a3Schema";
+import { summaryAuditLines } from "../intake/summaryBriefFields";
 import { briefTitle, type IntakeBrief } from "../intake/types";
 import { describeCoverageForAudit } from "../related/coverage";
 import { createWorkfrontProject, uploadWorkfrontDocument } from "./proxyClient";
@@ -161,6 +162,7 @@ function auditLines(brief: IntakeBrief, config: QueueDef): string[] {
   }
 
   lines.push(...multiValueLines(brief.a3, route.topic?.name ?? null));
+  lines.push(...summaryAuditLines(brief));
 
   return lines;
 }

@@ -87,10 +87,13 @@ onto the Context dropzone:
 4. Open **Request Queue** (`/deliverables`) → open **Summary** (or kebab → Summary),
    verify attachments show **Ready to upload** (green readiness) or use **Attach file to upload**
    if opening from a later browser session.
-5. Click **Accept — Send to Workfront** (or queue kebab **Send to WF**):
+5. On Summary, edit Project Summary field bodies as needed (decision **063**). The section title
+   is not editable. Approvals / Audience / Support without A3 fields save locally and appear as
+   labeled Overview Description audit lines on send.
+6. Click **Accept — Send to Adobe Workfront** (or queue kebab **Send to WF**):
    - **Without** `WORKFRONT_LIVE_SUBMIT=1`: still local; honest “not sent” messaging.
    - **With** kill switch on: confirm dialog (New Project in TEST PORTFOLIO + Entered By +
-     attachment readiness) → proxy `POST /projects` creates a bare **Project** in TEST PORTFOLIO -
+     attachment readiness) → proxy `POST /projects` creates a **Project** in TEST PORTFOLIO -
      CHRIS → name from intake summary → Overview **Description** carries the intake information →
      for each session file, proxy `POST /documents` attaches to Documents → **Intake** →
      UI may show **Sent to Workfront: (WF Aligned)** only when a real Project ID is stored
@@ -102,7 +105,7 @@ onto the Context dropzone:
 ## API route of a live submit (ordered)
 
 **Ready to send** makes none of these calls. The sequence below is what one live **Accept — Send
-to Workfront** / **Send to WF** does when `WORKFRONT_LIVE_SUBMIT=1` and the user confirms
+to Adobe Workfront** / **Send to WF** does when `WORKFRONT_LIVE_SUBMIT=1` and the user confirms
 (`confirmLive: true`). Host: `https://aaalife.my.workfront.com`. Workfront REST version: `v19.0`.
 
 ### Auth (once per proxy request)

@@ -27,9 +27,11 @@ control (project `portfolioPriority`), not the Request Queue Priority select.
 | Size | `brief.reviewer.size` (local S/M/L; default M) | No A3 field; Summary triage only (Concept v1). Not posted to Workfront |
 | Impact / Effort / Risk | `brief.reviewer.impact` / `effort` / `risk` (local High/Medium/Low) | No A3 field yet; possible custom dropdowns later as a Workfront config request only |
 
-Summary’s two-column brief card (Concept v1 labels) is local display: `buildSummaryBriefFields`
-reads `brief.a3` then falls back to `answers` / `contextText` (decision 042). It does not change
-the Workfront payload beyond Priority on live create.
+Summary’s two-column Project Summary card (Concept v1 node `956:5229`, decision **063**) is
+editable via Edit/Done: `buildSummaryBriefFields` reads `brief.a3` then falls back to `answers` /
+`contextText`. Edits write back to A3 fields where they exist. Approvals, Audience, and Support
+use `brief.answers` keys and ride Overview Description audit lines on send (no invented A3
+fields). Compliance Yes/No drives local `complianceFlags` review state.
 
 ## Two priority controls (do not merge)
 

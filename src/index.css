@@ -3699,13 +3699,21 @@ select.select {
 }
 
 .aaa-summary-tabs {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.aaa-summary-section-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-muted);
+  line-height: 1.4;
 }
 
 .aaa-summary-card {
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem;
   border: 1px solid var(--aaa-border);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: #ffffff;
   margin-bottom: 1.25rem;
 }
@@ -3713,12 +3721,13 @@ select.select {
 .aaa-summary-columns {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem 2rem;
+  gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
   .aaa-summary-columns {
     grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
   }
 }
 
@@ -3726,34 +3735,54 @@ select.select {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-.aaa-summary-fields > div {
+.aaa-summary-fields-full {
+  margin-top: 1.5rem;
+}
+
+.aaa-summary-field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aaa-blue); /* 7.65:1 estimated on white */
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+.aaa-summary-field-value {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 
-.aaa-summary-fields dt {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--aaa-blue); /* 7.65:1 estimated on white */
-}
-
-.aaa-summary-fields dd {
+.aaa-summary-field-text {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   line-height: 1.55;
   color: var(--aaa-ink);
   white-space: pre-wrap;
+}
+
+.aaa-summary-field-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.aaa-summary-field-edit .aaa-textarea,
+.aaa-summary-field-edit .aaa-input {
+  width: 100%;
 }
 
 .aaa-summary-assessments {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.5rem;
 }
 
 @media (min-width: 640px) {
@@ -3824,18 +3853,11 @@ select.select {
 }
 
 .aaa-summary-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 20;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.625rem;
-  padding: 1rem 0 0.5rem;
-  background: linear-gradient(
-    to top,
-    var(--aaa-surface) 70%,
-    color-mix(in srgb, var(--aaa-surface) 0%, transparent)
-  );
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
 }
 
 .aaa-summary-btn {
