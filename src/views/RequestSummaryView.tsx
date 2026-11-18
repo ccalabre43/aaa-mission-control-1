@@ -701,13 +701,13 @@ export default function RequestSummaryView() {
             ) : null}
           </div>
 
+          <h2 id="summary-attachments-heading" className="aaa-summary-section-heading">
+            Supporting files for Workfront
+          </h2>
           <section
             className="aaa-summary-card aaa-summary-attachments"
             aria-labelledby="summary-attachments-heading"
           >
-            <h2 id="summary-attachments-heading" className="aaa-panel-section-heading">
-              Supporting files for Workfront
-            </h2>
             <p className="aaa-panel-reason">
               Files attached during intake upload to the new project Documents → Intake
               folder on Accept. They stay in this browser session until submit. If you
