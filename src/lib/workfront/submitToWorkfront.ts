@@ -2,10 +2,10 @@
  * Workfront submission adapter.
  *
  * Default path is local-only (Ready to send). Live dual-write requires the proxy kill switch
- * `WORKFRONT_LIVE_SUBMIT=1`, an explicit UI confirm (`confirmLive`), and a real Brand Project ID
- * back from Workfront before `mode` becomes `"workfront"`. Secrets stay on the proxy — never in Vite.
+ * `WORKFRONT_LIVE_SUBMIT=1`, an explicit UI confirm (`confirmLive`), and a real Project ID from
+ * TEST PORTFOLIO - CHRIS before `mode` becomes `"workfront"`. Secrets stay on the proxy — never in Vite.
  * Stored keys remain `issueId` / `issueUrl` (now Project ID/URL) to avoid a localStorage migration
- * — decision 055 superseding Task dual-write on mission-control-v1.
+ * — decisions 055 / 057 superseding Task dual-write on mission-control-v1.
  */
 import {
   A3_SUBMITTED_FIELDS,
@@ -74,7 +74,7 @@ export interface WorkfrontSubmitResult {
   blockers: string[];
   /** Set when a live attempt was made and the proxy or Workfront refused it. */
   liveError?: string;
-  /** Documents uploaded after a successful live Brand project create. */
+  /** Documents uploaded after a successful live TEST PORTFOLIO project create. */
   uploadedDocuments?: WorkfrontUploadedDocumentRecord[];
   /** Non-fatal: Project was created but one or more document uploads failed. */
   documentError?: string;
@@ -259,8 +259,8 @@ export function sendBlockers(brief: IntakeBrief, config: QueueDef): string[] {
 
 /**
  * Display value under the Sent to Workfront label.
- * Affirmative " (WF Aligned)" is only returned with a real Brand Project ID
- * (copy-guard / decisions 035–036, 055). Storage key remains `issueId`.
+ * Affirmative " (WF Aligned)" is only returned with a real TEST PORTFOLIO Project ID
+ * (copy-guard / decisions 035–036, 055, 057). Storage key remains `issueId`.
  */
 export function workfrontSentDisplay(
   workfront: IntakeBrief["workfront"],
@@ -311,7 +311,7 @@ export interface WorkfrontSubmitOptions {
  * and never produces `ok: false`: the request is saved and marked Ready to send, and `blockers`
  * carries what an administrator has to supply before anything could be transmitted.
  *
- * `mode: "workfront"` only when Workfront returns a real Brand Project ID.
+ * `mode: "workfront"` only when Workfront returns a real TEST PORTFOLIO Project ID.
  */
 export async function submitToWorkfront(
   brief: IntakeBrief,

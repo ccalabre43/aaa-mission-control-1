@@ -245,9 +245,10 @@ export function topicPath(config: QueueDef, topic: QueueTopic | null): string {
 }
 
 /**
- * Brand project create (decision 055) needs a resolved Path topic for the description audit line.
- * Template and Brand portfolio IDs live on the proxy env, not on this client queue config, so
- * mission-control queue topic / project Workfront IDs are no longer live-send gates.
+ * New Project create in TEST PORTFOLIO - CHRIS (decisions 055 / 057) needs a resolved Path topic
+ * for the description audit line. Template and portfolio IDs live on the proxy env, not on this
+ * client queue config, so mission-control queue topic / project Workfront IDs are no longer
+ * live-send gates.
  */
 export function topicIsSubmittable(_config: QueueDef, topic: QueueTopic | null): boolean {
   return Boolean(topic);

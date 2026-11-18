@@ -110,8 +110,8 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | Path | Added | What it is | Status |
 | --- | --- | --- | --- |
 | `docs/deployment.md` | 2026-09-16; Vercel `/api/workfront` 2026-10-30 | How to build and host: `APP_BASE_PATH`, per-host history fallback, security headers, Vercel Workfront env, what hosting does **not** solve | active |
-| `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04; dual-write 2026-10-07; Refresh upsert 2026-10-07 | S2S + App Builder proxy; Task create/list; Refresh upserts into local queue (035–037) | active — Task dual-write; S2S Add Task ACL pending |
-| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; Brand cutover 055; TEST PORTFOLIO 057; Workstart 058; template+Chris 059; Projects placement 060 2026-11-16 | Local Ready-to-send; New Project from Email Creative template + Workstart; Projects tab not Optimization; Priority local-only; Portfolio Apply; Refresh | active |
+| `docs/workfront-auth.md` | 2026-09-16; Step 4 2026-10-04; dual-write 2026-10-07; Refresh upsert 2026-10-07; TEST PORTFOLIO labels 2026-11-16 | S2S + App Builder proxy; New Project create/list in TEST PORTFOLIO - CHRIS; Refresh upserts into local queue (035–037, 057) | active |
+| `docs/knowledge/workfront-submit-walkthrough.md` | 2026-10-07; Brand cutover 055; TEST PORTFOLIO 057; Workstart 058; template+Chris 059; Projects placement 060; live-submit API route 2026-11-16 | Local Ready-to-send; New Project from Email Creative template + Workstart; ordered proxy→Workfront REST calls for live submit; Projects tab not Optimization; Priority local-only; Portfolio Apply; Refresh | active |
 | `docs/knowledge/workfront-add-tasks-acl.md` | 2026-10-09 | S2S Access Level + project Share for Task create (resolved; decision 039; superseded for send path by 055) | historical — Task path |
 | `docs/knowledge/workfront-brand-project-acl.md` | 2026-11-15 | S2S Template + Brand portfolio ACL (055); superseded for Send landing by 057 | historical — Brand template path |
 | `docs/knowledge/workfront-test-portfolio-acl.md` | 2026-11-15 | S2S Manage on TEST PORTFOLIO - CHRIS for bare New Project create (057) | resolved — sample create OK |
@@ -129,8 +129,8 @@ Kept so nothing is lost. Not authoritative, and not to be edited.
 | `scripts/lib/copy-guard.mjs` | 2026-09-16 | The banned-phrase and coverage-disclosure checks, taking a directory so they can be tested | active |
 | `scripts/test-copy-guard.mjs` | 2026-09-16 | Proves the guard fails on known-bad fixtures. A guard never seen failing is not a guard | active |
 | `scripts/test-snapshot.mjs` | 2026-09-23 | Round-trips a queue snapshot export, import, and undo; proves four kinds of bad file are refused rather than partially applied; asserts requester identity is absent from the file and named in its omitted list | active |
-| `scripts/test-workfront-projects.mjs` | 2026-11-15 | Brand project create/list/health unit tests, fetch stubbed (`npm run test:workfront-projects`, decision 055) | active |
-| `scripts/workfront-sample-project.mjs` | 2026-11-15 | Live Brand project create probe against the local proxy (`npm run workfront:sample-project`) | active |
+| `scripts/test-workfront-projects.mjs` | 2026-11-15 | TEST PORTFOLIO project create/list/health unit tests, fetch stubbed (`npm run test:workfront-projects`, decisions 055/057) | active |
+| `scripts/workfront-sample-project.mjs` | 2026-11-15 | Live New Project create probe against the local proxy (`npm run workfront:sample-project`) | active |
 | `scripts/test-workfront-priority.mjs` | 2026-10-30 | Priority map round-trip + proxy reject paths for `/priority` and `/portfolio` (`npm run test:workfront-priority`) | active |
 
 ## Rules and skills

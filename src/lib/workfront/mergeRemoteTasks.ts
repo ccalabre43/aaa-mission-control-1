@@ -1,9 +1,9 @@
 /**
- * Upsert Workfront Brand Team project summaries into local Request Queue briefs.
+ * Upsert Workfront TEST PORTFOLIO - CHRIS project summaries into local Request Queue briefs.
  *
  * Match by Project ID (stored as `workfront.issueId`), then exact name. On conflict Workfront
  * wins for surface fields. Local briefs with no matching project are kept. Never stores
- * requester email. Coverage must name the Brand portfolio corpus — never organization-wide.
+ * requester email. Coverage must name the TEST PORTFOLIO - CHRIS corpus — never organization-wide.
  */
 
 import { ALAN_SEARCH_PATTERN } from "../intake/alanNumber";
@@ -218,12 +218,12 @@ function createBriefFromTask(task: WorkfrontRemoteIssue, now: string): IntakeBri
       corpusSize: 1,
       sources: [
         {
-          label: "Workfront Brand Team portfolio projects (summary fields)",
+          label: "Workfront TEST PORTFOLIO - CHRIS projects (summary fields)",
           count: 1,
         },
       ],
       limitations: [
-        "Created from a Brand Team portfolio project list refresh (summary fields only). Not a full A3 intake and not organization-wide.",
+        "Created from a TEST PORTFOLIO - CHRIS project list refresh (summary fields only). Not a full A3 intake and not organization-wide.",
       ],
       searchedAt: now,
     },

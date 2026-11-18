@@ -157,8 +157,9 @@ async function ensureProjectsTabPlacement(config, token, projectId, expectedPort
 
 /**
  * Make Chris Calabrese the project stakeholder (PRTU) and remove Pat Gaskin.
- * Chris is added first so the project is never left without a stakeholder. If Pat is the
- * project owner, ownership moves to Chris as well.
+ * PRTU is not a top-level API object, so the People list is replaced as a whole through
+ * `PROJ/{id}?updates={"projectUsers":[...]}` with Chris included. If Pat is the project owner,
+ * ownership moves to Chris as well.
  *
  * @param {ReturnType<typeof readConfig>} config
  * @param {string} token
@@ -188,18 +189,11 @@ async function ensureProjectStakeholders(config, token, projectId) {
   const row = readData.data || readData;
   const members = Array.isArray(row.projectUsers) ? row.projectUsers : [];
 
-  let added = false;
-  const hasStakeholder = members.some(
-    (member) => member && String(member.userID) === stakeholderID,
-  );
-  if (!hasStakeholder) {
-    await workfrontApi(config, token, "PRTU", {
-      method: "POST",
-      body: { projectID: projectId, userID: stakeholderID },
-    });
-    added = true;
-  }
+  const currentIds = members
+    .map((member) => (member && member.userID != null ? String(member.userID) : ""))
+    .filter(Boolean);
 
+  // Move ownership first so Pat is not left owning the project once he leaves the list.
   let ownerChanged = false;
   if (row.ownerID != null && removeIds.has(String(row.ownerID))) {
     await workfrontApi(config, token, "PROJ", {
@@ -209,18 +203,50 @@ async function ensureProjectStakeholders(config, token, projectId) {
     ownerChanged = true;
   }
 
+  const toRemove = currentIds.filter((userId) => removeIds.has(userId));
+  const added = !currentIds.includes(stakeholderID);
   /** @type {string[]} */
-  const removed = [];
-  for (const member of members) {
-    if (member && removeIds.has(String(member.userID)) && member.ID) {
-      await workfrontApi(config, token, `PRTU/${encodeURIComponent(String(member.ID))}`, {
-        method: "DELETE",
-      });
-      removed.push(String(member.userID));
+  let removed = [];
+  /** @type {string | undefined} */
+  let error;
+
+  if (added || toRemove.length > 0) {
+    // PRTU is not a top-level object, so Workfront only accepts the People list as a whole
+    // through the project's projectUsers collection. Send the full resulting list: Chris
+    // is included before Pat is dropped, so the list is never empty.
+    const nextIds = [
+      ...new Set([...currentIds.filter((userId) => !removeIds.has(userId)), stakeholderID]),
+    ];
+    const updates = { projectUsers: nextIds.map((userID) => ({ userID })) };
+    await workfrontApi(
+      config,
+      token,
+      `PROJ/${encodeURIComponent(projectId)}?updates=${encodeURIComponent(JSON.stringify(updates))}`,
+      // An empty JSON body keeps Content-Length set; a bodyless PUT is rejected with HTTP 411.
+      { method: "PUT", body: {} },
+    );
+
+    // Workfront can accept the update and silently keep a user, so report what is really there.
+    const verifyData = await workfrontApi(
+      config,
+      token,
+      `project/${encodeURIComponent(projectId)}?fields=${encodeURIComponent("projectUsers:userID")}`,
+    );
+    const verifyRow = verifyData.data || verifyData;
+    const finalIds = (Array.isArray(verifyRow.projectUsers) ? verifyRow.projectUsers : [])
+      .map((member) => (member && member.userID != null ? String(member.userID) : ""))
+      .filter(Boolean);
+    removed = toRemove.filter((userId) => !finalIds.includes(userId));
+    const kept = toRemove.filter((userId) => finalIds.includes(userId));
+    if (kept.length > 0) {
+      error =
+        `Workfront kept ${kept.join(", ")} on the project People list after the update. ` +
+        `The S2S tech account may lack permission to remove project users; remove them in ` +
+        `Workfront or share the project with an admin who can.`;
     }
   }
 
-  return { stakeholderID, added, removed, ownerChanged };
+  return { stakeholderID, added, removed, ownerChanged, ...(error ? { error } : {}) };
 }
 
 /**

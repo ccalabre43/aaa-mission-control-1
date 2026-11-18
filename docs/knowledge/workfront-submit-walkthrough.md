@@ -99,6 +99,64 @@ onto the Context dropzone:
 
 ---
 
+## API route of a live submit (ordered)
+
+**Ready to send** makes none of these calls. The sequence below is what one live **Accept — Send
+to Workfront** / **Send to WF** does when `WORKFRONT_LIVE_SUBMIT=1` and the user confirms
+(`confirmLive: true`). Host: `https://aaalife.my.workfront.com`. Workfront REST version: `v19.0`.
+
+### Auth (once per proxy request)
+
+Chosen in `workfront-proxy` shared client before any Workfront call:
+
+1. Signed-in Experience Cloud Shell IMS bearer, when the browser sends `Authorization: Bearer`.
+2. Otherwise `POST https://ims-na1.adobelogin.com/ims/token/v3` with the server-to-server
+   `client_id` / `client_secret` (`grant_type=client_credentials`).
+
+Writes also require the proxy kill switch and `confirmLive: true`. Without both, create and
+document upload are refused and the brief stays local.
+
+### Browser → proxy
+
+| Step | Call |
+| --- | --- |
+| 1 | `POST /api/workfront/projects` — Vite rewrites to local `POST /projects` on port 8787; Vercel uses `api/workfront/projects.js` |
+| 2 | For each session attachment file: `POST /api/workfront/documents` (same host rewrite / Vercel route) |
+
+### Proxy → Workfront (project create)
+
+From `workfront-projects/projects.js`, in order:
+
+| Step | Workfront call | Purpose |
+| --- | --- | --- |
+| 1 | `POST /attask/api/v19.0/project` | Create project: name, Overview description, `portfolioID` (`WORKFRONT_PORTFOLIO_ID` = TEST PORTFOLIO - CHRIS), `templateID` (BIM \| EMAIL CREATIVE DEVELOPMENT TEMPLATE), `status: CUR` |
+| 2 | `GET /attask/api/v19.0/project/{id}?fields=status,portfolioID,portfolioPriority,selectedOnPortfolioOptimizer` | Read Projects-tab placement |
+| 3 | `PUT /attask/api/v19.0/PROJ` | Only if status is not Current, or the project is on Optimization with no rank — normalize to Current / off optimizer |
+| 4 | `GET /attask/api/v19.0/project/{id}?fields=ownerID,projectUsers:userID` | Read owner and People list |
+| 5 | `PUT /attask/api/v19.0/PROJ` (owner and/or `projectUsers` updates) | Stakeholder Chris Calabrese; remove Pat Gaskin when present |
+| 6 | `POST /attask/api/v19.0/TASK` | Workstart task on Mission Control Main (`WORKFRONT_WORKSTART_PROJECT_ID`), assigned to Chris Calabrese |
+
+### Proxy → Workfront (each document)
+
+From `workfront-documents/documents.js`, for each file after a successful project create:
+
+| Step | Workfront call | Purpose |
+| --- | --- | --- |
+| 1 | `POST /attask/api/v19.0/upload` | Multipart upload; returns a handle |
+| 2 | `GET /attask/api/v19.0/DOCFDR/search?…` then `POST /attask/api/v19.0/DOCFDR` if missing | Find or create the project **Intake** folder |
+| 3 | `POST /attask/api/v19.0/document?updates=…` | Attach document to the new project (`docObjCode: PROJ`, folder **Intake**) |
+
+### Not part of submit
+
+These routes share the same proxy and host; they are not invoked by Accept / Send to WF:
+
+- **Refresh from Workfront** — `GET /api/workfront/projects` → `project/search?portfolioID=…`
+- **Executive Apply order** — `GET` / `POST /api/workfront/portfolio`
+- **Legacy** — `GET` / `POST /api/workfront/issues` (Tasks on mission-control-v1) and
+  `POST /api/workfront/priority` (Task urgency)
+
+---
+
 ## Where projects land
 
 | Field | Value |

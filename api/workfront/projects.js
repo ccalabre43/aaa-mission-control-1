@@ -1,6 +1,6 @@
 /**
  * Vercel serverless: GET/POST /api/workfront/projects
- * Brand Team project create / list — same contract as local proxy and Runtime action.
+ * TEST PORTFOLIO - CHRIS project create / list — same contract as local proxy and Runtime action.
  */
 
 import {

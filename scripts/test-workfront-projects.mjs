@@ -191,10 +191,14 @@ test("create normalizes QUE status to CUR for Projects tab", async () => {
 test("create swaps stakeholder Pat Gaskin for Chris Calabrese", async () => {
   const PAT = "641cb8d100053883a2499c4f0ac41735";
   const CHRIS = "690946b90001f53ab97763a1753be08f";
+  let peopleUpdated = false;
   const stub = stubFetch((url, init) => {
     const method = init.method || "GET";
     if (url.endsWith("/TASK")) {
       return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if (method === "PUT" && url.includes("updates=")) {
+      peopleUpdated = true;
     }
     if (method === "GET" && url.includes("/project/new-proj")) {
       return {
@@ -206,7 +210,9 @@ test("create swaps stakeholder Pat Gaskin for Chris Calabrese", async () => {
             portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
             selectedOnPortfolioOptimizer: false,
             ownerID: PAT,
-            projectUsers: [{ ID: "prtu-pat", userID: PAT }],
+            projectUsers: peopleUpdated
+              ? [{ ID: "prtu-chris", userID: CHRIS }]
+              : [{ ID: "prtu-pat", userID: PAT }],
           },
         },
       };
@@ -225,20 +231,64 @@ test("create swaps stakeholder Pat Gaskin for Chris Calabrese", async () => {
     assert.deepEqual(result.body.stakeholders.removed, [PAT]);
     assert.equal(result.body.stakeholders.ownerChanged, true);
 
-    const add = stub.calls.find((c) => c.method === "POST" && c.url.endsWith("/PRTU"));
-    assert.ok(add, "expected POST /PRTU for Chris");
-    assert.deepEqual(JSON.parse(String(add.body)), { projectID: "new-proj", userID: CHRIS });
-    const del = stub.calls.find((c) => c.method === "DELETE" && c.url.endsWith("/PRTU/prtu-pat"));
-    assert.ok(del, "expected DELETE of Pat's PRTU");
+    assert.equal(
+      stub.calls.some((c) => c.url.includes("/PRTU")),
+      false,
+      "PRTU is not a top-level object and must never be called directly",
+    );
+    const peoplePut = stub.calls.find(
+      (c) => c.method === "PUT" && c.url.includes("updates="),
+    );
+    assert.ok(peoplePut, "expected PUT PROJ/{id}?updates= with projectUsers");
+    assert.match(peoplePut.url, /\/PROJ\/new-proj\?/);
+    const updates = JSON.parse(new URL(peoplePut.url).searchParams.get("updates"));
+    assert.deepEqual(updates, { projectUsers: [{ userID: CHRIS }] });
     const ownerPut = stub.calls.find(
       (c) => c.method === "PUT" && String(c.body).includes("ownerID"),
     );
     assert.ok(ownerPut, "expected owner moved to Chris");
     assert.equal(JSON.parse(String(ownerPut.body)).ownerID, CHRIS);
-    assert.ok(
-      stub.calls.indexOf(add) < stub.calls.indexOf(del),
-      "Chris is added before Pat is removed",
-    );
+  } finally {
+    stub.restore();
+  }
+});
+
+test("create reports an error when Workfront silently keeps Pat on the People list", async () => {
+  const PAT = "641cb8d100053883a2499c4f0ac41735";
+  const CHRIS = "690946b90001f53ab97763a1753be08f";
+  const stub = stubFetch((url, init) => {
+    if (url.endsWith("/TASK")) {
+      return { status: 200, body: { data: { ID: "workstart-task", name: "Workstart" } } };
+    }
+    if ((init.method || "GET") === "GET" && url.includes("/project/new-proj")) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            ID: "new-proj",
+            status: "CUR",
+            portfolioID: "6aa167f4000304470fb9e879fb8bbd56",
+            selectedOnPortfolioOptimizer: false,
+            ownerID: CHRIS,
+            projectUsers: [
+              { ID: "prtu-pat", userID: PAT },
+              { ID: "prtu-chris", userID: CHRIS },
+            ],
+          },
+        },
+      };
+    }
+    return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };
+  });
+  try {
+    const result = await runCreateProject(BASE_ENV, {
+      name: "ALAN-1 - Flyer",
+      description: "x",
+      confirmLive: true,
+    });
+    assert.equal(result.statusCode, 201);
+    assert.deepEqual(result.body.stakeholders.removed, []);
+    assert.match(result.body.stakeholders.error, new RegExp(PAT));
   } finally {
     stub.restore();
   }
@@ -275,7 +325,11 @@ test("create does not re-add Chris when he is already a stakeholder", async () =
     });
     assert.equal(result.body.stakeholders.added, false);
     assert.deepEqual(result.body.stakeholders.removed, []);
-    assert.equal(stub.calls.some((c) => c.url.endsWith("/PRTU")), false);
+    assert.equal(
+      stub.calls.some((c) => c.method === "PUT" && c.url.includes("updates=")),
+      false,
+      "no People update when Chris is already the only stakeholder",
+    );
     assert.equal(stub.calls.some((c) => c.method === "DELETE"), false);
   } finally {
     stub.restore();
@@ -301,7 +355,7 @@ test("create keeps New Project when the stakeholder update fails", async () => {
         },
       };
     }
-    if (url.endsWith("/PRTU")) {
+    if ((init.method || "GET") === "PUT" && url.includes("updates=")) {
       return { status: 403, body: { error: { message: "no access" } } };
     }
     return { status: 200, body: { data: { ID: "new-proj", name: "ALAN-1 - Flyer" } } };

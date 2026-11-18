@@ -1611,11 +1611,20 @@ user (PRTU, the Stakeholders list). After every New Project create the proxy now
 
 | Step | Behavior |
 | --- | --- |
-| Add | POST `PRTU` for Chris Calabrese `690946b90001f53ab97763a1753be08f` unless already present |
+| Add | Chris Calabrese `690946b90001f53ab97763a1753be08f` is included unless already present |
 | Owner | If Pat is the project owner, `ownerID` moves to Chris |
-| Remove | DELETE Pat's `PRTU` (only after Chris is added, so the list is never empty) |
+| Remove | Pat is left out of the new list; one `PUT PROJ/{id}?updates={"projectUsers":[...]}` replaces the People list, so it is never empty |
+| Why not PRTU | A live run showed `PRTU is not a top level object`; POST/DELETE on `PRTU` cannot work. Only the project's `projectUsers` collection is writable |
 | Failure | Non-fatal, like Workstart: the project is kept and `stakeholders.error` is returned |
 | Config | `WORKFRONT_STAKEHOLDER_ID`, `WORKFRONT_REMOVE_STAKEHOLDER_IDS` (defaults above) |
+
+### 062 live verify (same day) - partly working
+
+Live sample creates showed: Chris is added and ownership moves to Chris. **Pat Gaskin stays on the
+People list.** Even `{"projectUsers":[]}` did not remove him, so Workfront accepts the update and
+silently keeps him. The proxy now reads the list back and returns `stakeholders.error` naming any
+user Workfront kept, rather than claiming a removal. Open question: why Pat is pinned (S2S account
+permission, a template-level entry, or a role). Not resolved; do not assume it is fixed.
 
 Applies to new requests only. Existing projects are not changed. This is a Workfront write against
 a project, still behind `WORKFRONT_LIVE_SUBMIT` and `confirmLive`. It supersedes the Pat Gaskin

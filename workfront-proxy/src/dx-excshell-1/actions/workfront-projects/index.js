@@ -1,7 +1,7 @@
 /**
- * Adobe App Builder Runtime web action: create / list Brand Team Projects.
+ * Adobe App Builder Runtime web action: create / list New Projects in TEST PORTFOLIO - CHRIS.
  *
- * GET → list projects in WORKFRONT_BRAND_PORTFOLIO_ID (summary fields).
+ * GET → list projects in WORKFRONT_PORTFOLIO_ID (summary fields).
  * POST → create project from WORKFRONT_TEMPLATE_ID when kill switch + confirmLive.
  */
 

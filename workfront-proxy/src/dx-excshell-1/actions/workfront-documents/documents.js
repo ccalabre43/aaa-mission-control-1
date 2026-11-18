@@ -1,5 +1,5 @@
 /**
- * Upload a document to a Workfront Project (Brand create) Documents folder.
+ * Upload a document to a Workfront Project (TEST PORTFOLIO create) Documents folder.
  * Optional taskId still mirrors onto a Task when provided (legacy path).
  * Requires WORKFRONT_LIVE_SUBMIT=1 and confirmLive: true.
  */
@@ -163,7 +163,7 @@ async function runUploadDocument(env, body, options = {}) {
         auth: authLabel(source),
         coverage: taskId
           ? `Document attached to Task ${taskId} and project ${projectId} folder "${folderName}".`
-          : `Document attached to Brand project ${projectId} Documents folder "${folderName}".`,
+          : `Document attached to TEST PORTFOLIO project ${projectId} Documents folder "${folderName}".`,
       },
     };
   } catch (error) {
